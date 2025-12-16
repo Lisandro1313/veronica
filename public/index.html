@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema RRHH - Empresas Hortícolas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="screen active">
+        <div class="container">
+            <div class="card">
+                <h1>🌱 Sistema RRHH</h1>
+                <p class="subtitle">Empresas Hortícolas</p>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="usuario">Usuario:</label>
+                        <input type="text" id="usuario" name="usuario" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Ingresar</button>
+                    <div class="login-hints">
+                        <p class="hint"><strong>👤 Usuarios de prueba:</strong></p>
+                        <p class="hint">🔴 Super Admin: <code>admin</code> / <code>admin123</code></p>
+                        <p class="hint">🟠 Admin RRHH: <code>rrhh</code> / <code>rrhh123</code></p>
+                        <p class="hint">🟢 Gerente: <code>manager</code> / <code>manager123</code></p>
+                        <p class="hint">🔵 Consultor: <code>viewer</code> / <code>viewer123</code></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla Principal -->
+    <div id="main-screen" class="screen">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-seedling"></i>
+                <h3>RRHH Pro</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-tab="lista">
+                    <i class="fas fa-users"></i>
+                    <span>Personal</span>
+                </button>
+                <button class="nav-item" data-tab="nuevo">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Nuevo Empleado</span>
+                </button>
+                <button class="nav-item" data-tab="tickets">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Tickets</span>
+                </button>
+                <button class="nav-item" data-tab="reportes">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Reportes</span>
+                </button>
+                <button class="nav-item" data-tab="alertas">
+                    <i class="fas fa-bell"></i>
+                    <span>Alertas</span>
+                    <span id="notif-badge" class="notif-badge" style="display:none;">0</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <div>
+                        <div id="sidebar-user-name">Usuario</div>
+                        <small>Administrador</small>
+                    </div>
+                </div>
+                <button id="sidebar-logout-btn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="page-title"><i class="fas fa-chart-line"></i> Dashboard</h1>
+                <div class="top-bar-actions">
+                    <span id="role-badge" class="role-badge" style="display: none;">
+                        <i class="fas fa-shield-alt"></i>
+                        <span id="role-text">Usuario</span>
+                    </span>
+                    <button class="btn-icon" title="Refrescar">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn-icon" title="Ayuda">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Tab: Dashboard -->
+            <div id="tab-dashboard" class="tab-content active">
+                <!-- KPIs -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #2196f3;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3 id="kpi-total">0</h3>
+                            <p>Total Empleados</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #ff9800;">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3 id="kpi-extranjeros">0</h3>
+                            <p>Extranjeros</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #f44336;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3 id="kpi-antecedentes">0</h3>
+                            <p>Con Antecedentes</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #9c27b0;">
+                            <i class="fas fa-child"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3 id="kpi-menores">0</h3>
+                            <p>Menores en Familias</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #e91e63;">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3 id="kpi-salud">0</h3>
+                            <p>Con Problemas de Salud</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #00bcd4;">
+                            <i class="fas fa-plane"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3 id="kpi-viaje">0</h3>
+                            <p>De Viaje/Ausentes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPIs Avanzados -->
+                <div class="advanced-kpis">
+                    <h3 class="section-title"><i class="fas fa-chart-bar"></i> Métricas Avanzadas</h3>
+                    <div class="kpi-grid-advanced">
+                        <div class="kpi-advanced">
+                            <i class="fas fa-birthday-cake"></i>
+                            <div>
+                                <h4 id="kpi-edad-promedio">0</h4>
+                                <p>Edad Promedio</p>
+                            </div>
+                        </div>
+                        <div class="kpi-advanced">
+                            <i class="fas fa-calendar-check"></i>
+                            <div>
+                                <h4 id="kpi-antiguedad-promedio">0</h4>
+                                <p>Antigüedad Promedio</p>
+                            </div>
+                        </div>
+                        <div class="kpi-advanced">
+                            <i class="fas fa-dollar-sign"></i>
+                            <div>
+                                <h4 id="kpi-salario-promedio">$0</h4>
+                                <p>Salario Promedio</p>
+                            </div>
+                        </div>
+                        <div class="kpi-advanced">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <div>
+                                <h4 id="kpi-costo-total">$0</h4>
+                                <p>Costo Laboral Total</p>
+                            </div>
+                        </div>
+                        <div class="kpi-advanced">
+                            <i class="fas fa-users-cog"></i>
+                            <div>
+                                <h4 id="kpi-area-mayor">-</h4>
+                                <p>Área con Más Personal</p>
+                            </div>
+                        </div>
+                        <div class="kpi-advanced">
+                            <i class="fas fa-user-graduate"></i>
+                            <div>
+                                <h4 id="kpi-educacion-alta">0%</h4>
+                                <p>Con Estudios Superiores</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3><i class="fas fa-flag"></i> Distribución por Nacionalidad</h3>
+                        <canvas id="chart-nacionalidad"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3><i class="fas fa-graduation-cap"></i> Nivel Educativo</h3>
+                        <canvas id="chart-educacion"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3><i class="fas fa-id-card"></i> Tipos de Residencia</h3>
+                        <canvas id="chart-residencia"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-bar"></i> Distribución por Edad</h3>
+                        <canvas id="chart-edad"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tabla de Alertas Rápidas -->
+                <div class="card">
+                    <h3><i class="fas fa-exclamation-circle"></i> Alertas Prioritarias</h3>
+                    <div id="alertas-dashboard" class="alertas-list"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Lista de Empleados -->
+            <div id="tab-lista" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-users"></i> Personal Registrado</h3>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary" onclick="toggleAdvancedSearch()">
+                                <i class="fas fa-filter"></i> Búsqueda Avanzada
+                            </button>
+                            <button class="btn btn-primary" onclick="exportarExcel()">
+                                <i class="fas fa-file-excel"></i> Exportar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Búsqueda Simple -->
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Búsqueda rápida: nombre, CUIL, documento, puesto..." />
+                        <button class="btn-clear" onclick="clearSearch()" title="Limpiar búsqueda">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Búsqueda Avanzada (Tipo SAP/Workday) -->
+                    <div id="advanced-search" class="advanced-search" style="display: none;">
+                        <h4><i class="fas fa-sliders-h"></i> Filtros Avanzados</h4>
+                        <div class="filters-grid">
+                            <div class="filter-group">
+                                <label><i class="fas fa-briefcase"></i> Puesto</label>
+                                <select id="filter-puesto" onchange="applyAdvancedFilters()">
+                                    <option value="">Todos los puestos</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-building"></i> Área</label>
+                                <select id="filter-area" onchange="applyAdvancedFilters()">
+                                    <option value="">Todas las áreas</option>
+                                    <option value="Producción">Producción</option>
+                                    <option value="Administración">Administración</option>
+                                    <option value="Ventas">Ventas</option>
+                                    <option value="Logística">Logística</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-globe"></i> Nacionalidad</label>
+                                <select id="filter-nacionalidad" onchange="applyAdvancedFilters()">
+                                    <option value="">Todas</option>
+                                    <option value="Argentina">Argentina</option>
+                                    <option value="Bolivia">Bolivia</option>
+                                    <option value="Paraguay">Paraguay</option>
+                                    <option value="Perú">Perú</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-graduation-cap"></i> Nivel Educativo</label>
+                                <select id="filter-educacion" onchange="applyAdvancedFilters()">
+                                    <option value="">Todos los niveles</option>
+                                    <option value="Primario">Primario</option>
+                                    <option value="Secundario">Secundario</option>
+                                    <option value="Terciario">Terciario</option>
+                                    <option value="Universitario">Universitario</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-heart"></i> Estado de Salud</label>
+                                <select id="filter-salud" onchange="applyAdvancedFilters()">
+                                    <option value="">Todos</option>
+                                    <option value="sin-problemas">Sin problemas</option>
+                                    <option value="con-problemas">Con problemas de salud</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-exclamation-triangle"></i> Antecedentes</label>
+                                <select id="filter-antecedentes" onchange="applyAdvancedFilters()">
+                                    <option value="">Todos</option>
+                                    <option value="si">Con antecedentes</option>
+                                    <option value="no">Sin antecedentes</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-calendar"></i> Rango de Edad</label>
+                                <div class="range-inputs">
+                                    <input type="number" id="filter-edad-min" placeholder="Desde" min="18" max="99" onchange="applyAdvancedFilters()">
+                                    <span>-</span>
+                                    <input type="number" id="filter-edad-max" placeholder="Hasta" min="18" max="99" onchange="applyAdvancedFilters()">
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-clock"></i> Antigüedad</label>
+                                <select id="filter-antiguedad" onchange="applyAdvancedFilters()">
+                                    <option value="">Todas</option>
+                                    <option value="0-1">Menos de 1 año</option>
+                                    <option value="1-3">1 a 3 años</option>
+                                    <option value="3-5">3 a 5 años</option>
+                                    <option value="5+">Más de 5 años</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-users"></i> Con Familia</label>
+                                <select id="filter-familia" onchange="applyAdvancedFilters()">
+                                    <option value="">Todos</option>
+                                    <option value="si">Con familiares a cargo</option>
+                                    <option value="no">Sin familiares</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-file-alt"></i> Estado de Documentos</label>
+                                <select id="filter-documentos" onchange="applyAdvancedFilters()">
+                                    <option value="">Todos</option>
+                                    <option value="vigentes">Todos vigentes</option>
+                                    <option value="por-vencer">Por vencer (30 días)</option>
+                                    <option value="vencidos">Con documentos vencidos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filters-actions">
+                            <button class="btn btn-primary" onclick="applyAdvancedFilters()">
+                                <i class="fas fa-filter"></i> Aplicar Filtros
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearAllFilters()">
+                                <i class="fas fa-eraser"></i> Limpiar Todo
+                            </button>
+                            <div class="filter-results" id="filter-results"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros Activos -->
+                    <div id="active-filters" class="active-filters" style="display: none;"></div>
+                    
+                    <div id="empleados-list" class="empleados-list">
+                        <p class="loading">Cargando empleados...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Nuevo Empleado -->
+            <div id="tab-nuevo" class="tab-content">
+                <div class="card">
+                    <h3><i class="fas fa-user-plus"></i> Registrar Nuevo Empleado</h3>
+                    <form id="empleado-form">
+                        <!-- DATOS PERSONALES -->
+                        <fieldset>
+                            <legend>📋 Datos Personales</legend>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="nombreCompleto">Nombre Completo *</label>
+                                    <input type="text" id="nombreCompleto" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cuil">CUIL *</label>
+                                    <input type="text" id="cuil" required placeholder="20-12345678-9">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="fechaNacimiento">Fecha de Nacimiento *</label>
+                                    <input type="date" id="fechaNacimiento" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="documento">Documento</label>
+                                    <input type="text" id="documento">
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- COMPOSICIÓN FAMILIAR -->
+                        <fieldset>
+                            <legend>👨‍👩‍👧‍👦 Composición Familiar</legend>
+                            <div class="form-group">
+                                <label for="estadoCivil">Estado Civil</label>
+                                <select id="estadoCivil">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="soltero">Soltero/a</option>
+                                    <option value="casado">Casado/a</option>
+                                    <option value="divorciado">Divorciado/a</option>
+                                    <option value="viudo">Viudo/a</option>
+                                    <option value="union">Unión de hecho</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="integracionFamiliar">Integración Familiar (ej: cónyuge, 2 hijos)</label>
+                                <textarea id="integracionFamiliar" rows="3" placeholder="Describe la composición familiar..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="escolaridadFamiliar">Escolaridad Familiar</label>
+                                <textarea id="escolaridadFamiliar" rows="3" placeholder="Nivel educativo de los integrantes..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- EDUCACIÓN -->
+                        <fieldset>
+                            <legend>🎓 Educación</legend>
+                            <div class="form-group">
+                                <label for="nivelEducativo">Nivel Educativo</label>
+                                <select id="nivelEducativo">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="sin_estudios">Sin estudios</option>
+                                    <option value="primario_incompleto">Primario incompleto</option>
+                                    <option value="primario_completo">Primario completo</option>
+                                    <option value="secundario_incompleto">Secundario incompleto</option>
+                                    <option value="secundario_completo">Secundario completo</option>
+                                    <option value="terciario">Terciario</option>
+                                    <option value="universitario">Universitario</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- SALUD -->
+                        <fieldset>
+                            <legend>🏥 Salud</legend>
+                            <div class="form-group">
+                                <label for="problemasSalud">Problemas de Salud / Observaciones</label>
+                                <textarea id="problemasSalud" rows="3" placeholder="Alergias, enfermedades crónicas, discapacidades..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- DATOS MIGRATORIOS -->
+                        <fieldset>
+                            <legend>🌍 Datos Migratorios</legend>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="esExtranjero">¿Es extranjero?</label>
+                                    <select id="esExtranjero">
+                                        <option value="no">No</option>
+                                        <option value="si">Sí</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="paisOrigen">País de Origen</label>
+                                    <input type="text" id="paisOrigen">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="fechaEntradaPais">Fecha de Entrada al País</label>
+                                    <input type="date" id="fechaEntradaPais">
+                                </div>
+                                <div class="form-group">
+                                    <label for="tipoResidencia">Tipo de Residencia</label>
+                                    <select id="tipoResidencia">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="argentino">Argentino</option>
+                                        <option value="permanente">Residencia Permanente</option>
+                                        <option value="temporaria">Residencia Temporaria</option>
+                                        <option value="precaria">Precaria</option>
+                                        <option value="turista">Turista</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="entradasSalidasPais">Registro de Entradas/Salidas del País</label>
+                                <textarea id="entradasSalidasPais" rows="3" placeholder="Fechas de viajes, vacaciones fuera del país..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- EXPERIENCIA LABORAL -->
+                        <fieldset>
+                            <legend>💼 Experiencia Laboral</legend>
+                            <div class="form-group">
+                                <label for="experienciaLaboral">Experiencia Laboral Previa</label>
+                                <textarea id="experienciaLaboral" rows="4" placeholder="Empresas donde trabajó, puestos, períodos..."></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="fechaIngreso">Fecha de Ingreso a la Empresa *</label>
+                                    <input type="date" id="fechaIngreso" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="puesto">Puesto Actual</label>
+                                    <input type="text" id="puesto">
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- ANTECEDENTES -->
+                        <fieldset>
+                            <legend>📜 Antecedentes</legend>
+                            <div class="form-group">
+                                <label for="antecedentesPenales">Antecedentes Penales</label>
+                                <select id="antecedentesPenales">
+                                    <option value="no">No tiene</option>
+                                    <option value="si">Sí tiene</option>
+                                    <option value="pendiente">Pendiente de verificación</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="observacionesAntecedentes">Observaciones sobre Antecedentes</label>
+                                <textarea id="observacionesAntecedentes" rows="2"></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- OBSERVACIONES GENERALES -->
+                        <fieldset>
+                            <legend>📝 Observaciones Generales</legend>
+                            <div class="form-group">
+                                <label for="observaciones">Notas adicionales</label>
+                                <textarea id="observaciones" rows="3" placeholder="Cualquier información adicional relevante..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Guardar Empleado</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetForm()">🔄 Limpiar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tab: Tickets -->
+            <div id="tab-tickets" class="tab-content">
+                <div class="card">
+                    <h3><i class="fas fa-clipboard-list"></i> Tickets y Notificaciones</h3>
+                    <div id="tickets-list" class="tickets-list">
+                        <p class="loading">Cargando tickets...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Reportes -->
+            <div id="tab-reportes" class="tab-content">
+                <div class="reports-header">
+                    <h2><i class="fas fa-file-alt"></i> Centro de Reportes</h2>
+                    <div class="reports-header-actions">
+                        <button class="btn btn-success" onclick="exportarAExcelMejorado()">
+                            <i class="fas fa-file-excel"></i> Exportar Excel Completo
+                        </button>
+                        <button class="btn btn-primary" onclick="exportarAPDF()">
+                            <i class="fas fa-file-pdf"></i> Exportar PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="reports-grid">
+                    <div class="report-card" onclick="generarReporte('general')">
+                        <i class="fas fa-file-alt"></i>
+                        <h4>Reporte General</h4>
+                        <p>Todos los empleados con información completa</p>
+                    </div>
+                    <div class="report-card" onclick="generarReporte('extranjeros')">
+                        <i class="fas fa-globe"></i>
+                        <h4>Personal Extranjero</h4>
+                        <p>Listado de empleados extranjeros y sus residencias</p>
+                    </div>
+                    <div class="report-card" onclick="generarReporte('antecedentes')">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h4>Con Antecedentes</h4>
+                        <p>Empleados con antecedentes penales</p>
+                    </div>
+                    <div class="report-card" onclick="generarReporte('salud')">
+                        <i class="fas fa-heartbeat"></i>
+                        <h4>Problemas de Salud</h4>
+                        <p>Personal con condiciones de salud registradas</p>
+                    </div>
+                    <div class="report-card" onclick="generarReporte('familias')">
+                        <i class="fas fa-child"></i>
+                        <h4>Composición Familiar</h4>
+                        <p>Análisis demográfico de familias y menores</p>
+                    </div>
+                    <div class="report-card" onclick="generarReporte('educacion')">
+                        <i class="fas fa-graduation-cap"></i>
+                        <h4>Nivel Educativo</h4>
+                        <p>Estadísticas de educación del personal</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Alertas -->
+            <div id="tab-alertas" class="tab-content">
+                <div class="card">
+                    <h3><i class="fas fa-bell"></i> Alertas y Notificaciones</h3>
+                    <div class="alertas-tabs">
+                        <button class="alerta-tab-btn active" data-alerta="todas">Todas</button>
+                        <button class="alerta-tab-btn" data-alerta="criticas">Críticas</button>
+                        <button class="alerta-tab-btn" data-alerta="migratorio">Migratorio</button>
+                        <button class="alerta-tab-btn" data-alerta="salud">Salud</button>
+                    </div>
+                    <div id="alertas-list" class="alertas-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Ver Perfil Completo del Empleado -->
+    <div id="modal-perfil" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="perfil-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Crear Ticket -->
+    <div id="modal-ticket" class="modal">
+        <div class="modal-content">
+            <span class="modal-close-ticket">&times;</span>
+            <h3>📋 Crear Ticket/Notificación</h3>
+            <form id="ticket-form">
+                <input type="hidden" id="ticket-empleadoId">
+                <div class="form-group">
+                    <label for="ticket-tipo">Tipo de Notificación *</label>
+                    <select id="ticket-tipo" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="inspeccion">🔍 Inspección</option>
+                        <option value="vacaciones">🏖️ Vacaciones</option>
+                        <option value="ausencia">❌ Ausencia sin registro</option>
+                        <option value="asistencia_social">🤝 Asistencia Social</option>
+                        <option value="salud">🏥 Problema de Salud</option>
+                        <option value="migratorio">🌍 Trámite Migratorio</option>
+                        <option value="otro">📝 Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ticket-descripcion">Descripción *</label>
+                    <textarea id="ticket-descripcion" rows="4" required placeholder="Describe el evento o situación..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="ticket-fecha">Fecha del Evento</label>
+                    <input type="date" id="ticket-fecha">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Crear Ticket</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeTicketModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- jsPDF Libraries for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
