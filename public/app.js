@@ -10,6 +10,9 @@ let currentPage = 1;
 let itemsPerPage = 25;
 let currentFilteredList = [];
 
+// Ordenamiento
+let currentSort = '';
+
 // Elementos del DOM
 const loginScreen = document.getElementById('login-screen');
 const mainScreen = document.getElementById('main-screen');
@@ -95,10 +98,10 @@ loginForm.addEventListener('submit', async (e) => {
             aplicarPermisos(); // Aplicar permisos según rol
             loadDashboard();
         } else {
-            alert('❌ ' + data.mensaje);
+            showToast('error', 'Error de Login', data.mensaje);
         }
     } catch (error) {
-        alert('❌ Error al conectar con el servidor');
+        showToast('error', 'Error', 'No se pudo conectar con el servidor');
         console.error(error);
     }
 });
@@ -109,7 +112,44 @@ logoutBtn.addEventListener('click', () => {
     tickets = [];
     showLoginScreen();
     loginForm.reset();
+    showToast('info', 'Sesión Cerrada', 'Has cerrado sesión correctamente');
 });
+
+// ===== TOAST NOTIFICATIONS =====
+
+function showToast(type, title, message) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        warning: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+    };
+    
+    toast.innerHTML = `
+        <i class="fas ${icons[type]} toast-icon"></i>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Auto-cerrar después de 5 segundos
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
 
 // ===== SISTEMA DE PERMISOS =====
 
@@ -558,10 +598,146 @@ function calcularEdad(fechaNacimiento) {
     return edad;
 }
 
+// ===== VALIDACIONES =====
+
+function validarCUIL(cuil) {
+    // Formato: XX-XXXXXXXX-X
+    const regex = /^\d{2}-\d{8}-\d{1}$/;
+    if (!regex.test(cuil)) {
+        return { valido: false, mensaje: 'Formato de CUIL inválido. Debe ser XX-XXXXXXXX-X' };
+    }
+    
+    // Validar dígito verificador
+    const nums = cuil.replace(/-/g, '');
+    const multiplicadores = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+    let suma = 0;
+    
+    for (let i = 0; i < 10; i++) {
+        suma += parseInt(nums[i]) * multiplicadores[i];
+    }
+    
+    const resto = suma % 11;
+    const digito = resto === 0 ? 0 : resto === 1 ? 9 : 11 - resto;
+    
+    if (digito !== parseInt(nums[10])) {
+        return { valido: false, mensaje: 'CUIL inválido: dígito verificador incorrecto' };
+    }
+    
+    return { valido: true, mensaje: '' };
+}
+
+function validarEmail(email) {
+    if (!email) return { valido: true, mensaje: '' }; // Email opcional
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!regex.test(email)) {
+        return { valido: false, mensaje: 'Email inválido' };
+    }
+    return { valido: true, mensaje: '' };
+}
+
+function validarFecha(fecha, nombre) {
+    if (!fecha) return { valido: false, mensaje: `${nombre} es obligatoria` };
+    
+    const fechaObj = new Date(fecha);
+    const hoy = new Date();
+    
+    if (isNaN(fechaObj.getTime())) {
+        return { valido: false, mensaje: `${nombre} inválida` };
+    }
+    
+    if (nombre === 'Fecha de Nacimiento' && fechaObj > hoy) {
+        return { valido: false, mensaje: 'La fecha de nacimiento no puede ser futura' };
+    }
+    
+    if (nombre === 'Fecha de Nacimiento') {
+        const edad = hoy.getFullYear() - fechaObj.getFullYear();
+        if (edad < 18 || edad > 100) {
+            return { valido: false, mensaje: 'La edad debe estar entre 18 y 100 años' };
+        }
+    }
+    
+    return { valido: true, mensaje: '' };
+}
+
+function mostrarErrorCampo(inputId, mensaje) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    // Eliminar error anterior
+    const errorAnterior = input.parentElement.querySelector('.error-mensaje');
+    if (errorAnterior) errorAnterior.remove();
+    
+    // Agregar borde rojo
+    input.style.borderColor = '#ef4444';
+    
+    // Agregar mensaje de error
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-mensaje';
+    errorDiv.textContent = mensaje;
+    errorDiv.style.color = '#ef4444';
+    errorDiv.style.fontSize = '12px';
+    errorDiv.style.marginTop = '4px';
+    input.parentElement.appendChild(errorDiv);
+}
+
+function limpiarErrorCampo(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    input.style.borderColor = '';
+    const errorAnterior = input.parentElement.querySelector('.error-mensaje');
+    if (errorAnterior) errorAnterior.remove();
+}
+
+function validarFormulario() {
+    let errores = [];
+    
+    // Validar nombre completo
+    const nombre = document.getElementById('nombreCompleto').value.trim();
+    if (!nombre || nombre.length < 3) {
+        errores.push({ campo: 'nombreCompleto', mensaje: 'Nombre completo debe tener al menos 3 caracteres' });
+    } else {
+        limpiarErrorCampo('nombreCompleto');
+    }
+    
+    // Validar CUIL
+    const cuil = document.getElementById('cuil').value.trim();
+    if (cuil) {
+        const validacionCUIL = validarCUIL(cuil);
+        if (!validacionCUIL.valido) {
+            errores.push({ campo: 'cuil', mensaje: validacionCUIL.mensaje });
+        } else {
+            limpiarErrorCampo('cuil');
+        }
+    }
+    
+    // Validar fecha de nacimiento
+    const fechaNac = document.getElementById('fechaNacimiento').value;
+    const validacionFecha = validarFecha(fechaNac, 'Fecha de Nacimiento');
+    if (!validacionFecha.valido) {
+        errores.push({ campo: 'fechaNacimiento', mensaje: validacionFecha.mensaje });
+    } else {
+        limpiarErrorCampo('fechaNacimiento');
+    }
+    
+    // Mostrar todos los errores
+    errores.forEach(error => {
+        mostrarErrorCampo(error.campo, error.mensaje);
+    });
+    
+    return errores.length === 0;
+}
+
 // ===== GESTIÓN DE EMPLEADOS =====
 
 empleadoForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // Validar formulario
+    if (!validarFormulario()) {
+        alert('⚠️ Por favor corrige los errores en el formulario');
+        return;
+    }
     
     const empleadoData = {
         nombreCompleto: document.getElementById('nombreCompleto').value,
@@ -593,6 +769,12 @@ empleadoForm.addEventListener('submit', async (e) => {
         observaciones: document.getElementById('observaciones').value
     };
     
+    // Obtener botón de submit y mostrar loading
+    const submitBtn = empleadoForm.querySelector('button[type="submit"]');
+    const textoOriginal = submitBtn.textContent;
+    submitBtn.classList.add('btn-loading');
+    submitBtn.disabled = true;
+    
     try {
         const response = await fetch(`${API_URL}/empleados`, {
             method: 'POST',
@@ -603,12 +785,29 @@ empleadoForm.addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (data.success) {
-            alert('✅ Empleado registrado correctamente');
+            showToast('success', 'Empleado Registrado', 'El empleado se ha registrado correctamente');
             empleadoForm.reset();
             // Cambiar a la tab de lista
             document.querySelector('[data-tab="lista"]').click();
         }
     } catch (error) {
+        showToast('error', 'Error', 'No se pudo registrar el empleado');
+        console.error(error);
+    } finally {
+        // Restaurar botón
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.disabled = false;
+    }
+            document.querySelector('[data-tab="lista"]').click();
+        }
+    } catch (error) {
+        alert('❌ Error al registrar empleado');
+        console.error(error);
+    } finally {
+        // Restaurar botón
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.disabled = false;
+    }
         alert('❌ Error al registrar empleado');
         console.error(error);
     }
@@ -748,6 +947,81 @@ function cambiarItemsPorPagina(value) {
     itemsPerPage = parseInt(value);
     currentPage = 1;
     displayEmpleados(currentFilteredList);
+}
+
+// Función de ordenamiento
+function aplicarOrdenamiento() {
+    const sortValue = document.getElementById('sort-select').value;
+    currentSort = sortValue;
+    
+    if (!sortValue) {
+        displayEmpleados(currentFilteredList);
+        return;
+    }
+    
+    const [campo, orden] = sortValue.split('-');
+    const sorted = [...currentFilteredList];
+    
+    sorted.sort((a, b) => {
+        let valorA, valorB;
+        
+        switch(campo) {
+            case 'nombre':
+                valorA = a.nombreCompleto?.toLowerCase() || '';
+                valorB = b.nombreCompleto?.toLowerCase() || '';
+                break;
+                
+            case 'fecha':
+                valorA = a.laboral?.fechaIngreso ? new Date(a.laboral.fechaIngreso) : new Date(0);
+                valorB = b.laboral?.fechaIngreso ? new Date(b.laboral.fechaIngreso) : new Date(0);
+                break;
+                
+            case 'salario':
+                valorA = parseFloat(a.laboral?.salario) || 0;
+                valorB = parseFloat(b.laboral?.salario) || 0;
+                break;
+                
+            case 'area':
+                valorA = a.laboral?.area?.toLowerCase() || '';
+                valorB = b.laboral?.area?.toLowerCase() || '';
+                break;
+                
+            case 'edad':
+                if (a.fechaNacimiento) {
+                    const hoy = new Date();
+                    const nacimiento = new Date(a.fechaNacimiento);
+                    valorA = hoy.getFullYear() - nacimiento.getFullYear();
+                } else {
+                    valorA = 0;
+                }
+                
+                if (b.fechaNacimiento) {
+                    const hoy = new Date();
+                    const nacimiento = new Date(b.fechaNacimiento);
+                    valorB = hoy.getFullYear() - nacimiento.getFullYear();
+                } else {
+                    valorB = 0;
+                }
+                break;
+                
+            default:
+                return 0;
+        }
+        
+        // Aplicar orden ascendente o descendente
+        if (orden === 'asc') {
+            if (valorA < valorB) return -1;
+            if (valorA > valorB) return 1;
+            return 0;
+        } else {
+            if (valorA > valorB) return -1;
+            if (valorA < valorB) return 1;
+            return 0;
+        }
+    });
+    
+    currentPage = 1;
+    displayEmpleados(sorted);
 }
 
 // Búsqueda en tiempo real
@@ -1766,6 +2040,8 @@ function applyAdvancedFilters() {
         nacionalidad: document.getElementById('filter-nacionalidad')?.value || '',
         educacion: document.getElementById('filter-educacion')?.value || '',
         salud: document.getElementById('filter-salud')?.value || '',
+        estado: document.getElementById('filter-estado')?.value || '',
+        salario: document.getElementById('filter-salario')?.value || '',
         antecedentes: document.getElementById('filter-antecedentes')?.value || '',
         edadMin: document.getElementById('filter-edad-min')?.value || '',
         edadMax: document.getElementById('filter-edad-max')?.value || '',
@@ -1819,6 +2095,30 @@ function applyAdvancedFilters() {
             const salud = e.salud || {};
             const problemas = salud.problemasSalud || e.problemasSalud || '';
             return problemas && problemas !== 'Ninguno' && problemas !== '';
+        });
+    }
+    
+    // Filtro de estado activo/inactivo
+    if (filters.estado) {
+        filtered = filtered.filter(e => {
+            const laboral = e.laboral || {};
+            const estado = laboral.estado || e.estado || 'activo';
+            return estado.toLowerCase() === filters.estado;
+        });
+    }
+    
+    // Filtro de rango de salario
+    if (filters.salario) {
+        filtered = filtered.filter(e => {
+            const laboral = e.laboral || {};
+            const salario = parseFloat(laboral.salario || e.salario || 0);
+            
+            if (filters.salario === '200000+') {
+                return salario > 200000;
+            }
+            
+            const [min, max] = filters.salario.split('-').map(v => parseFloat(v));
+            return salario >= min && salario <= max;
         });
     }
     
@@ -2635,6 +2935,202 @@ function exportarAExcelMejorado() {
         alert('❌ Error al exportar Excel: ' + error.message);
     }
 }
+
+// ===== VALIDACIÓN EN TIEMPO REAL =====
+document.addEventListener('DOMContentLoaded', function() {
+    // Validación en tiempo real para CUIL
+    const cuilInput = document.getElementById('cuil');
+    if (cuilInput) {
+        cuilInput.addEventListener('blur', function() {
+            const cuil = this.value.trim();
+            if (cuil) {
+                const validacion = validarCUIL(cuil);
+                if (!validacion.valido) {
+                    mostrarErrorCampo('cuil', validacion.mensaje);
+                } else {
+                    limpiarErrorCampo('cuil');
+                }
+            }
+        });
+        
+        // Auto-formato CUIL mientras escribe
+        cuilInput.addEventListener('input', function(e) {
+            let valor = this.value.replace(/\D/g, ''); // Solo números
+            if (valor.length > 2 && valor.length <= 10) {
+                valor = valor.slice(0, 2) + '-' + valor.slice(2);
+            }
+            if (valor.length > 11) {
+                valor = valor.slice(0, 11) + '-' + valor.slice(11, 12);
+            }
+            if (valor !== this.value) {
+                this.value = valor;
+            }
+        });
+    }
+    
+    // Validación para nombre
+    const nombreInput = document.getElementById('nombreCompleto');
+    if (nombreInput) {
+        nombreInput.addEventListener('blur', function() {
+            const nombre = this.value.trim();
+            if (!nombre || nombre.length < 3) {
+                mostrarErrorCampo('nombreCompleto', 'El nombre debe tener al menos 3 caracteres');
+            } else {
+                limpiarErrorCampo('nombreCompleto');
+            }
+        });
+    }
+    
+    // Validación para fecha de nacimiento
+    const fechaNacInput = document.getElementById('fechaNacimiento');
+    if (fechaNacInput) {
+        fechaNacInput.addEventListener('blur', function() {
+            const fecha = this.value;
+            const validacion = validarFecha(fecha, 'Fecha de Nacimiento');
+            if (!validacion.valido) {
+                mostrarErrorCampo('fechaNacimiento', validacion.mensaje);
+            } else {
+                limpiarErrorCampo('fechaNacimiento');
+            }
+        });
+    }
+});
+
+// ===== BACKUP Y RECUPERACIÓN =====
+
+function exportarBackup() {
+    try {
+        const backup = {
+            version: '1.0',
+            fecha: new Date().toISOString(),
+            usuario: currentUser?.nombre || 'Desconocido',
+            datos: {
+                empleados: empleados,
+                tickets: tickets,
+                configuracion: {
+                    paginacion: itemsPerPage,
+                    ordenamiento: currentSort
+                }
+            }
+        };
+        
+        const json = JSON.stringify(backup, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup_rrhh_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert(`✅ Backup exportado correctamente\n\n📦 Contenido:\n- ${empleados.length} empleados\n- ${tickets.length} tickets\n- Configuración del sistema`);
+    } catch (error) {
+        console.error('Error al exportar backup:', error);
+        alert('❌ Error al exportar backup: ' + error.message);
+    }
+}
+
+function importarBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!confirm('⚠️ ADVERTENCIA: Importar un backup sobrescribirá todos los datos actuales.\n\n¿Desea continuar?')) {
+        event.target.value = '';
+        return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = async function(e) {
+        try {
+            const backup = JSON.parse(e.target.result);
+            
+            // Validar estructura del backup
+            if (!backup.version || !backup.datos || !backup.datos.empleados) {
+                throw new Error('Archivo de backup inválido o corrupto');
+            }
+            
+            // Confirmar detalles del backup
+            const mensaje = `📦 Información del Backup:\n\n` +
+                          `Versión: ${backup.version}\n` +
+                          `Fecha: ${new Date(backup.fecha).toLocaleString()}\n` +
+                          `Usuario: ${backup.usuario}\n` +
+                          `Empleados: ${backup.datos.empleados.length}\n` +
+                          `Tickets: ${backup.datos.tickets?.length || 0}\n\n` +
+                          `¿Confirma la importación?`;
+            
+            if (!confirm(mensaje)) {
+                event.target.value = '';
+                return;
+            }
+            
+            // Importar empleados
+            for (const empleado of backup.datos.empleados) {
+                await fetch(`${API_URL}/empleados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(empleado)
+                });
+            }
+            
+            // Importar tickets si existen
+            if (backup.datos.tickets && backup.datos.tickets.length > 0) {
+                for (const ticket of backup.datos.tickets) {
+                    await fetch(`${API_URL}/tickets`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(ticket)
+                    });
+                }
+            }
+            
+            // Aplicar configuración si existe
+            if (backup.datos.configuracion) {
+                if (backup.datos.configuracion.paginacion) {
+                    itemsPerPage = backup.datos.configuracion.paginacion;
+                    document.getElementById('items-per-page').value = itemsPerPage;
+                }
+            }
+            
+            alert(`✅ Backup importado correctamente\n\n📥 Datos restaurados:\n- ${backup.datos.empleados.length} empleados\n- ${backup.datos.tickets?.length || 0} tickets`);
+            
+            // Recargar datos
+            await loadEmpleados();
+            await loadTickets();
+            
+            // Limpiar input file
+            event.target.value = '';
+            
+        } catch (error) {
+            console.error('Error al importar backup:', error);
+            alert('❌ Error al importar backup: ' + error.message);
+            event.target.value = '';
+        }
+    };
+    
+    reader.onerror = function() {
+        alert('❌ Error al leer el archivo');
+        event.target.value = '';
+    };
+    
+    reader.readAsText(file);
+}
+
+// Inicializar
+showLoginScreen();
+            const fecha = this.value;
+            const validacion = validarFecha(fecha, 'Fecha de Nacimiento');
+            if (!validacion.valido) {
+                mostrarErrorCampo('fechaNacimiento', validacion.mensaje);
+            } else {
+                limpiarErrorCampo('fechaNacimiento');
+            }
+        });
+    }
+});
 
 // Inicializar
 showLoginScreen();

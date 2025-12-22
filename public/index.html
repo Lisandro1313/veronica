@@ -86,6 +86,9 @@
             </div>
         </aside>
 
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-bar">
@@ -313,6 +316,25 @@
                                 </select>
                             </div>
                             <div class="filter-group">
+                                <label><i class="fas fa-toggle-on"></i> Estado Laboral</label>
+                                <select id="filter-estado" onchange="applyAdvancedFilters()">
+                                    <option value="">Todos</option>
+                                    <option value="activo">Activos</option>
+                                    <option value="inactivo">Inactivos</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label><i class="fas fa-dollar-sign"></i> Rango de Salario</label>
+                                <select id="filter-salario" onchange="applyAdvancedFilters()">
+                                    <option value="">Todos</option>
+                                    <option value="0-50000">Hasta $50,000</option>
+                                    <option value="50000-100000">$50,000 - $100,000</option>
+                                    <option value="100000-150000">$100,000 - $150,000</option>
+                                    <option value="150000-200000">$150,000 - $200,000</option>
+                                    <option value="200000+">Más de $200,000</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
                                 <label><i class="fas fa-exclamation-triangle"></i> Antecedentes</label>
                                 <select id="filter-antecedentes" onchange="applyAdvancedFilters()">
                                     <option value="">Todos</option>
@@ -369,6 +391,24 @@
                     
                     <!-- Filtros Activos -->
                     <div id="active-filters" class="active-filters" style="display: none;"></div>
+                    
+                    <!-- Controles de Ordenamiento -->
+                    <div class="sort-controls">
+                        <label><i class="fas fa-sort"></i> Ordenar por:</label>
+                        <select id="sort-select" onchange="aplicarOrdenamiento()">
+                            <option value="">Sin ordenar</option>
+                            <option value="nombre-asc">Nombre (A-Z)</option>
+                            <option value="nombre-desc">Nombre (Z-A)</option>
+                            <option value="fecha-asc">Fecha Ingreso (Más antiguo)</option>
+                            <option value="fecha-desc">Fecha Ingreso (Más reciente)</option>
+                            <option value="salario-asc">Salario (Menor a Mayor)</option>
+                            <option value="salario-desc">Salario (Mayor a Menor)</option>
+                            <option value="area-asc">Área (A-Z)</option>
+                            <option value="area-desc">Área (Z-A)</option>
+                            <option value="edad-asc">Edad (Menor a Mayor)</option>
+                            <option value="edad-desc">Edad (Mayor a Menor)</option>
+                        </select>
+                    </div>
                     
                     <div id="empleados-list" class="empleados-list">
                         <p class="loading">Cargando empleados...</p>
@@ -570,6 +610,13 @@
                         <button class="btn btn-primary" onclick="exportarAPDF()">
                             <i class="fas fa-file-pdf"></i> Exportar PDF
                         </button>
+                        <button class="btn btn-warning" onclick="exportarBackup()">
+                            <i class="fas fa-download"></i> Backup Completo
+                        </button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">
+                            <i class="fas fa-upload"></i> Importar Datos
+                        </button>
+                        <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importarBackup(event)">
                     </div>
                 </div>
                 
