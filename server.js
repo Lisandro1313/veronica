@@ -12,6 +12,11 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
+// Ruta raíz de prueba
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
+
 // Inicializar base de datos al arrancar (solo en producción)
 if (process.env.NODE_ENV === 'production') {
     initDatabase().catch(err => console.error('Error en init:', err));
