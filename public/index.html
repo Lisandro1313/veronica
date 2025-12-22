@@ -98,7 +98,10 @@
                         <i class="fas fa-shield-alt"></i>
                         <span id="role-text">Usuario</span>
                     </span>
-                    <button class="btn-icon" title="Refrescar">
+                    <button class="btn-icon" id="theme-toggle" title="Cambiar tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="btn-icon" title="Refrescar" onclick="location.reload()">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                     <button class="btn-icon" title="Ayuda">
@@ -212,6 +215,57 @@
                                 <h4 id="kpi-educacion-alta">0%</h4>
                                 <p>Con Estudios Superiores</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tendencias y Comparativas -->
+                <div class="tendencias-section">
+                    <h3 class="section-title"><i class="fas fa-chart-line"></i> Tendencias del Mes</h3>
+                    <div class="tendencias-grid">
+                        <div class="tendencia-card">
+                            <div class="tendencia-header">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Nuevos Ingresos</span>
+                            </div>
+                            <div class="tendencia-value" id="tend-ingresos">0</div>
+                            <div class="tendencia-change" id="tend-ingresos-change">
+                                <i class="fas fa-minus"></i> Sin cambios
+                            </div>
+                            <div class="tendencia-subtitle">vs mes anterior</div>
+                        </div>
+                        <div class="tendencia-card">
+                            <div class="tendencia-header">
+                                <i class="fas fa-user-minus"></i>
+                                <span>Bajas</span>
+                            </div>
+                            <div class="tendencia-value" id="tend-bajas">0</div>
+                            <div class="tendencia-change" id="tend-bajas-change">
+                                <i class="fas fa-minus"></i> Sin cambios
+                            </div>
+                            <div class="tendencia-subtitle">vs mes anterior</div>
+                        </div>
+                        <div class="tendencia-card">
+                            <div class="tendencia-header">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Rotación</span>
+                            </div>
+                            <div class="tendencia-value" id="tend-rotacion">0%</div>
+                            <div class="tendencia-change" id="tend-rotacion-change">
+                                <i class="fas fa-minus"></i> Sin cambios
+                            </div>
+                            <div class="tendencia-subtitle">Tasa mensual</div>
+                        </div>
+                        <div class="tendencia-card">
+                            <div class="tendencia-header">
+                                <i class="fas fa-dollar-sign"></i>
+                                <span>Costo Promedio</span>
+                            </div>
+                            <div class="tendencia-value" id="tend-costo">$0</div>
+                            <div class="tendencia-change" id="tend-costo-change">
+                                <i class="fas fa-minus"></i> Sin cambios
+                            </div>
+                            <div class="tendencia-subtitle">vs mes anterior</div>
                         </div>
                     </div>
                 </div>
@@ -673,7 +727,12 @@
     <!-- Modal: Ver Perfil Completo del Empleado -->
     <div id="modal-perfil" class="modal">
         <div class="modal-content">
-            <span class="modal-close">&times;</span>
+            <div class="modal-header-perfil">
+                <span class="modal-close">&times;</span>
+                <button class="btn btn-primary" onclick="imprimirPerfil()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+            </div>
             <div id="perfil-content"></div>
         </div>
     </div>

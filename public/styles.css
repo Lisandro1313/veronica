@@ -14,6 +14,35 @@
     --gray-900: #202124;
     --sidebar-width: 260px;
     --topbar-height: 70px;
+    
+    /* Light Theme */
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e8eaed;
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --border-color: #dadce0;
+    --shadow: rgba(0, 0, 0, 0.1);
+    --shadow-hover: rgba(0, 0, 0, 0.15);
+}
+
+/* Dark Theme */
+body.dark-mode {
+    --primary: #8ab4f8;
+    --primary-dark: #669df6;
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #3a3a3a;
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --border-color: #3c4043;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --shadow-hover: rgba(0, 0, 0, 0.4);
+    --gray-100: #2d2d2d;
+    --gray-200: #3a3a3a;
+    --gray-300: #3c4043;
+    --gray-700: #9aa0a6;
+    --gray-900: #e8eaed;
 }
 
 * {
@@ -24,9 +53,10 @@
 
 body {
     font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: var(--gray-100);
-    color: var(--gray-900);
+    background: var(--bg-primary);
+    color: var(--text-primary);
     line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ===== LOGIN SCREEN ===== */
@@ -53,10 +83,10 @@ body {
 }
 
 #login-screen .card {
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 12px;
     padding: 48px 40px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 40px var(--shadow);
 }
 
 #login-screen h1 {
@@ -85,7 +115,8 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 1000;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 2px 0 10px var(--shadow);
+    transition: background-color 0.3s ease;
 }
 
 .sidebar-header {
@@ -196,16 +227,17 @@ body {
 }
 
 .top-bar {
-    background: white;
+    background: var(--bg-secondary);
     height: var(--topbar-height);
     padding: 0 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: background-color 0.3s ease;
 }
 
 .top-bar h1 {
@@ -297,11 +329,12 @@ body {
 
 /* ===== CARDS ===== */
 .card {
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 12px;
     padding: 24px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px var(--shadow);
     margin-bottom: 24px;
+    transition: background-color 0.3s ease;
 }
 
 .card h3 {
@@ -431,6 +464,87 @@ body {
     font-size: 12px;
     color: var(--gray-700);
     margin: 0;
+}
+
+/* ===== TENDENCIAS Y COMPARATIVAS ===== */
+.tendencias-section {
+    margin: 32px 0;
+}
+
+.tendencias-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.tendencia-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.tendencia-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px var(--shadow-hover);
+}
+
+.tendencia-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.tendencia-header i {
+    color: var(--primary);
+    font-size: 18px;
+}
+
+.tendencia-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.tendencia-change {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.tendencia-change.positive {
+    color: #34a853;
+}
+
+.tendencia-change.positive i {
+    color: #34a853;
+}
+
+.tendencia-change.negative {
+    color: #ea4335;
+}
+
+.tendencia-change.negative i {
+    color: #ea4335;
+}
+
+.tendencia-change.neutral {
+    color: var(--text-secondary);
+}
+
+.tendencia-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
 }
 
 /* ===== CHARTS ===== */
@@ -2262,5 +2376,86 @@ fieldset legend {
     
     .notif-icon i {
         font-size: 18px;
+    }
+}
+
+/* ===== ESTILOS PARA IMPRIMIR ===== */
+
+.modal-header-perfil {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+@media print {
+    /* Ocultar elementos innecesarios */
+    .sidebar,
+    .top-bar,
+    .modal-close,
+    .modal-header-perfil button,
+    #toast-container,
+    .btn,
+    .pagination,
+    .filters,
+    .sort-controls,
+    .search-bar {
+        display: none !important;
+    }
+    
+    /* Ajustar modal para impresión */
+    .modal {
+        display: block !important;
+        position: static !important;
+        background: white !important;
+    }
+    
+    .modal-content {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 20mm !important;
+        box-shadow: none !important;
+        background: white !important;
+        color: black !important;
+    }
+    
+    /* Ajustar contenido principal */
+    .main-content {
+        margin-left: 0 !important;
+    }
+    
+    /* Estilos de página */
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    /* Asegurar que las secciones no se corten */
+    .perfil-section {
+        page-break-inside: avoid;
+    }
+    
+    /* Tablas y listas */
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    
+    /* Colores para impresión */
+    .kpi-card,
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
     }
 }

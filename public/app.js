@@ -13,6 +13,9 @@ let currentFilteredList = [];
 // Ordenamiento
 let currentSort = '';
 
+// Tema
+let darkMode = localStorage.getItem('darkMode') === 'true';
+
 // Elementos del DOM
 const loginScreen = document.getElementById('login-screen');
 const mainScreen = document.getElementById('main-screen');
@@ -339,6 +342,9 @@ function mostrarKPIs(kpis) {
     
     // Calcular y mostrar métricas avanzadas
     calcularMetricasAvanzadas();
+    
+    // Calcular y mostrar tendencias
+    calcularTendencias();
 }
 
 function calcularMetricasAvanzadas() {
@@ -415,6 +421,134 @@ function calcularMetricasAvanzadas() {
         : 0;
     
     document.getElementById('kpi-educacion-alta').textContent = `${porcentajeSuperiores}%`;
+}
+
+function calcularTendencias() {
+    if (empleados.length === 0) return;
+    
+    const ahora = new Date();
+    const mesActual = ahora.getMonth();
+    const añoActual = ahora.getFullYear();
+    
+    // Calcular mes anterior
+    const fechaMesAnterior = new Date(añoActual, mesActual - 1, 1);
+    const mesAnterior = fechaMesAnterior.getMonth();
+    const añoMesAnterior = fechaMesAnterior.getFullYear();
+    
+    // Filtrar empleados del mes actual
+    const empleadosMesActual = empleados.filter(e => {
+        if (!e.laboral || !e.laboral.fechaIngreso) return false;
+        const fecha = new Date(e.laboral.fechaIngreso);
+        return fecha.getMonth() === mesActual && fecha.getFullYear() === añoActual;
+    });
+    
+    // Filtrar empleados del mes anterior
+    const empleadosMesAnterior = empleados.filter(e => {
+        if (!e.laboral || !e.laboral.fechaIngreso) return false;
+        const fecha = new Date(e.laboral.fechaIngreso);
+        return fecha.getMonth() === mesAnterior && fecha.getFullYear() === añoMesAnterior;
+    });
+    
+    // 1. Nuevos Ingresos
+    const ingresosMesActual = empleadosMesActual.length;
+    const ingresosMesAnterior = empleadosMesAnterior.length;
+    const cambioIngresos = ingresosMesActual - ingresosMesAnterior;
+    const porcentajeIngresos = ingresosMesAnterior > 0 
+        ? ((cambioIngresos / ingresosMesAnterior) * 100).toFixed(0)
+        : 0;
+    
+    document.getElementById('tend-ingresos').textContent = ingresosMesActual;
+    actualizarIndicadorCambio('tend-ingresos-change', cambioIngresos, porcentajeIngresos, true);
+    
+    // 2. Bajas (simuladas con tickets de baja si existen)
+    const bajasMesActual = tickets.filter(t => {
+        if (!t.tipo || t.tipo !== 'baja') return false;
+        const fecha = new Date(t.fecha);
+        return fecha.getMonth() === mesActual && fecha.getFullYear() === añoActual;
+    }).length;
+    
+    const bajasMesAnterior = tickets.filter(t => {
+        if (!t.tipo || t.tipo !== 'baja') return false;
+        const fecha = new Date(t.fecha);
+        return fecha.getMonth() === mesAnterior && fecha.getFullYear() === añoMesAnterior;
+    }).length;
+    
+    const cambioBajas = bajasMesActual - bajasMesAnterior;
+    const porcentajeBajas = bajasMesAnterior > 0
+        ? ((cambioBajas / bajasMesAnterior) * 100).toFixed(0)
+        : 0;
+    
+    document.getElementById('tend-bajas').textContent = bajasMesActual;
+    actualizarIndicadorCambio('tend-bajas-change', cambioBajas, porcentajeBajas, false);
+    
+    // 3. Rotación (bajas / total * 100)
+    const rotacionActual = empleados.length > 0
+        ? ((bajasMesActual / empleados.length) * 100).toFixed(1)
+        : 0;
+    
+    const totalMesAnterior = empleados.length + bajasMesAnterior - ingresosMesActual;
+    const rotacionAnterior = totalMesAnterior > 0
+        ? ((bajasMesAnterior / totalMesAnterior) * 100).toFixed(1)
+        : 0;
+    
+    const cambioRotacion = (rotacionActual - rotacionAnterior).toFixed(1);
+    
+    document.getElementById('tend-rotacion').textContent = `${rotacionActual}%`;
+    actualizarIndicadorCambio('tend-rotacion-change', parseFloat(cambioRotacion), cambioRotacion, false);
+    
+    // 4. Costo Promedio
+    const salariosMesActual = empleadosMesActual
+        .filter(e => e.laboral && e.laboral.salario)
+        .map(e => e.laboral.salario);
+    
+    const salariosMesAnterior = empleadosMesAnterior
+        .filter(e => e.laboral && e.laboral.salario)
+        .map(e => e.laboral.salario);
+    
+    const costoPromedioActual = salariosMesActual.length > 0
+        ? Math.round(salariosMesActual.reduce((sum, s) => sum + s, 0) / salariosMesActual.length)
+        : 0;
+    
+    const costoPromedioAnterior = salariosMesAnterior.length > 0
+        ? Math.round(salariosMesAnterior.reduce((sum, s) => sum + s, 0) / salariosMesAnterior.length)
+        : 0;
+    
+    const cambioCosto = costoPromedioActual - costoPromedioAnterior;
+    const porcentajeCosto = costoPromedioAnterior > 0
+        ? ((cambioCosto / costoPromedioAnterior) * 100).toFixed(0)
+        : 0;
+    
+    document.getElementById('tend-costo').textContent = 
+        `$${costoPromedioActual.toLocaleString('es-AR')}`;
+    actualizarIndicadorCambio('tend-costo-change', cambioCosto, porcentajeCosto, false);
+}
+
+function actualizarIndicadorCambio(elementId, cambio, porcentaje, positivoEsBueno) {
+    const elemento = document.getElementById(elementId);
+    if (!elemento) return;
+    
+    // Limpiar clases previas
+    elemento.classList.remove('positive', 'negative', 'neutral');
+    
+    if (cambio > 0) {
+        elemento.classList.add(positivoEsBueno ? 'positive' : 'negative');
+        elemento.innerHTML = `
+            <i class="fas fa-arrow-up"></i>
+            <span>+${Math.abs(porcentaje)}% vs mes anterior</span>
+        `;
+    } else if (cambio < 0) {
+        elemento.classList.add(positivoEsBueno ? 'negative' : 'positive');
+        elemento.innerHTML = `
+            <i class="fas fa-arrow-down"></i>
+            <span>-${Math.abs(porcentaje)}% vs mes anterior</span>
+        `;
+    } else {
+        elemento.classList.add('neutral');
+        elemento.innerHTML = `
+            <i class="fas fa-minus"></i>
+            <span>Sin cambios vs mes anterior</span>
+        `;
+    }
 }
 
 function crearGraficos(empleados) {
@@ -798,19 +932,6 @@ empleadoForm.addEventListener('submit', async (e) => {
         submitBtn.classList.remove('btn-loading');
         submitBtn.disabled = false;
     }
-            document.querySelector('[data-tab="lista"]').click();
-        }
-    } catch (error) {
-        alert('❌ Error al registrar empleado');
-        console.error(error);
-    } finally {
-        // Restaurar botón
-        submitBtn.classList.remove('btn-loading');
-        submitBtn.disabled = false;
-    }
-        alert('❌ Error al registrar empleado');
-        console.error(error);
-    }
 });
 
 async function loadEmpleados() {
@@ -1063,6 +1184,12 @@ async function eliminarEmpleado(id) {
         alert('❌ Error al eliminar empleado');
         console.error(error);
     }
+}
+
+// ===== IMPRIMIR PERFIL =====
+
+function imprimirPerfil() {
+    window.print();
 }
 
 // ===== VER PERFIL COMPLETO =====
@@ -3119,16 +3246,44 @@ function importarBackup(event) {
     reader.readAsText(file);
 }
 
-// Inicializar
-showLoginScreen();
-            const fecha = this.value;
-            const validacion = validarFecha(fecha, 'Fecha de Nacimiento');
-            if (!validacion.valido) {
-                mostrarErrorCampo('fechaNacimiento', validacion.mensaje);
-            } else {
-                limpiarErrorCampo('fechaNacimiento');
-            }
-        });
+// ===== MODO OSCURO =====
+
+function toggleDarkMode() {
+    darkMode = !darkMode;
+    localStorage.setItem('darkMode', darkMode);
+    applyTheme();
+}
+
+function applyTheme() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const icon = themeToggle?.querySelector('i');
+    
+    if (darkMode) {
+        document.body.classList.add('dark-mode');
+        if (icon) {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+        themeToggle.title = 'Modo Claro';
+    } else {
+        document.body.classList.remove('dark-mode');
+        if (icon) {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+        themeToggle.title = 'Modo Oscuro';
+    }
+}
+
+// Event listener para toggle de tema
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar tema guardado
+    applyTheme();
+    
+    // Agregar evento al botón
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleDarkMode);
     }
 });
 
