@@ -9,7 +9,7 @@ package-lock.json
 
 # Data files (JSON - ya no se usan, ahora es PostgreSQL)
 data/
-*.json
+data/*.json
 
 # Logs
 *.log

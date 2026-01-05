@@ -36,8 +36,8 @@ const modalClose = document.querySelector('.modal-close');
 const modalCloseTicket = document.querySelector('.modal-close-ticket');
 
 // API Base URL - Detecta automáticamente si está en local o producción
-const API_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3000/api' 
+const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000/api'
     : '/api';
 
 // ===== NAVEGACIÓN SIDEBAR =====
