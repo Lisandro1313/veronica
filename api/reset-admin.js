@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
     try {
         // Hashear la contraseña "admin123" con bcrypt
         const hashedPassword = await bcrypt.hash('admin123', 10);
-        
+
         console.log('Hash generado:', hashedPassword);
 
         // Actualizar todos los usuarios admin
@@ -35,8 +35,8 @@ module.exports = async (req, res) => {
 
         console.log('Usuarios actualizados:', data);
 
-        return res.json({ 
-            success: true, 
+        return res.json({
+            success: true,
             mensaje: 'Contraseña actualizada',
             hash: hashedPassword,
             usuarios: data.length
