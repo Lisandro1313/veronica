@@ -1,11 +1,11 @@
-const { Pool } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcrypt');
 
-// Crear pool de conexión
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-});
+// Crear cliente de Supabase
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+);
 
 module.exports = async (req, res) => {
     // Configurar CORS
@@ -24,23 +24,25 @@ module.exports = async (req, res) => {
     try {
         const { usuario, password } = req.body;
 
-        const result = await pool.query(
-            'SELECT id, nombre, username, password, rol FROM usuarios WHERE username = $1',
-            [usuario]
-        );
+        // Buscar usuario con Supabase
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id, nombre, username, password, rol')
+            .eq('username', usuario)
+            .single();
 
-        if (result.rows.length > 0) {
-            const user = result.rows[0];
-            const match = await bcrypt.compare(password, user.password);
+        if (error || !data) {
+            return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
+        }
 
-            if (match) {
-                return res.json({
-                    success: true,
-                    usuario: { id: user.id, nombre: user.nombre, rol: user.rol }
-                });
-            } else {
-                return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
-            }
+        // Verificar contraseña
+        const match = await bcrypt.compare(password, data.password);
+
+        if (match) {
+            return res.json({
+                success: true,
+                usuario: { id: data.id, nombre: data.nombre, rol: data.rol }
+            });
         } else {
             return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
         }
