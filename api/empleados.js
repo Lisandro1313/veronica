@@ -26,7 +26,31 @@ module.exports = async (req, res) => {
             return res.json(data || []);
 
         } else if (req.method === 'POST') {
-            const empleadoData = req.body;
+            const d = req.body;
+            
+            // Mapear los campos del frontend a los nombres de la BD
+            const empleadoData = {
+                nombre_completo: d.nombreCompleto,
+                cuil: d.cuil,
+                fecha_nacimiento: d.fechaNacimiento,
+                documento: d.documento,
+                estado_civil: d.estadoCivil,
+                integracion_familiar: d.integracionFamiliar,
+                escolaridad_familiar: d.escolaridadFamiliar,
+                nivel_educativo: d.nivelEducativo,
+                problemas_salud: d.problemasSalud,
+                es_extranjero: d.esExtranjero === 'si',
+                pais_origen: d.paisOrigen || null,
+                fecha_entrada_pais: d.fechaEntradaPais || null,
+                tipo_residencia: d.tipoResidencia || null,
+                entradas_salidas_pais: d.entradasSalidasPais || null,
+                experiencia_laboral: d.experienciaLaboral,
+                fecha_ingreso: d.fechaIngreso,
+                puesto: d.puesto,
+                antecedentes_penales: d.antecedentesPenales === 'si',
+                observaciones_antecedentes: d.observacionesAntecedentes || null,
+                observaciones: d.observaciones || null
+            };
 
             const { data, error } = await supabase
                 .from('empleados')
