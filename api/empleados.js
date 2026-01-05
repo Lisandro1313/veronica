@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
 
         } else if (req.method === 'POST') {
             const d = req.body;
-            
+
             // Mapear los campos del frontend a los nombres de la BD
             const empleadoData = {
                 nombre_completo: d.nombreCompleto,
