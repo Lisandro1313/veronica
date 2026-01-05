@@ -5,6 +5,7 @@
 ### 📋 Pasos para Deploy:
 
 #### 1. Sube tu código a GitHub
+
 ```bash
 git init
 git add .
@@ -15,16 +16,19 @@ git push -u origin main
 ```
 
 #### 2. Crea cuenta en Vercel
+
 - Ve a: https://vercel.com
 - Click en "Sign Up"
 - Inicia sesión con GitHub (recomendado)
 
 #### 3. Importa tu proyecto
+
 - Click en "Add New..." → "Project"
 - Selecciona tu repositorio
 - Click en "Import"
 
 #### 4. Configura Variables de Entorno
+
 En la pantalla de configuración, agrega estas variables:
 
 ```
@@ -35,6 +39,7 @@ NODE_ENV=production
 ```
 
 #### 5. Deploy
+
 - Click en "Deploy"
 - Espera 2-3 minutos
 - ¡Listo! Tu app está en línea
@@ -42,9 +47,11 @@ NODE_ENV=production
 ---
 
 ## 🌐 Tu Aplicación estará en:
+
 `https://tu-proyecto.vercel.app`
 
 ## 🔄 Deploys Automáticos
+
 Cada vez que hagas `git push`, Vercel desplegará automáticamente.
 
 ---
@@ -52,6 +59,7 @@ Cada vez que hagas `git push`, Vercel desplegará automáticamente.
 ## ⚠️ IMPORTANTE: Supabase ya configurado
 
 Tu base de datos está en Supabase (gratis permanente):
+
 - ✅ 500MB de almacenamiento
 - ✅ 2GB de transferencia/mes
 - ✅ Backups automáticos
@@ -64,17 +72,13 @@ Tu base de datos está en Supabase (gratis permanente):
 1. **100% Gratis Permanente**
    - Vercel: Hosting gratis sin límite de tiempo
    - Supabase: Base de datos gratis sin límite de tiempo
-   
 2. **Alta Disponibilidad**
    - Vercel: 99.99% uptime
    - Supabase: Infraestructura de AWS
-   
 3. **Deploy Automático**
    - Push a GitHub → Deploy automático
-   
 4. **HTTPS Incluido**
    - Certificado SSL automático
-   
 5. **Sin Mantenimiento**
    - No necesitas gestionar servidores
    - Actualizaciones automáticas
