@@ -34,3 +34,12 @@ build/
 # Temporary files
 tmp/
 temp/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+rrhh.db*
+
+# Vercel
+.vercel

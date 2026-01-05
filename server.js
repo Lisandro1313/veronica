@@ -3,8 +3,8 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const db = require('./db');
-const { initDatabase } = require('./init-database');
+const bcrypt = require('bcrypt');
+const db = require('./db'); // Usar db.js con Supabase
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,28 +19,29 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
 
-// Inicializar base de datos al arrancar (solo en producción)
-if (process.env.NODE_ENV === 'production') {
-    initDatabase().catch(err => console.error('Error en init:', err));
-}
-
 // ===== RUTAS DE AUTENTICACIÓN =====
 
 app.post('/api/login', async (req, res) => {
     try {
         const { usuario, password } = req.body;
-        
+
         const result = await db.query(
-            'SELECT id, nombre, usuario, rol FROM usuarios WHERE usuario = $1 AND password = $2',
-            [usuario, password]
+            'SELECT id, nombre, username, password, rol FROM usuarios WHERE username = $1',
+            [usuario]
         );
-        
+
         if (result.rows.length > 0) {
             const user = result.rows[0];
-            res.json({ 
-                success: true, 
-                usuario: { id: user.id, nombre: user.nombre, rol: user.rol }
-            });
+            const match = await bcrypt.compare(password, user.password);
+
+            if (match) {
+                res.json({
+                    success: true,
+                    usuario: { id: user.id, nombre: user.nombre, rol: user.rol }
+                });
+            } else {
+                res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
+            }
         } else {
             res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
         }
@@ -67,7 +68,7 @@ app.get('/api/empleados', async (req, res) => {
 app.get('/api/empleados/:id', async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM empleados WHERE id = $1', [req.params.id]);
-        
+
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
         } else {
@@ -83,12 +84,12 @@ app.get('/api/empleados/:id', async (req, res) => {
 app.post('/api/empleados', async (req, res) => {
     try {
         const data = req.body;
-        
+
         // Extraer datos de objetos anidados si existen
         const datosPersonales = data.datosPersonales || {};
         const datosLaborales = data.laboral || {};
         const educacionData = data.educacion || {};
-        
+
         const result = await db.query(
             `INSERT INTO empleados (
                 nombre, apellido, dni, cuit, fecha_nacimiento, nacionalidad, 
@@ -144,7 +145,7 @@ app.post('/api/empleados', async (req, res) => {
                 JSON.stringify(data.datosAdicionales || null)
             ]
         );
-        
+
         res.json({ success: true, data: result.rows[0] });
     } catch (error) {
         console.error('Error al crear empleado:', error);
@@ -159,7 +160,7 @@ app.put('/api/empleados/:id', async (req, res) => {
         const datosPersonales = data.datosPersonales || {};
         const datosLaborales = data.laboral || {};
         const educacionData = data.educacion || {};
-        
+
         const result = await db.query(
             `UPDATE empleados SET
                 nombre = $1, apellido = $2, dni = $3, cuit = $4, 
@@ -215,7 +216,7 @@ app.put('/api/empleados/:id', async (req, res) => {
                 req.params.id
             ]
         );
-        
+
         if (result.rows.length > 0) {
             res.json({ success: true, data: result.rows[0] });
         } else {
@@ -231,7 +232,7 @@ app.put('/api/empleados/:id', async (req, res) => {
 app.delete('/api/empleados/:id', async (req, res) => {
     try {
         const result = await db.query('DELETE FROM empleados WHERE id = $1 RETURNING id', [req.params.id]);
-        
+
         if (result.rows.length > 0) {
             res.json({ success: true, mensaje: 'Empleado eliminado' });
         } else {
@@ -249,7 +250,12 @@ app.delete('/api/empleados/:id', async (req, res) => {
 app.get('/api/tickets/:empleadoId', async (req, res) => {
     try {
         const result = await db.query(
-            'SELECT * FROM tickets WHERE empleado_id = $1 ORDER BY created_at DESC',
+            `SELECT t.*, u1.nombre as creado_por_nombre, u2.nombre as aprobado_por_nombre
+             FROM tickets t
+             LEFT JOIN usuarios u1 ON t.creado_por = u1.id
+             LEFT JOIN usuarios u2 ON t.aprobado_por = u2.id
+             WHERE t.empleado_id = $1 
+             ORDER BY t.created_at DESC`,
             [req.params.empleadoId]
         );
         res.json(result.rows);
@@ -262,18 +268,35 @@ app.get('/api/tickets/:empleadoId', async (req, res) => {
 // Crear nuevo ticket
 app.post('/api/tickets', async (req, res) => {
     try {
-        const { empleadoId, tipo, descripcion, fecha, estado } = req.body;
-        
+        const {
+            empleadoId, tipo, titulo, descripcion,
+            fechaEvento, fechaDesde, fechaHasta,
+            valorAnterior, valorNuevo, observaciones,
+            datosAdicionales, creadoPor, actualizaEmpleado, estado
+        } = req.body;
+
         const result = await db.query(
-            `INSERT INTO tickets (empleado_id, tipo, descripcion, fecha, estado) 
-             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [empleadoId, tipo, descripcion, fecha, estado || 'pendiente']
+            `INSERT INTO tickets (
+                empleado_id, tipo, titulo, descripcion, 
+                fecha_evento, fecha_desde, fecha_hasta,
+                valor_anterior, valor_nuevo, observaciones,
+                datos_adicionales, creado_por, actualiza_empleado, estado
+             ) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+             RETURNING *`,
+            [
+                empleadoId, tipo, titulo, descripcion,
+                fechaEvento, fechaDesde, fechaHasta,
+                valorAnterior, valorNuevo, observaciones,
+                datosAdicionales ? JSON.stringify(datosAdicionales) : null,
+                creadoPor, actualizaEmpleado || false, estado || 'pendiente'
+            ]
         );
-        
+
         res.json({ success: true, data: result.rows[0] });
     } catch (error) {
         console.error('Error al crear ticket:', error);
-        res.status(500).json({ success: false, mensaje: 'Error al crear ticket' });
+        res.status(500).json({ success: false, mensaje: 'Error al crear ticket', error: error.message });
     }
 });
 
@@ -293,6 +316,113 @@ app.get('/api/tickets', async (req, res) => {
     }
 });
 
+// Actualizar ticket
+app.put('/api/tickets/:id', async (req, res) => {
+    try {
+        const { estado, observaciones, aprobadoPor } = req.body;
+
+        const result = await db.query(
+            `UPDATE tickets SET
+                estado = COALESCE($1, estado),
+                observaciones = COALESCE($2, observaciones),
+                aprobado_por = COALESCE($3, aprobado_por),
+                fecha_aprobacion = CASE WHEN $1 IN ('aprobado', 'rechazado') AND fecha_aprobacion IS NULL 
+                                        THEN CURRENT_TIMESTAMP ELSE fecha_aprobacion END,
+                updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4
+             RETURNING *`,
+            [estado, observaciones, aprobadoPor, req.params.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, mensaje: 'Ticket no encontrado' });
+        }
+
+        // Si el ticket actualiza el empleado y fue aprobado
+        if (result.rows[0].actualiza_empleado && estado === 'aprobado') {
+            await actualizarEmpleadoDesdeTicket(result.rows[0]);
+        }
+
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al actualizar ticket:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar ticket' });
+    }
+});
+
+// Eliminar ticket
+app.delete('/api/tickets/:id', async (req, res) => {
+    try {
+        const result = await db.query('DELETE FROM tickets WHERE id = $1 RETURNING *', [req.params.id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, mensaje: 'Ticket no encontrado' });
+        }
+        res.json({ success: true, mensaje: 'Ticket eliminado' });
+    } catch (error) {
+        console.error('Error al eliminar ticket:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al eliminar ticket' });
+    }
+});
+
+// Obtener empleados ausentes actualmente
+app.get('/api/empleados/ausentes', async (req, res) => {
+    try {
+        const result = await db.query(`SELECT * FROM v_empleados_ausentes`);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener empleados ausentes:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener empleados ausentes' });
+    }
+});
+
+// Obtener historial completo de un empleado
+app.get('/api/empleados/:id/historial', async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT * FROM v_historial_empleados WHERE empleado_id = $1`,
+            [req.params.id]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener historial:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener historial' });
+    }
+});
+
+// Función auxiliar para actualizar empleado desde ticket
+async function actualizarEmpleadoDesdeTicket(ticket) {
+    try {
+        switch (ticket.tipo) {
+            case 'cambio_puesto':
+                if (ticket.valor_nuevo) {
+                    await db.query(
+                        'UPDATE empleados SET puesto = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                        [ticket.valor_nuevo, ticket.empleado_id]
+                    );
+                }
+                break;
+            case 'cambio_area':
+                if (ticket.valor_nuevo) {
+                    await db.query(
+                        'UPDATE empleados SET area = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                        [ticket.valor_nuevo, ticket.empleado_id]
+                    );
+                }
+                break;
+            case 'cambio_salario':
+                if (ticket.valor_nuevo) {
+                    await db.query(
+                        'UPDATE empleados SET salario = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                        [parseFloat(ticket.valor_nuevo), ticket.empleado_id]
+                    );
+                }
+                break;
+        }
+    } catch (error) {
+        console.error('Error al actualizar empleado desde ticket:', error);
+    }
+}
+
 // ===== HEALTH CHECK =====
 app.get('/health', async (req, res) => {
     try {
@@ -305,9 +435,15 @@ app.get('/health', async (req, res) => {
 
 // ===== INICIAR SERVIDOR =====
 
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-    console.log(`📁 Frontend disponible en http://localhost:${PORT}`);
-    console.log(`🗄️  Base de datos: PostgreSQL`);
-    console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
-});
+// Solo iniciar servidor si no está en Vercel (serverless)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+        console.log(`📁 Frontend disponible en http://localhost:${PORT}`);
+        console.log(`🗄️  Base de datos: PostgreSQL`);
+        console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
+    });
+}
+
+// Exportar para Vercel
+module.exports = app;

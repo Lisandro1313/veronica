@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema RRHH - Empresas Hortícolas</title>
+    <title>Verapp - Sistema para Gestión de Personas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -13,8 +13,8 @@
     <div id="login-screen" class="screen active">
         <div class="container">
             <div class="card">
-                <h1>🌱 Sistema RRHH</h1>
-                <p class="subtitle">Empresas Hortícolas</p>
+                <h1>Verapp</h1>
+                <p class="subtitle">Sistema para Gestión de Personas</p>
                 <form id="login-form">
                     <div class="form-group">
                         <label for="usuario">Usuario:</label>
@@ -25,13 +25,6 @@
                         <input type="password" id="password" name="password" required>
                     </div>
                     <button type="submit" class="btn btn-primary">Ingresar</button>
-                    <div class="login-hints">
-                        <p class="hint"><strong>👤 Usuarios de prueba:</strong></p>
-                        <p class="hint">🔴 Super Admin: <code>admin</code> / <code>admin123</code></p>
-                        <p class="hint">🟠 Admin RRHH: <code>rrhh</code> / <code>rrhh123</code></p>
-                        <p class="hint">🟢 Gerente: <code>manager</code> / <code>manager123</code></p>
-                        <p class="hint">🔵 Consultor: <code>viewer</code> / <code>viewer123</code></p>
-                    </div>
                 </form>
             </div>
         </div>
@@ -42,8 +35,8 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <i class="fas fa-seedling"></i>
-                <h3>RRHH Pro</h3>
+                <i class="fas fa-users-cog"></i>
+                <h3>Verapp</h3>
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-item active" data-tab="dashboard">
@@ -645,10 +638,95 @@
 
             <!-- Tab: Tickets -->
             <div id="tab-tickets" class="tab-content">
+                <!-- Estadísticas de Tickets -->
+                <div class="tickets-stats-grid">
+                    <div class="stat-card-mini stat-pendientes">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <h3 id="stat-tickets-pendientes">0</h3>
+                            <p>Pendientes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card-mini stat-aprobados">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <h3 id="stat-tickets-aprobados">0</h3>
+                            <p>Aprobados</p>
+                        </div>
+                    </div>
+                    <div class="stat-card-mini stat-proceso">
+                        <i class="fas fa-spinner"></i>
+                        <div>
+                            <h3 id="stat-tickets-proceso">0</h3>
+                            <p>En Proceso</p>
+                        </div>
+                    </div>
+                    <div class="stat-card-mini stat-ausentes">
+                        <i class="fas fa-plane-departure"></i>
+                        <div>
+                            <h3 id="stat-empleados-ausentes">0</h3>
+                            <p>Ausentes Hoy</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestañas de Tickets -->
                 <div class="card">
-                    <h3><i class="fas fa-clipboard-list"></i> Tickets y Notificaciones</h3>
+                    <div class="tickets-header">
+                        <h3><i class="fas fa-clipboard-list"></i> Gestión de Tickets</h3>
+                        <button class="btn btn-primary" onclick="mostrarModalNuevoTicket()">
+                            <i class="fas fa-plus"></i> Nuevo Ticket
+                        </button>
+                    </div>
+
+                    <div class="tickets-tabs">
+                        <button class="ticket-tab-btn active" data-tickettab="todos">Todos</button>
+                        <button class="ticket-tab-btn" data-tickettab="pendientes">Pendientes</button>
+                        <button class="ticket-tab-btn" data-tickettab="ausentes">Ausentes Hoy</button>
+                        <button class="ticket-tab-btn" data-tickettab="vacaciones">Vacaciones</button>
+                        <button class="ticket-tab-btn" data-tickettab="cambios">Cambios</button>
+                    </div>
+
+                    <!-- Filtros de Tickets -->
+                    <div class="tickets-filters">
+                        <input type="text" id="ticket-search" placeholder="🔍 Buscar por empleado, tipo o título..." onkeyup="filtrarTickets()">
+                        <select id="ticket-filter-estado" onchange="filtrarTickets()">
+                            <option value="">Todos los estados</option>
+                            <option value="pendiente">Pendientes</option>
+                            <option value="aprobado">Aprobados</option>
+                            <option value="rechazado">Rechazados</option>
+                            <option value="en_proceso">En Proceso</option>
+                            <option value="completado">Completados</option>
+                            <option value="cancelado">Cancelados</option>
+                        </select>
+                        <select id="ticket-filter-tipo" onchange="filtrarTickets()">
+                            <option value="">Todos los tipos</option>
+                            <option value="vacaciones">Vacaciones</option>
+                            <option value="viaje">Viaje</option>
+                            <option value="licencia_medica">Licencia Médica</option>
+                            <option value="licencia_maternidad">Maternidad/Paternidad</option>
+                            <option value="cambio_puesto">Cambio de Puesto</option>
+                            <option value="cambio_area">Cambio de Área</option>
+                            <option value="cambio_salario">Cambio de Salario</option>
+                            <option value="cambio_personal">Cambio Personal</option>
+                            <option value="capacitacion">Capacitación</option>
+                            <option value="reconocimiento">Reconocimiento</option>
+                            <option value="desvinculacion">Desvinculación</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <!-- Lista de Tickets -->
                     <div id="tickets-list" class="tickets-list">
                         <p class="loading">Cargando tickets...</p>
+                    </div>
+                </div>
+
+                <!-- Empleados Ausentes -->
+                <div class="card" id="ausentes-card">
+                    <h3><i class="fas fa-calendar-times"></i> Empleados Ausentes Hoy</h3>
+                    <div id="empleados-ausentes-list" class="ausentes-list">
+                        <p class="loading">Cargando...</p>
                     </div>
                 </div>
             </div>
@@ -737,39 +815,135 @@
         </div>
     </div>
 
-    <!-- Modal: Crear Ticket -->
+    <!-- Modal: Crear/Editar Ticket -->
     <div id="modal-ticket" class="modal">
-        <div class="modal-content">
+        <div class="modal-content modal-large">
             <span class="modal-close-ticket">&times;</span>
-            <h3>📋 Crear Ticket/Notificación</h3>
+            <h3 id="ticket-modal-title">📋 Crear Nuevo Ticket</h3>
             <form id="ticket-form">
+                <input type="hidden" id="ticket-id">
                 <input type="hidden" id="ticket-empleadoId">
-                <div class="form-group">
-                    <label for="ticket-tipo">Tipo de Notificación *</label>
-                    <select id="ticket-tipo" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="inspeccion">🔍 Inspección</option>
-                        <option value="vacaciones">🏖️ Vacaciones</option>
-                        <option value="ausencia">❌ Ausencia sin registro</option>
-                        <option value="asistencia_social">🤝 Asistencia Social</option>
-                        <option value="salud">🏥 Problema de Salud</option>
-                        <option value="migratorio">🌍 Trámite Migratorio</option>
-                        <option value="otro">📝 Otro</option>
-                    </select>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ticket-empleado-select">Empleado *</label>
+                        <select id="ticket-empleado-select" required>
+                            <option value="">Seleccionar empleado...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ticket-tipo">Tipo de Ticket *</label>
+                        <select id="ticket-tipo" required onchange="adaptarFormularioTicket()">
+                            <option value="">Seleccionar tipo...</option>
+                            <optgroup label="Ausencias">
+                                <option value="vacaciones">🏖️ Vacaciones</option>
+                                <option value="licencia_medica">🏥 Licencia Médica</option>
+                                <option value="licencia_maternidad">👶 Licencia Maternidad/Paternidad</option>
+                                <option value="permiso">📋 Permiso Temporal</option>
+                                <option value="suspension">⚠️ Suspensión</option>
+                            </optgroup>
+                            <optgroup label="Cambios Laborales">
+                                <option value="cambio_puesto">📈 Cambio de Puesto</option>
+                                <option value="cambio_area">🏢 Cambio de Área</option>
+                                <option value="cambio_salario">💰 Cambio de Salario</option>
+                                <option value="desvinculacion">🚪 Desvinculación</option>
+                                <option value="reincorporacion">↩️ Reincorporación</option>
+                            </optgroup>
+                            <optgroup label="Eventos">
+                                <option value="viaje">✈️ Viaje</option>
+                                <option value="cambio_personal">👨‍👩‍👧 Cambio Personal</option>
+                                <option value="capacitacion">📚 Capacitación</option>
+                                <option value="reconocimiento">🏆 Reconocimiento</option>
+                                <option value="amonestacion">⚠️ Amonestación</option>
+                            </optgroup>
+                            <option value="otro">📝 Otro</option>
+                        </select>
+                    </div>
                 </div>
+
                 <div class="form-group">
-                    <label for="ticket-descripcion">Descripción *</label>
-                    <textarea id="ticket-descripcion" rows="4" required placeholder="Describe el evento o situación..."></textarea>
+                    <label for="ticket-titulo">Título *</label>
+                    <input type="text" id="ticket-titulo" required placeholder="Ej: Vacaciones de verano, Promoción a Senior, etc.">
                 </div>
+
                 <div class="form-group">
-                    <label for="ticket-fecha">Fecha del Evento</label>
-                    <input type="date" id="ticket-fecha">
+                    <label for="ticket-descripcion">Descripción</label>
+                    <textarea id="ticket-descripcion" rows="3" placeholder="Detalles adicionales..."></textarea>
                 </div>
+
+                <!-- Campos dinámicos según tipo -->
+                <div id="ticket-campos-periodo" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ticket-fecha-desde">Fecha Desde *</label>
+                            <input type="date" id="ticket-fecha-desde">
+                        </div>
+                        <div class="form-group">
+                            <label for="ticket-fecha-hasta">Fecha Hasta *</label>
+                            <input type="date" id="ticket-fecha-hasta">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ticket-campos-evento" style="display:none;">
+                    <div class="form-group">
+                        <label for="ticket-fecha-evento">Fecha del Evento *</label>
+                        <input type="date" id="ticket-fecha-evento">
+                    </div>
+                </div>
+
+                <div id="ticket-campos-cambio" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ticket-valor-anterior">Valor Anterior</label>
+                            <input type="text" id="ticket-valor-anterior" placeholder="Valor actual">
+                        </div>
+                        <div class="form-group">
+                            <label for="ticket-valor-nuevo">Valor Nuevo *</label>
+                            <input type="text" id="ticket-valor-nuevo" placeholder="Nuevo valor">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="ticket-actualiza-empleado">
+                            Actualizar automáticamente los datos del empleado al aprobar
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ticket-observaciones">Observaciones</label>
+                    <textarea id="ticket-observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ticket-estado">Estado</label>
+                        <select id="ticket-estado">
+                            <option value="pendiente">⏳ Pendiente</option>
+                            <option value="aprobado">✅ Aprobado</option>
+                            <option value="rechazado">❌ Rechazado</option>
+                            <option value="en_proceso">🔄 En Proceso</option>
+                            <option value="completado">✔️ Completado</option>
+                            <option value="cancelado">🚫 Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">💾 Crear Ticket</button>
+                    <button type="submit" class="btn btn-primary">💾 Guardar Ticket</button>
                     <button type="button" class="btn btn-secondary" onclick="closeTicketModal()">Cancelar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal: Detalle del Ticket -->
+    <div id="modal-ticket-detalle" class="modal">
+        <div class="modal-content modal-medium">
+            <span class="modal-close" onclick="closeTicketDetalleModal()">&times;</span>
+            <div id="ticket-detalle-content"></div>
         </div>
     </div>
 

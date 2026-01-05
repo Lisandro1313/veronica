@@ -43,17 +43,17 @@ const API_URL = 'http://localhost:3000/api';
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
         const tabName = btn.dataset.tab;
-        
+
         // Actualizar navegación
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
+
         // Actualizar contenido
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
         document.getElementById(`tab-${tabName}`).classList.add('active');
-        
+
         // Actualizar título
         const titles = {
             'dashboard': '<i class="fas fa-chart-line"></i> Dashboard',
@@ -64,7 +64,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             'alertas': '<i class="fas fa-bell"></i> Alertas'
         };
         pageTitle.innerHTML = titles[tabName];
-        
+
         // Cargar datos según la tab
         if (tabName === 'dashboard') {
             loadDashboard();
@@ -82,19 +82,19 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const usuario = document.getElementById('usuario').value;
     const password = document.getElementById('password').value;
-    
+
     try {
         const response = await fetch(`${API_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ usuario, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             currentUser = data.usuario;
             showMainScreen();
@@ -123,17 +123,17 @@ logoutBtn.addEventListener('click', () => {
 function showToast(type, title, message) {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    
+
     const icons = {
         success: 'fa-check-circle',
         error: 'fa-times-circle',
         warning: 'fa-exclamation-circle',
         info: 'fa-info-circle'
     };
-    
+
     toast.innerHTML = `
         <i class="fas ${icons[type]} toast-icon"></i>
         <div class="toast-content">
@@ -144,9 +144,9 @@ function showToast(type, title, message) {
             <i class="fas fa-times"></i>
         </button>
     `;
-    
+
     container.appendChild(toast);
-    
+
     // Auto-cerrar después de 5 segundos
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease-out';
@@ -163,9 +163,9 @@ function tienePermiso(modulo, accion) {
 
 function aplicarPermisos() {
     if (!currentUser) return;
-    
+
     const rol = currentUser.rol || 'viewer';
-    
+
     // Mostrar rol en sidebar
     const userInfoDiv = document.querySelector('.sidebar-footer small');
     if (userInfoDiv) {
@@ -177,7 +177,7 @@ function aplicarPermisos() {
         };
         userInfoDiv.textContent = rolesNombres[rol] || 'Usuario';
     }
-    
+
     // Mostrar badge de rol en top bar
     const roleBadge = document.getElementById('role-badge');
     const roleText = document.getElementById('role-text');
@@ -188,44 +188,44 @@ function aplicarPermisos() {
             'manager': 'Gerente',
             'viewer': 'Consultor'
         };
-        
+
         // Remover clases anteriores
         roleBadge.className = 'role-badge';
-        
+
         // Agregar clase específica del rol
         roleBadge.classList.add(`role-${rol}`);
-        
+
         // Actualizar texto
         roleText.textContent = rolesNombres[rol] || 'Usuario';
-        
+
         // Mostrar badge
         roleBadge.style.display = 'flex';
     }
-    
+
     // Ocultar tab "Nuevo Empleado" si no tiene permisos
     if (!tienePermiso('empleados', 'crear')) {
         const nuevoTab = document.querySelector('[data-tab="nuevo"]');
         if (nuevoTab) nuevoTab.style.display = 'none';
     }
-    
+
     // Ocultar botones de exportación si no tiene permisos
     if (!tienePermiso('exportar', 'pdf')) {
         document.querySelectorAll('[onclick*="exportarAPDF"]').forEach(btn => {
             btn.style.display = 'none';
         });
     }
-    
+
     if (!tienePermiso('exportar', 'excel')) {
         document.querySelectorAll('[onclick*="exportarAExcel"]').forEach(btn => {
             btn.style.display = 'none';
         });
     }
-    
+
     // Deshabilitar botones de eliminar si no tiene permisos
     if (!tienePermiso('empleados', 'eliminar')) {
         aplicarPermisoEliminacion();
     }
-    
+
     // Deshabilitar botones de edición si no tiene permisos
     if (!tienePermiso('empleados', 'editar')) {
         aplicarPermisoEdicion();
@@ -281,17 +281,17 @@ async function loadDashboard() {
     try {
         const response = await fetch(`${API_URL}/empleados`);
         empleados = await response.json();
-        
+
         // Calcular KPIs
         const kpis = calcularKPIs(empleados);
         mostrarKPIs(kpis);
-        
+
         // Crear gráficos
         crearGraficos(empleados);
-        
+
         // Mostrar alertas prioritarias
         mostrarAlertasDashboard(empleados);
-        
+
     } catch (error) {
         console.error('Error al cargar dashboard:', error);
     }
@@ -301,7 +301,7 @@ function calcularKPIs(empleados) {
     const extranjeros = empleados.filter(e => e.esExtranjero === 'si').length;
     const conAntecedentes = empleados.filter(e => e.antecedentesPenales === 'si').length;
     const conProblemasSalud = empleados.filter(e => e.problemasSalud && e.problemasSalud.trim() !== '').length;
-    
+
     // Calcular menores en familias (estimación basada en composición familiar)
     let menoresEstimados = 0;
     empleados.forEach(e => {
@@ -315,13 +315,13 @@ function calcularKPIs(empleados) {
             }
         }
     });
-    
+
     // Empleados de viaje (basado en tickets recientes)
-    const deViaje = tickets.filter(t => 
-        t.tipo === 'vacaciones' && 
-        new Date(t.fecha) > new Date(Date.now() - 30*24*60*60*1000)
+    const deViaje = tickets.filter(t =>
+        t.tipo === 'vacaciones' &&
+        new Date(t.fecha) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     ).length;
-    
+
     return {
         total: empleados.length,
         extranjeros,
@@ -339,57 +339,57 @@ function mostrarKPIs(kpis) {
     document.getElementById('kpi-menores').textContent = kpis.menores;
     document.getElementById('kpi-salud').textContent = kpis.conProblemasSalud;
     document.getElementById('kpi-viaje').textContent = kpis.deViaje;
-    
+
     // Calcular y mostrar métricas avanzadas
     calcularMetricasAvanzadas();
-    
+
     // Calcular y mostrar tendencias
     calcularTendencias();
 }
 
 function calcularMetricasAvanzadas() {
     if (empleados.length === 0) return;
-    
+
     // Edad promedio
     const edades = empleados.map(e => {
         const datos = e.datosPersonales || e;
         return calcularEdad(datos.fechaNacimiento);
     }).filter(edad => edad > 0);
-    
-    const edadPromedio = edades.length > 0 
+
+    const edadPromedio = edades.length > 0
         ? (edades.reduce((sum, edad) => sum + edad, 0) / edades.length).toFixed(1)
         : 0;
-    
+
     document.getElementById('kpi-edad-promedio').textContent = `${edadPromedio} años`;
-    
+
     // Antigüedad promedio
     const antiguedades = empleados
         .filter(e => e.laboral && e.laboral.fechaIngreso)
         .map(e => calcularAntiguedad(e.laboral.fechaIngreso));
-    
+
     const antiguedadPromedio = antiguedades.length > 0
         ? (antiguedades.reduce((sum, ant) => sum + ant, 0) / antiguedades.length).toFixed(1)
         : 0;
-    
+
     document.getElementById('kpi-antiguedad-promedio').textContent = `${antiguedadPromedio} años`;
-    
+
     // Salario promedio
     const salarios = empleados
         .filter(e => e.laboral && e.laboral.salario)
         .map(e => e.laboral.salario);
-    
+
     const salarioPromedio = salarios.length > 0
         ? Math.round(salarios.reduce((sum, sal) => sum + sal, 0) / salarios.length)
         : 0;
-    
-    document.getElementById('kpi-salario-promedio').textContent = 
+
+    document.getElementById('kpi-salario-promedio').textContent =
         `$${salarioPromedio.toLocaleString('es-AR')}`;
-    
+
     // Costo laboral total
     const costoTotal = salarios.reduce((sum, sal) => sum + sal, 0);
-    document.getElementById('kpi-costo-total').textContent = 
+    document.getElementById('kpi-costo-total').textContent =
         `$${costoTotal.toLocaleString('es-AR')}`;
-    
+
     // Área con más personal
     const areaCount = {};
     empleados.forEach(e => {
@@ -397,7 +397,7 @@ function calcularMetricasAvanzadas() {
             areaCount[e.laboral.area] = (areaCount[e.laboral.area] || 0) + 1;
         }
     });
-    
+
     let areaMayor = '-';
     let maxCount = 0;
     Object.entries(areaCount).forEach(([area, count]) => {
@@ -406,119 +406,119 @@ function calcularMetricasAvanzadas() {
             areaMayor = `${area} (${count})`;
         }
     });
-    
+
     document.getElementById('kpi-area-mayor').textContent = areaMayor;
-    
+
     // Porcentaje con estudios superiores
     const conEstudiosSuperiores = empleados.filter(e => {
         const nivel = e.educacion?.nivelMaximo || e.nivelEducativo || '';
-        return nivel.toLowerCase().includes('universitario') || 
-               nivel.toLowerCase().includes('terciario');
+        return nivel.toLowerCase().includes('universitario') ||
+            nivel.toLowerCase().includes('terciario');
     }).length;
-    
+
     const porcentajeSuperiores = empleados.length > 0
         ? ((conEstudiosSuperiores / empleados.length) * 100).toFixed(0)
         : 0;
-    
+
     document.getElementById('kpi-educacion-alta').textContent = `${porcentajeSuperiores}%`;
 }
 
 function calcularTendencias() {
     if (empleados.length === 0) return;
-    
+
     const ahora = new Date();
     const mesActual = ahora.getMonth();
     const añoActual = ahora.getFullYear();
-    
+
     // Calcular mes anterior
     const fechaMesAnterior = new Date(añoActual, mesActual - 1, 1);
     const mesAnterior = fechaMesAnterior.getMonth();
     const añoMesAnterior = fechaMesAnterior.getFullYear();
-    
+
     // Filtrar empleados del mes actual
     const empleadosMesActual = empleados.filter(e => {
         if (!e.laboral || !e.laboral.fechaIngreso) return false;
         const fecha = new Date(e.laboral.fechaIngreso);
         return fecha.getMonth() === mesActual && fecha.getFullYear() === añoActual;
     });
-    
+
     // Filtrar empleados del mes anterior
     const empleadosMesAnterior = empleados.filter(e => {
         if (!e.laboral || !e.laboral.fechaIngreso) return false;
         const fecha = new Date(e.laboral.fechaIngreso);
         return fecha.getMonth() === mesAnterior && fecha.getFullYear() === añoMesAnterior;
     });
-    
+
     // 1. Nuevos Ingresos
     const ingresosMesActual = empleadosMesActual.length;
     const ingresosMesAnterior = empleadosMesAnterior.length;
     const cambioIngresos = ingresosMesActual - ingresosMesAnterior;
-    const porcentajeIngresos = ingresosMesAnterior > 0 
+    const porcentajeIngresos = ingresosMesAnterior > 0
         ? ((cambioIngresos / ingresosMesAnterior) * 100).toFixed(0)
         : 0;
-    
+
     document.getElementById('tend-ingresos').textContent = ingresosMesActual;
     actualizarIndicadorCambio('tend-ingresos-change', cambioIngresos, porcentajeIngresos, true);
-    
+
     // 2. Bajas (simuladas con tickets de baja si existen)
     const bajasMesActual = tickets.filter(t => {
         if (!t.tipo || t.tipo !== 'baja') return false;
         const fecha = new Date(t.fecha);
         return fecha.getMonth() === mesActual && fecha.getFullYear() === añoActual;
     }).length;
-    
+
     const bajasMesAnterior = tickets.filter(t => {
         if (!t.tipo || t.tipo !== 'baja') return false;
         const fecha = new Date(t.fecha);
         return fecha.getMonth() === mesAnterior && fecha.getFullYear() === añoMesAnterior;
     }).length;
-    
+
     const cambioBajas = bajasMesActual - bajasMesAnterior;
     const porcentajeBajas = bajasMesAnterior > 0
         ? ((cambioBajas / bajasMesAnterior) * 100).toFixed(0)
         : 0;
-    
+
     document.getElementById('tend-bajas').textContent = bajasMesActual;
     actualizarIndicadorCambio('tend-bajas-change', cambioBajas, porcentajeBajas, false);
-    
+
     // 3. Rotación (bajas / total * 100)
     const rotacionActual = empleados.length > 0
         ? ((bajasMesActual / empleados.length) * 100).toFixed(1)
         : 0;
-    
+
     const totalMesAnterior = empleados.length + bajasMesAnterior - ingresosMesActual;
     const rotacionAnterior = totalMesAnterior > 0
         ? ((bajasMesAnterior / totalMesAnterior) * 100).toFixed(1)
         : 0;
-    
+
     const cambioRotacion = (rotacionActual - rotacionAnterior).toFixed(1);
-    
+
     document.getElementById('tend-rotacion').textContent = `${rotacionActual}%`;
     actualizarIndicadorCambio('tend-rotacion-change', parseFloat(cambioRotacion), cambioRotacion, false);
-    
+
     // 4. Costo Promedio
     const salariosMesActual = empleadosMesActual
         .filter(e => e.laboral && e.laboral.salario)
         .map(e => e.laboral.salario);
-    
+
     const salariosMesAnterior = empleadosMesAnterior
         .filter(e => e.laboral && e.laboral.salario)
         .map(e => e.laboral.salario);
-    
+
     const costoPromedioActual = salariosMesActual.length > 0
         ? Math.round(salariosMesActual.reduce((sum, s) => sum + s, 0) / salariosMesActual.length)
         : 0;
-    
+
     const costoPromedioAnterior = salariosMesAnterior.length > 0
         ? Math.round(salariosMesAnterior.reduce((sum, s) => sum + s, 0) / salariosMesAnterior.length)
         : 0;
-    
+
     const cambioCosto = costoPromedioActual - costoPromedioAnterior;
     const porcentajeCosto = costoPromedioAnterior > 0
         ? ((cambioCosto / costoPromedioAnterior) * 100).toFixed(0)
         : 0;
-    
-    document.getElementById('tend-costo').textContent = 
+
+    document.getElementById('tend-costo').textContent =
         `$${costoPromedioActual.toLocaleString('es-AR')}`;
     actualizarIndicadorCambio('tend-costo-change', cambioCosto, porcentajeCosto, false);
 }
@@ -526,10 +526,10 @@ function calcularTendencias() {
 function actualizarIndicadorCambio(elementId, cambio, porcentaje, positivoEsBueno) {
     const elemento = document.getElementById(elementId);
     if (!elemento) return;
-    
+
     // Limpiar clases previas
     elemento.classList.remove('positive', 'negative', 'neutral');
-    
+
     if (cambio > 0) {
         elemento.classList.add(positivoEsBueno ? 'positive' : 'negative');
         elemento.innerHTML = `
@@ -555,14 +555,14 @@ function crearGraficos(empleados) {
     // Destruir gráficos existentes
     Object.values(charts).forEach(chart => chart.destroy());
     charts = {};
-    
+
     // Gráfico: Nacionalidad
     const nacionalidades = {};
     empleados.forEach(e => {
         const pais = e.esExtranjero === 'si' ? (e.paisOrigen || 'Desconocido') : 'Argentina';
         nacionalidades[pais] = (nacionalidades[pais] || 0) + 1;
     });
-    
+
     charts.nacionalidad = new Chart(document.getElementById('chart-nacionalidad'), {
         type: 'pie',
         data: {
@@ -580,14 +580,14 @@ function crearGraficos(empleados) {
             }
         }
     });
-    
+
     // Gráfico: Educación
     const educacion = {};
     empleados.forEach(e => {
         const nivel = e.nivelEducativo || 'Sin especificar';
         educacion[nivel] = (educacion[nivel] || 0) + 1;
     });
-    
+
     charts.educacion = new Chart(document.getElementById('chart-educacion'), {
         type: 'bar',
         data: {
@@ -606,14 +606,14 @@ function crearGraficos(empleados) {
             }
         }
     });
-    
+
     // Gráfico: Residencia
     const residencias = {};
     empleados.forEach(e => {
         const tipo = e.tipoResidencia || 'No aplica';
         residencias[tipo] = (residencias[tipo] || 0) + 1;
     });
-    
+
     charts.residencia = new Chart(document.getElementById('chart-residencia'), {
         type: 'doughnut',
         data: {
@@ -631,7 +631,7 @@ function crearGraficos(empleados) {
             }
         }
     });
-    
+
     // Gráfico: Edad (distribución por rangos)
     const edades = { '18-25': 0, '26-35': 0, '36-45': 0, '46-55': 0, '56+': 0 };
     empleados.forEach(e => {
@@ -644,7 +644,7 @@ function crearGraficos(empleados) {
             else if (edad >= 56) edades['56+']++;
         }
     });
-    
+
     charts.edad = new Chart(document.getElementById('chart-edad'), {
         type: 'bar',
         data: {
@@ -668,7 +668,7 @@ function crearGraficos(empleados) {
 function mostrarAlertasDashboard(empleados) {
     const alertasContainer = document.getElementById('alertas-dashboard');
     const alertas = [];
-    
+
     // Generar alertas
     empleados.forEach(emp => {
         // Antecedentes penales
@@ -681,7 +681,7 @@ function mostrarAlertasDashboard(empleados) {
                 empleadoId: emp.id
             });
         }
-        
+
         // Problemas de salud
         if (emp.problemasSalud && emp.problemasSalud.trim() !== '') {
             alertas.push({
@@ -692,7 +692,7 @@ function mostrarAlertasDashboard(empleados) {
                 empleadoId: emp.id
             });
         }
-        
+
         // Residencia temporaria o precaria
         if (emp.tipoResidencia === 'temporaria' || emp.tipoResidencia === 'precaria') {
             alertas.push({
@@ -704,12 +704,12 @@ function mostrarAlertasDashboard(empleados) {
             });
         }
     });
-    
+
     if (alertas.length === 0) {
         alertasContainer.innerHTML = '<p class="empty-state">✅ No hay alertas prioritarias.</p>';
         return;
     }
-    
+
     alertasContainer.innerHTML = alertas.slice(0, 5).map(a => `
         <div class="alerta-item ${a.tipo}" onclick="verPerfil(${a.empleadoId})">
             <i class="${a.icono}"></i>
@@ -740,23 +740,23 @@ function validarCUIL(cuil) {
     if (!regex.test(cuil)) {
         return { valido: false, mensaje: 'Formato de CUIL inválido. Debe ser XX-XXXXXXXX-X' };
     }
-    
+
     // Validar dígito verificador
     const nums = cuil.replace(/-/g, '');
     const multiplicadores = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
     let suma = 0;
-    
+
     for (let i = 0; i < 10; i++) {
         suma += parseInt(nums[i]) * multiplicadores[i];
     }
-    
+
     const resto = suma % 11;
     const digito = resto === 0 ? 0 : resto === 1 ? 9 : 11 - resto;
-    
+
     if (digito !== parseInt(nums[10])) {
         return { valido: false, mensaje: 'CUIL inválido: dígito verificador incorrecto' };
     }
-    
+
     return { valido: true, mensaje: '' };
 }
 
@@ -771,39 +771,39 @@ function validarEmail(email) {
 
 function validarFecha(fecha, nombre) {
     if (!fecha) return { valido: false, mensaje: `${nombre} es obligatoria` };
-    
+
     const fechaObj = new Date(fecha);
     const hoy = new Date();
-    
+
     if (isNaN(fechaObj.getTime())) {
         return { valido: false, mensaje: `${nombre} inválida` };
     }
-    
+
     if (nombre === 'Fecha de Nacimiento' && fechaObj > hoy) {
         return { valido: false, mensaje: 'La fecha de nacimiento no puede ser futura' };
     }
-    
+
     if (nombre === 'Fecha de Nacimiento') {
         const edad = hoy.getFullYear() - fechaObj.getFullYear();
         if (edad < 18 || edad > 100) {
             return { valido: false, mensaje: 'La edad debe estar entre 18 y 100 años' };
         }
     }
-    
+
     return { valido: true, mensaje: '' };
 }
 
 function mostrarErrorCampo(inputId, mensaje) {
     const input = document.getElementById(inputId);
     if (!input) return;
-    
+
     // Eliminar error anterior
     const errorAnterior = input.parentElement.querySelector('.error-mensaje');
     if (errorAnterior) errorAnterior.remove();
-    
+
     // Agregar borde rojo
     input.style.borderColor = '#ef4444';
-    
+
     // Agregar mensaje de error
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-mensaje';
@@ -817,7 +817,7 @@ function mostrarErrorCampo(inputId, mensaje) {
 function limpiarErrorCampo(inputId) {
     const input = document.getElementById(inputId);
     if (!input) return;
-    
+
     input.style.borderColor = '';
     const errorAnterior = input.parentElement.querySelector('.error-mensaje');
     if (errorAnterior) errorAnterior.remove();
@@ -825,7 +825,7 @@ function limpiarErrorCampo(inputId) {
 
 function validarFormulario() {
     let errores = [];
-    
+
     // Validar nombre completo
     const nombre = document.getElementById('nombreCompleto').value.trim();
     if (!nombre || nombre.length < 3) {
@@ -833,7 +833,7 @@ function validarFormulario() {
     } else {
         limpiarErrorCampo('nombreCompleto');
     }
-    
+
     // Validar CUIL
     const cuil = document.getElementById('cuil').value.trim();
     if (cuil) {
@@ -844,7 +844,7 @@ function validarFormulario() {
             limpiarErrorCampo('cuil');
         }
     }
-    
+
     // Validar fecha de nacimiento
     const fechaNac = document.getElementById('fechaNacimiento').value;
     const validacionFecha = validarFecha(fechaNac, 'Fecha de Nacimiento');
@@ -853,12 +853,12 @@ function validarFormulario() {
     } else {
         limpiarErrorCampo('fechaNacimiento');
     }
-    
+
     // Mostrar todos los errores
     errores.forEach(error => {
         mostrarErrorCampo(error.campo, error.mensaje);
     });
-    
+
     return errores.length === 0;
 }
 
@@ -866,66 +866,80 @@ function validarFormulario() {
 
 empleadoForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     // Validar formulario
     if (!validarFormulario()) {
         alert('⚠️ Por favor corrige los errores en el formulario');
         return;
     }
-    
+
     const empleadoData = {
         nombreCompleto: document.getElementById('nombreCompleto').value,
         cuil: document.getElementById('cuil').value,
         fechaNacimiento: document.getElementById('fechaNacimiento').value,
         documento: document.getElementById('documento').value,
-        
+
         estadoCivil: document.getElementById('estadoCivil').value,
         integracionFamiliar: document.getElementById('integracionFamiliar').value,
         escolaridadFamiliar: document.getElementById('escolaridadFamiliar').value,
-        
+
         nivelEducativo: document.getElementById('nivelEducativo').value,
-        
+
         problemasSalud: document.getElementById('problemasSalud').value,
-        
+
         esExtranjero: document.getElementById('esExtranjero').value,
         paisOrigen: document.getElementById('paisOrigen').value,
         fechaEntradaPais: document.getElementById('fechaEntradaPais').value,
         tipoResidencia: document.getElementById('tipoResidencia').value,
         entradasSalidasPais: document.getElementById('entradasSalidasPais').value,
-        
+
         experienciaLaboral: document.getElementById('experienciaLaboral').value,
         fechaIngreso: document.getElementById('fechaIngreso').value,
         puesto: document.getElementById('puesto').value,
-        
+
         antecedentesPenales: document.getElementById('antecedentesPenales').value,
         observacionesAntecedentes: document.getElementById('observacionesAntecedentes').value,
-        
+
         observaciones: document.getElementById('observaciones').value
     };
-    
+
     // Obtener botón de submit y mostrar loading
     const submitBtn = empleadoForm.querySelector('button[type="submit"]');
     const textoOriginal = submitBtn.textContent;
     submitBtn.classList.add('btn-loading');
     submitBtn.disabled = true;
-    
+
     try {
-        const response = await fetch(`${API_URL}/empleados`, {
-            method: 'POST',
+        // Detectar si es edición o creación
+        const editId = empleadoForm.dataset.editId;
+        const isEdit = editId && editId !== '';
+
+        const url = isEdit ? `${API_URL}/empleados/${editId}` : `${API_URL}/empleados`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(empleadoData)
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
-            showToast('success', 'Empleado Registrado', 'El empleado se ha registrado correctamente');
+            showToast('success', isEdit ? 'Empleado Actualizado' : 'Empleado Registrado',
+                isEdit ? 'Los cambios se guardaron correctamente' : 'El empleado se ha registrado correctamente');
+
             empleadoForm.reset();
+            delete empleadoForm.dataset.editId;
+
+            // Restaurar texto del botón
+            submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Registrar Empleado';
+
             // Cambiar a la tab de lista
             document.querySelector('[data-tab="lista"]').click();
         }
     } catch (error) {
-        showToast('error', 'Error', 'No se pudo registrar el empleado');
+        showToast('error', 'Error', 'No se pudo guardar el empleado');
         console.error(error);
     } finally {
         // Restaurar botón
@@ -939,7 +953,7 @@ async function loadEmpleados() {
         const response = await fetch(`${API_URL}/empleados`);
         empleados = await response.json();
         displayEmpleados(empleados);
-        
+
         // Generar notificaciones inteligentes
         generarNotificaciones();
     } catch (error) {
@@ -950,18 +964,18 @@ async function loadEmpleados() {
 
 function displayEmpleados(lista) {
     currentFilteredList = lista;
-    
+
     if (lista.length === 0) {
         empleadosList.innerHTML = '<p class="empty-state">📭 No hay empleados registrados aún.</p>';
         return;
     }
-    
+
     // Calcular paginación
     const totalPages = Math.ceil(lista.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedList = lista.slice(startIndex, endIndex);
-    
+
     empleadosList.innerHTML = `
         <div class="empleados-header">
             <div class="empleados-count">
@@ -1036,11 +1050,11 @@ function generarBotonesPagina(current, total) {
     const maxVisible = 5;
     let start = Math.max(1, current - Math.floor(maxVisible / 2));
     let end = Math.min(total, start + maxVisible - 1);
-    
+
     if (end - start < maxVisible - 1) {
         start = Math.max(1, end - maxVisible + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
         buttons.push(`
             <button class="pagination-page ${i === current ? 'active' : ''}" 
@@ -1049,17 +1063,17 @@ function generarBotonesPagina(current, total) {
             </button>
         `);
     }
-    
+
     return buttons.join('');
 }
 
 function cambiarPagina(page) {
     const totalPages = Math.ceil(currentFilteredList.length / itemsPerPage);
     if (page < 1 || page > totalPages) return;
-    
+
     currentPage = page;
     displayEmpleados(currentFilteredList);
-    
+
     // Scroll suave al inicio de la tabla
     document.querySelector('.empleados-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1074,39 +1088,39 @@ function cambiarItemsPorPagina(value) {
 function aplicarOrdenamiento() {
     const sortValue = document.getElementById('sort-select').value;
     currentSort = sortValue;
-    
+
     if (!sortValue) {
         displayEmpleados(currentFilteredList);
         return;
     }
-    
+
     const [campo, orden] = sortValue.split('-');
     const sorted = [...currentFilteredList];
-    
+
     sorted.sort((a, b) => {
         let valorA, valorB;
-        
-        switch(campo) {
+
+        switch (campo) {
             case 'nombre':
                 valorA = a.nombreCompleto?.toLowerCase() || '';
                 valorB = b.nombreCompleto?.toLowerCase() || '';
                 break;
-                
+
             case 'fecha':
                 valorA = a.laboral?.fechaIngreso ? new Date(a.laboral.fechaIngreso) : new Date(0);
                 valorB = b.laboral?.fechaIngreso ? new Date(b.laboral.fechaIngreso) : new Date(0);
                 break;
-                
+
             case 'salario':
                 valorA = parseFloat(a.laboral?.salario) || 0;
                 valorB = parseFloat(b.laboral?.salario) || 0;
                 break;
-                
+
             case 'area':
                 valorA = a.laboral?.area?.toLowerCase() || '';
                 valorB = b.laboral?.area?.toLowerCase() || '';
                 break;
-                
+
             case 'edad':
                 if (a.fechaNacimiento) {
                     const hoy = new Date();
@@ -1115,7 +1129,7 @@ function aplicarOrdenamiento() {
                 } else {
                     valorA = 0;
                 }
-                
+
                 if (b.fechaNacimiento) {
                     const hoy = new Date();
                     const nacimiento = new Date(b.fechaNacimiento);
@@ -1124,11 +1138,11 @@ function aplicarOrdenamiento() {
                     valorB = 0;
                 }
                 break;
-                
+
             default:
                 return 0;
         }
-        
+
         // Aplicar orden ascendente o descendente
         if (orden === 'asc') {
             if (valorA < valorB) return -1;
@@ -1140,7 +1154,7 @@ function aplicarOrdenamiento() {
             return 0;
         }
     });
-    
+
     currentPage = 1;
     displayEmpleados(sorted);
 }
@@ -1148,7 +1162,7 @@ function aplicarOrdenamiento() {
 // Búsqueda en tiempo real
 searchInput.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase();
-    const filtered = empleados.filter(emp => 
+    const filtered = empleados.filter(emp =>
         emp.nombreCompleto.toLowerCase().includes(query) ||
         emp.cuil.toLowerCase().includes(query) ||
         (emp.documento && emp.documento.toLowerCase().includes(query)) ||
@@ -1164,18 +1178,18 @@ async function eliminarEmpleado(id) {
         alert('⛔ No tiene permisos para eliminar empleados');
         return;
     }
-    
+
     if (!confirm('¿Estás seguro de eliminar este empleado? Esta acción no se puede deshacer.')) {
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_URL}/empleados/${id}`, {
             method: 'DELETE'
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             alert('✅ Empleado eliminado');
             loadEmpleados();
@@ -1198,7 +1212,7 @@ async function verPerfil(id) {
     try {
         const response = await fetch(`${API_URL}/empleados/${id}`);
         const emp = await response.json();
-        
+
         // Funciones auxiliares para formatear
         const dp = emp.datosPersonales || {};
         const dir = emp.direccion || {};
@@ -1208,7 +1222,7 @@ async function verPerfil(id) {
         const inm = emp.inmigracion || {};
         const lab = emp.laboral || {};
         const ant = emp.antecedentes || {};
-        
+
         const perfilHTML = `
             <div class="perfil-header">
                 <h2><i class="fas fa-user-circle"></i> ${escapeHtml(dp.nombreCompleto || emp.nombreCompleto || 'Sin nombre')}</h2>
@@ -1662,17 +1676,28 @@ async function verPerfil(id) {
                 <p>${escapeHtml(emp.observaciones)}</p>
             </div>
             ` : ''}
+            
+            <div class="perfil-actions" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--border-color); display: flex; gap: 1rem; justify-content: flex-end;">
+                ${canEditEmployees() ? `
+                    <button class="btn btn-primary" onclick="editarEmpleado(${id})">
+                        <i class="fas fa-edit"></i> Editar Empleado
+                    </button>
+                ` : ''}
+                <button class="btn btn-secondary" onclick="modalPerfil.style.display='none'">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
         `;
-        
+
         document.getElementById('perfil-content').innerHTML = perfilHTML;
         modalPerfil.style.display = 'block';
-        
+
         // Activar tabs del perfil
         activatePerfilTabs();
-        
+
         // Cargar tickets del empleado
         loadTicketsEmpleado(emp.id);
-        
+
     } catch (error) {
         alert('❌ Error al cargar perfil');
         console.error(error);
@@ -1683,21 +1708,83 @@ async function loadTicketsEmpleado(empleadoId) {
     try {
         const response = await fetch(`${API_URL}/tickets/${empleadoId}`);
         const ticketsEmp = await response.json();
-        
+
         const container = document.getElementById(`tickets-empleado-${empleadoId}`);
-        
+
         if (ticketsEmp.length === 0) {
-            container.innerHTML = '<p>No hay tickets registrados.</p>';
+            container.innerHTML = '<p class="empty-state">📋 No hay tickets registrados para este empleado.</p>';
             return;
         }
-        
-        container.innerHTML = ticketsEmp.map(t => `
-            <div class="ticket-item-small">
-                <strong>${getTipoTicketIcon(t.tipo)} ${escapeHtml(t.tipo)}</strong> - ${formatDate(t.fechaCreacion)}<br>
-                ${escapeHtml(t.descripcion)}
+
+        // Crear timeline de tickets
+        const timelineHTML = `
+            <div class="timeline-tickets">
+                ${ticketsEmp.map(t => `
+                    <div class="timeline-item">
+                        <div class="timeline-marker ${getTimelineMarkerClass(t.estado)}">
+                            ${getTicketTipoIcon(t.tipo)}
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-header">
+                                <h4>${escapeHtml(t.titulo)}</h4>
+                                <div class="timeline-badges">
+                                    ${getTicketEstadoBadge(t.estado)}
+                                    ${getTicketTipoBadge(t.tipo)}
+                                </div>
+                            </div>
+                            
+                            ${t.descripcion ? `<p>${escapeHtml(t.descripcion)}</p>` : ''}
+                            
+                            ${t.fecha_desde && t.fecha_hasta ? `
+                                <div class="timeline-dates">
+                                    <i class="fas fa-calendar"></i>
+                                    ${formatDate(t.fecha_desde)} - ${formatDate(t.fecha_hasta)}
+                                    <span class="timeline-duracion">(${calcularDias(t.fecha_desde, t.fecha_hasta)} días)</span>
+                                </div>
+                            ` : t.fecha_evento ? `
+                                <div class="timeline-dates">
+                                    <i class="fas fa-calendar-day"></i>
+                                    ${formatDate(t.fecha_evento)}
+                                </div>
+                            ` : ''}
+                            
+                            ${t.valor_anterior && t.valor_nuevo ? `
+                                <div class="timeline-cambio">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    <span class="valor-anterior">${escapeHtml(t.valor_anterior)}</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                    <span class="valor-nuevo">${escapeHtml(t.valor_nuevo)}</span>
+                                </div>
+                            ` : ''}
+                            
+                            ${t.observaciones ? `
+                                <div class="timeline-observaciones">
+                                    <i class="fas fa-comment"></i>
+                                    ${escapeHtml(t.observaciones)}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="timeline-footer">
+                                <span><i class="fas fa-user"></i> ${t.creado_por_nombre || 'Sistema'}</span>
+                                <span><i class="fas fa-clock"></i> ${formatDate(t.created_at)}</span>
+                                ${t.aprobado_por_nombre ? `
+                                    <span><i class="fas fa-check-circle"></i> ${t.aprobado_por_nombre}</span>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
             </div>
-        `).join('');
-        
+            
+            <div class="perfil-actions-tickets">
+                <button class="btn btn-primary" onclick="mostrarModalNuevoTicket(${empleadoId})">
+                    <i class="fas fa-plus"></i> Crear Nuevo Ticket
+                </button>
+            </div>
+        `;
+
+        container.innerHTML = timelineHTML;
+
     } catch (error) {
         console.error(error);
     }
@@ -1735,7 +1822,7 @@ modalCloseTicket.addEventListener('click', closeTicketModal);
 
 ticketForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const ticketData = {
         empleadoId: parseInt(document.getElementById('ticket-empleadoId').value),
         tipo: document.getElementById('ticket-tipo').value,
@@ -1743,20 +1830,20 @@ ticketForm.addEventListener('submit', async (e) => {
         fecha: document.getElementById('ticket-fecha').value,
         creadoPor: currentUser.nombre
     };
-    
+
     // Obtener nombre del empleado
     const empleado = empleados.find(e => e.id === ticketData.empleadoId);
     ticketData.empleadoNombre = empleado ? empleado.nombreCompleto : 'Desconocido';
-    
+
     try {
         const response = await fetch(`${API_URL}/tickets`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(ticketData)
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             alert('✅ Ticket creado correctamente');
             closeTicketModal();
@@ -1783,10 +1870,10 @@ function displayTickets(lista) {
         ticketsList.innerHTML = '<p class="empty-state">📭 No hay tickets registrados.</p>';
         return;
     }
-    
+
     // Ordenar por fecha (más reciente primero)
     lista.sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion));
-    
+
     ticketsList.innerHTML = lista.map(t => `
         <div class="ticket-item">
             <div class="ticket-header">
@@ -1818,12 +1905,16 @@ function getTipoTicketIcon(tipo) {
 
 function showLoginScreen() {
     loginScreen.classList.add('active');
+    loginScreen.style.display = 'flex';
     mainScreen.classList.remove('active');
+    mainScreen.style.display = 'none';
 }
 
 function showMainScreen() {
     loginScreen.classList.remove('active');
+    loginScreen.style.display = 'none';
     mainScreen.classList.add('active');
+    mainScreen.style.display = 'flex';
     userNameSpan.textContent = currentUser.nombre;
 }
 
@@ -1833,7 +1924,7 @@ async function loadAlertas() {
     try {
         const response = await fetch(`${API_URL}/empleados`);
         empleados = await response.json();
-        
+
         mostrarAlertasCompletas(empleados);
     } catch (error) {
         console.error('Error al cargar alertas:', error);
@@ -1843,7 +1934,7 @@ async function loadAlertas() {
 function mostrarAlertasCompletas(empleados) {
     const alertasContainer = document.getElementById('alertas-list');
     const alertas = [];
-    
+
     empleados.forEach(emp => {
         // Antecedentes penales
         if (emp.antecedentesPenales === 'si') {
@@ -1857,7 +1948,7 @@ function mostrarAlertasCompletas(empleados) {
                 categoria: 'criticas'
             });
         }
-        
+
         // Problemas de salud
         if (emp.problemasSalud && emp.problemasSalud.trim() !== '') {
             alertas.push({
@@ -1870,7 +1961,7 @@ function mostrarAlertasCompletas(empleados) {
                 categoria: 'salud'
             });
         }
-        
+
         // Residencia temporaria o precaria
         if (emp.tipoResidencia === 'temporaria' || emp.tipoResidencia === 'precaria') {
             alertas.push({
@@ -1883,7 +1974,7 @@ function mostrarAlertasCompletas(empleados) {
                 categoria: 'migratorio'
             });
         }
-        
+
         // Turistas (situación irregular)
         if (emp.tipoResidencia === 'turista') {
             alertas.push({
@@ -1896,7 +1987,7 @@ function mostrarAlertasCompletas(empleados) {
                 categoria: 'criticas,migratorio'
             });
         }
-        
+
         // Sin antecedentes verificados
         if (emp.antecedentesPenales === 'pendiente') {
             alertas.push({
@@ -1910,34 +2001,34 @@ function mostrarAlertasCompletas(empleados) {
             });
         }
     });
-    
+
     // Configurar filtros de alertas
     document.querySelectorAll('.alerta-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.alerta-tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
+
             const filtro = btn.dataset.alerta;
             mostrarAlertasFiltradas(alertas, filtro);
         });
     });
-    
+
     mostrarAlertasFiltradas(alertas, 'todas');
 }
 
 function mostrarAlertasFiltradas(alertas, filtro) {
     const alertasContainer = document.getElementById('alertas-list');
-    
+
     let alertasFiltradas = alertas;
     if (filtro !== 'todas') {
         alertasFiltradas = alertas.filter(a => a.categoria.includes(filtro));
     }
-    
+
     if (alertasFiltradas.length === 0) {
         alertasContainer.innerHTML = '<p class="empty-state"><i class="fas fa-check-circle"></i><br>No hay alertas en esta categoría.</p>';
         return;
     }
-    
+
     alertasContainer.innerHTML = alertasFiltradas.map(a => `
         <div class="alerta-item ${a.tipo}">
             <i class="${a.icono}"></i>
@@ -1958,8 +2049,8 @@ function mostrarAlertasFiltradas(alertas, filtro) {
 function generarReporte(tipo) {
     let filteredData = [];
     let nombreReporte = '';
-    
-    switch(tipo) {
+
+    switch (tipo) {
         case 'general':
             filteredData = empleados;
             nombreReporte = 'Reporte General de Personal';
@@ -1985,12 +2076,12 @@ function generarReporte(tipo) {
             nombreReporte = 'Reporte de Nivel Educativo';
             break;
     }
-    
+
     if (filteredData.length === 0) {
         alert('⚠️ No hay datos para generar este reporte.');
         return;
     }
-    
+
     // Crear tabla HTML para el reporte
     let html = `
         <div style="font-family: Arial; padding: 20px;">
@@ -2031,12 +2122,12 @@ function generarReporte(tipo) {
             </table>
         </div>
     `;
-    
+
     // Abrir en nueva ventana para imprimir
     const ventana = window.open('', '_blank');
     ventana.document.write(html);
     ventana.document.close();
-    
+
     alert('✅ Reporte generado. Use Ctrl+P para imprimir o guardar como PDF.');
 }
 
@@ -2045,21 +2136,21 @@ function exportarExcel() {
         alert('⚠️ No hay datos para exportar.');
         return;
     }
-    
+
     // Crear CSV
     let csv = 'Nombre,CUIL,Fecha Nacimiento,Puesto,Es Extranjero,País Origen,Tipo Residencia,Nivel Educativo,Antecedentes,Fecha Ingreso\n';
-    
+
     empleados.forEach(emp => {
         csv += `"${emp.nombreCompleto}","${emp.cuil}","${emp.fechaNacimiento || ''}","${emp.puesto || ''}","${emp.esExtranjero}","${emp.paisOrigen || ''}","${emp.tipoResidencia || ''}","${emp.nivelEducativo || ''}","${emp.antecedentesPenales}","${emp.fechaIngreso || ''}"\n`;
     });
-    
+
     // Descargar
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `empleados_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-    
+
     alert('✅ Archivo exportado correctamente.');
 }
 
@@ -2068,13 +2159,13 @@ function exportarExcel() {
 function activatePerfilTabs() {
     const tabs = document.querySelectorAll('.perfil-tab');
     const contents = document.querySelectorAll('.perfil-tab-content');
-    
+
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             // Remover active de todos
             tabs.forEach(t => t.classList.remove('active'));
             contents.forEach(c => c.classList.remove('active'));
-            
+
             // Activar el seleccionado
             tab.classList.add('active');
             const tabName = tab.dataset.tab;
@@ -2154,7 +2245,7 @@ function populateFilterDropdowns() {
         const laboral = e.laboral || {};
         return laboral.puesto || e.puesto;
     }).filter(p => p))];
-    
+
     const puestoSelect = document.getElementById('filter-puesto');
     puestoSelect.innerHTML = '<option value="">Todos los puestos</option>' +
         puestos.map(p => `<option value="${p}">${p}</option>`).join('');
@@ -2176,11 +2267,11 @@ function applyAdvancedFilters() {
         familia: document.getElementById('filter-familia')?.value || '',
         documentos: document.getElementById('filter-documentos')?.value || ''
     };
-    
+
     advancedFiltersActive = filters;
-    
+
     let filtered = [...empleados];
-    
+
     // Aplicar filtros
     if (filters.puesto) {
         filtered = filtered.filter(e => {
@@ -2188,21 +2279,21 @@ function applyAdvancedFilters() {
             return (laboral.puesto || e.puesto) === filters.puesto;
         });
     }
-    
+
     if (filters.area) {
         filtered = filtered.filter(e => {
             const laboral = e.laboral || {};
             return (laboral.area || e.area) === filters.area;
         });
     }
-    
+
     if (filters.nacionalidad) {
         filtered = filtered.filter(e => {
             const dp = e.datosPersonales || {};
             return (dp.nacionalidad || e.paisOrigen) === filters.nacionalidad;
         });
     }
-    
+
     if (filters.educacion) {
         filtered = filtered.filter(e => {
             const edu = e.educacion || {};
@@ -2210,7 +2301,7 @@ function applyAdvancedFilters() {
             return nivel.toLowerCase().includes(filters.educacion.toLowerCase());
         });
     }
-    
+
     if (filters.salud === 'sin-problemas') {
         filtered = filtered.filter(e => {
             const salud = e.salud || {};
@@ -2224,7 +2315,7 @@ function applyAdvancedFilters() {
             return problemas && problemas !== 'Ninguno' && problemas !== '';
         });
     }
-    
+
     // Filtro de estado activo/inactivo
     if (filters.estado) {
         filtered = filtered.filter(e => {
@@ -2233,22 +2324,22 @@ function applyAdvancedFilters() {
             return estado.toLowerCase() === filters.estado;
         });
     }
-    
+
     // Filtro de rango de salario
     if (filters.salario) {
         filtered = filtered.filter(e => {
             const laboral = e.laboral || {};
             const salario = parseFloat(laboral.salario || e.salario || 0);
-            
+
             if (filters.salario === '200000+') {
                 return salario > 200000;
             }
-            
+
             const [min, max] = filters.salario.split('-').map(v => parseFloat(v));
             return salario >= min && salario <= max;
         });
     }
-    
+
     if (filters.antecedentes) {
         filtered = filtered.filter(e => {
             const ant = e.antecedentes || {};
@@ -2256,7 +2347,7 @@ function applyAdvancedFilters() {
             return filters.antecedentes === 'si' ? tiene : !tiene;
         });
     }
-    
+
     if (filters.edadMin || filters.edadMax) {
         filtered = filtered.filter(e => {
             const dp = e.datosPersonales || {};
@@ -2267,23 +2358,23 @@ function applyAdvancedFilters() {
             return true;
         });
     }
-    
+
     if (filters.antiguedad) {
         filtered = filtered.filter(e => {
             const laboral = e.laboral || {};
             const fechaIngreso = laboral.fechaIngreso || e.fechaIngreso;
             if (!fechaIngreso) return false;
-            
+
             const años = calcularAntiguedad(fechaIngreso);
             const [min, max] = filters.antiguedad.split('-');
-            
+
             if (filters.antiguedad === '5+') {
                 return años >= 5;
             }
             return años >= parseInt(min) && años < parseInt(max);
         });
     }
-    
+
     if (filters.familia) {
         filtered = filtered.filter(e => {
             const familiares = e.familiares || [];
@@ -2291,7 +2382,7 @@ function applyAdvancedFilters() {
             return filters.familia === 'si' ? tieneACargo : !tieneACargo;
         });
     }
-    
+
     if (filters.documentos) {
         filtered = filtered.filter(e => {
             const docs = e.documentos || [];
@@ -2309,7 +2400,7 @@ function applyAdvancedFilters() {
             return true;
         });
     }
-    
+
     displayEmpleados(filtered);
     updateActiveFiltersDisplay();
     updateFilterResults(filtered.length);
@@ -2334,7 +2425,7 @@ function calcularDiasHastaVencimiento(fechaVencimiento) {
 function updateActiveFiltersDisplay() {
     const container = document.getElementById('active-filters');
     const chips = [];
-    
+
     Object.entries(advancedFiltersActive).forEach(([key, value]) => {
         if (value) {
             const labels = {
@@ -2350,7 +2441,7 @@ function updateActiveFiltersDisplay() {
                 familia: 'Familia',
                 documentos: 'Documentos'
             };
-            
+
             chips.push(`
                 <div class="filter-chip">
                     <span>${labels[key]}: ${value}</span>
@@ -2359,7 +2450,7 @@ function updateActiveFiltersDisplay() {
             `);
         }
     });
-    
+
     if (chips.length > 0) {
         container.style.display = 'flex';
         container.innerHTML = chips.join('');
@@ -2395,7 +2486,7 @@ function clearAllFilters() {
     document.getElementById('filter-antiguedad').value = '';
     document.getElementById('filter-familia').value = '';
     document.getElementById('filter-documentos').value = '';
-    
+
     advancedFiltersActive = {};
     displayEmpleados(empleados);
     updateActiveFiltersDisplay();
@@ -2415,18 +2506,18 @@ let notifFilter = 'all';
 function generarNotificaciones() {
     notificaciones = [];
     const hoy = new Date();
-    
+
     empleados.forEach(emp => {
         const datos = emp.datosPersonales || emp;
         const documentos = emp.documentos || [];
         const salud = emp.salud || {};
         const inmigracion = emp.inmigracion || {};
-        
+
         // 1. Documentos vencidos o por vencer
         documentos.forEach(doc => {
             if (doc.fechaVencimiento) {
                 const diasHasta = calcularDiasHastaVencimiento(doc.fechaVencimiento);
-                
+
                 if (diasHasta < 0) {
                     notificaciones.push({
                         id: `doc-venc-${emp.id}-${doc.tipo}`,
@@ -2474,12 +2565,12 @@ function generarNotificaciones() {
                 }
             }
         });
-        
+
         // 2. Exámenes médicos vencidos
         if (salud.ultimoExamen) {
             const fechaExamen = new Date(salud.ultimoExamen);
             const mesesDesde = Math.floor((hoy - fechaExamen) / (1000 * 60 * 60 * 24 * 30));
-            
+
             if (mesesDesde > 12) {
                 notificaciones.push({
                     id: `salud-${emp.id}`,
@@ -2493,7 +2584,7 @@ function generarNotificaciones() {
                 });
             }
         }
-        
+
         // 3. Problemas de salud activos
         if (salud.problemasSalud === 'si' && salud.descripcionProblemas) {
             notificaciones.push({
@@ -2507,11 +2598,11 @@ function generarNotificaciones() {
                 leida: false
             });
         }
-        
+
         // 4. Residencia por vencer (extranjeros)
         if (datos.nacionalidad && datos.nacionalidad !== 'Argentina' && inmigracion.residenciaVencimiento) {
             const diasHasta = calcularDiasHastaVencimiento(inmigracion.residenciaVencimiento);
-            
+
             if (diasHasta < 0) {
                 notificaciones.push({
                     id: `res-venc-${emp.id}`,
@@ -2536,13 +2627,13 @@ function generarNotificaciones() {
                 });
             }
         }
-        
+
         // 5. Cumpleaños próximos (7 días)
         if (datos.fechaNacimiento) {
             const cumple = new Date(datos.fechaNacimiento);
             const cumpleEsteAno = new Date(hoy.getFullYear(), cumple.getMonth(), cumple.getDate());
             const diasHastaCumple = Math.ceil((cumpleEsteAno - hoy) / (1000 * 60 * 60 * 24));
-            
+
             if (diasHastaCumple >= 0 && diasHastaCumple <= 7) {
                 notificaciones.push({
                     id: `cumple-${emp.id}`,
@@ -2556,14 +2647,14 @@ function generarNotificaciones() {
                 });
             }
         }
-        
+
         // 6. Aniversario laboral próximo
         if (emp.laboral && emp.laboral.fechaIngreso) {
             const ingreso = new Date(emp.laboral.fechaIngreso);
             const aniversario = new Date(hoy.getFullYear(), ingreso.getMonth(), ingreso.getDate());
             const diasHastaAniv = Math.ceil((aniversario - hoy) / (1000 * 60 * 60 * 24));
             const anos = hoy.getFullYear() - ingreso.getFullYear();
-            
+
             if (diasHastaAniv >= 0 && diasHastaAniv <= 7 && anos > 0) {
                 notificaciones.push({
                     id: `aniv-${emp.id}`,
@@ -2578,10 +2669,10 @@ function generarNotificaciones() {
             }
         }
     });
-    
+
     // Ordenar por fecha (más urgentes primero)
     notificaciones.sort((a, b) => a.fecha - b.fecha);
-    
+
     actualizarBadgeNotificaciones();
     mostrarNotificaciones();
 }
@@ -2589,23 +2680,23 @@ function generarNotificaciones() {
 function actualizarBadgeNotificaciones() {
     const badge = document.getElementById('notif-badge');
     const noLeidas = notificaciones.filter(n => !n.leida).length;
-    
+
     if (noLeidas > 0) {
         badge.textContent = noLeidas;
         badge.style.display = 'inline-block';
     } else {
         badge.style.display = 'none';
     }
-    
+
     // Actualizar contadores por tipo
     const critical = notificaciones.filter(n => n.tipo === 'critical').length;
     const warning = notificaciones.filter(n => n.tipo === 'warning').length;
     const info = notificaciones.filter(n => n.tipo === 'info').length;
-    
+
     const criticalCount = document.getElementById('notif-critical-count');
     const warningCount = document.getElementById('notif-warning-count');
     const infoCount = document.getElementById('notif-info-count');
-    
+
     if (criticalCount) criticalCount.textContent = critical;
     if (warningCount) warningCount.textContent = warning;
     if (infoCount) infoCount.textContent = info;
@@ -2614,11 +2705,11 @@ function actualizarBadgeNotificaciones() {
 function mostrarNotificaciones() {
     const lista = document.getElementById('notificaciones-list');
     if (!lista) return;
-    
-    const notifFiltradas = notifFilter === 'all' 
-        ? notificaciones 
+
+    const notifFiltradas = notifFilter === 'all'
+        ? notificaciones
         : notificaciones.filter(n => n.tipo === notifFilter);
-    
+
     if (notifFiltradas.length === 0) {
         lista.innerHTML = `
             <div class="notif-empty">
@@ -2628,7 +2719,7 @@ function mostrarNotificaciones() {
         `;
         return;
     }
-    
+
     lista.innerHTML = notifFiltradas.map(n => `
         <div class="notif-item ${n.tipo} ${n.leida ? 'leida' : ''}" onclick="verEmpleadoDesdeNotif('${n.empleadoId}')">
             <div class="notif-icon">
@@ -2648,12 +2739,12 @@ function mostrarNotificaciones() {
 
 function filtrarNotificaciones(tipo) {
     notifFilter = tipo;
-    
+
     // Actualizar botones
     document.querySelectorAll('.notif-filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.filter === tipo);
     });
-    
+
     mostrarNotificaciones();
 }
 
@@ -2694,40 +2785,40 @@ async function exportarAPDF() {
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
+
         // Configuración
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         let yPos = 20;
-        
+
         // Logo y encabezado
         doc.setFillColor(76, 175, 80);
         doc.rect(0, 0, pageWidth, 35, 'F');
-        
+
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
-        doc.text('🌱 Sistema RRHH', pageWidth / 2, 15, { align: 'center' });
-        
+        doc.text('Verapp', pageWidth / 2, 15, { align: 'center' });
+
         doc.setFontSize(14);
         doc.setFont('helvetica', 'normal');
-        doc.text('Empresas Hortícolas', pageWidth / 2, 25, { align: 'center' });
-        
+        doc.text('Sistema para Gestión de Personas', pageWidth / 2, 25, { align: 'center' });
+
         // Fecha de generación
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(10);
         yPos = 45;
         doc.text(`Reporte generado: ${new Date().toLocaleDateString('es-AR')}`, 15, yPos);
         doc.text(`Total empleados: ${empleados.length}`, pageWidth - 15, yPos, { align: 'right' });
-        
+
         yPos += 10;
-        
+
         // Tabla de empleados
         const tableData = empleados.map(emp => {
             const datos = emp.datosPersonales || emp;
             const edad = calcularEdad(datos.fechaNacimiento);
             const antiguedad = emp.laboral ? calcularAntiguedad(emp.laboral.fechaIngreso) : 0;
-            
+
             return [
                 datos.nombre + ' ' + datos.apellido,
                 datos.dni || datos.cuil || '-',
@@ -2738,7 +2829,7 @@ async function exportarAPDF() {
                 datos.estadoCivil || '-'
             ];
         });
-        
+
         doc.autoTable({
             startY: yPos,
             head: [['Nombre', 'DNI/CUIL', 'Nacionalidad', 'Edad', 'Puesto', 'Antigüedad', 'Estado Civil']],
@@ -2759,7 +2850,7 @@ async function exportarAPDF() {
             },
             margin: { left: 15, right: 15 }
         });
-        
+
         // Pie de página
         const totalPages = doc.internal.pages.length - 1;
         for (let i = 1; i <= totalPages; i++) {
@@ -2773,10 +2864,10 @@ async function exportarAPDF() {
                 { align: 'center' }
             );
         }
-        
+
         // Guardar
         doc.save(`empleados_${new Date().toISOString().split('T')[0]}.pdf`);
-        
+
         alert('✅ PDF exportado exitosamente');
     } catch (error) {
         console.error('Error al exportar PDF:', error);
@@ -2808,10 +2899,10 @@ function exportarAExcelMejorado() {
 
         // Crear workbook
         const wb = XLSX.utils.book_new();
-        
+
         // ===== HOJA 1: RESUMEN EJECUTIVO =====
         const resumenData = [
-            ['SISTEMA RRHH - EMPRESAS HORTÍCOLAS'],
+            ['VERAPP - SISTEMA PARA GESTIÓN DE PERSONAS'],
             ['Reporte Generado:', new Date().toLocaleDateString('es-AR')],
             [''],
             ['RESUMEN GENERAL'],
@@ -2842,10 +2933,10 @@ function exportarAExcelMejorado() {
         });
 
         const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
-        
+
         // Aplicar estilos al resumen
         wsResumen['!cols'] = [{ width: 30 }, { width: 20 }];
-        
+
         XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen Ejecutivo');
 
         // ===== HOJA 2: EMPLEADOS - DATOS PERSONALES =====
@@ -2853,7 +2944,7 @@ function exportarAExcelMejorado() {
             const datos = emp.datosPersonales || emp;
             const edad = calcularEdad(datos.fechaNacimiento);
             const antiguedad = emp.laboral ? calcularAntiguedad(emp.laboral.fechaIngreso) : 0;
-            
+
             return {
                 'ID': emp.id,
                 'Nombre Completo': `${datos.nombre} ${datos.apellido}`,
@@ -2880,7 +2971,7 @@ function exportarAExcelMejorado() {
         });
 
         const wsEmpleados = XLSX.utils.json_to_sheet(empleadosData);
-        
+
         // Anchos de columna
         wsEmpleados['!cols'] = [
             { width: 8 }, { width: 25 }, { width: 12 }, { width: 15 }, { width: 15 },
@@ -2889,7 +2980,7 @@ function exportarAExcelMejorado() {
             { width: 20 }, { width: 15 }, { width: 15 }, { width: 12 }, { width: 15 },
             { width: 12 }
         ];
-        
+
         XLSX.utils.book_append_sheet(wb, wsEmpleados, 'Empleados');
 
         // ===== HOJA 3: FAMILIARES =====
@@ -2967,7 +3058,7 @@ function exportarAExcelMejorado() {
         const saludData = empleados.map(emp => {
             const datos = emp.datosPersonales || emp;
             const salud = emp.salud || {};
-            
+
             return {
                 'Empleado': `${datos.nombre} ${datos.apellido}`,
                 'DNI': datos.dni || '-',
@@ -2994,7 +3085,7 @@ function exportarAExcelMejorado() {
         const educacionData = empleados.map(emp => {
             const datos = emp.datosPersonales || emp;
             const edu = emp.educacion || {};
-            
+
             return {
                 'Empleado': `${datos.nombre} ${datos.apellido}`,
                 'DNI': datos.dni || '-',
@@ -3054,9 +3145,9 @@ function exportarAExcelMejorado() {
         // Guardar archivo
         const fecha = new Date().toISOString().split('T')[0];
         XLSX.writeFile(wb, `RRHH_Completo_${fecha}.xlsx`);
-        
+
         alert(`✅ Excel exportado exitosamente\n\n📊 Hojas incluidas:\n- Resumen Ejecutivo\n- Empleados (${empleados.length})\n- Familiares (${familiaresData.length})\n- Documentos (${documentosData.length})\n- Salud\n- Educación${inmigracionData.length > 0 ? '\n- Inmigración (' + inmigracionData.length + ')' : ''}`);
-        
+
     } catch (error) {
         console.error('Error al exportar Excel:', error);
         alert('❌ Error al exportar Excel: ' + error.message);
@@ -3064,11 +3155,11 @@ function exportarAExcelMejorado() {
 }
 
 // ===== VALIDACIÓN EN TIEMPO REAL =====
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Validación en tiempo real para CUIL
     const cuilInput = document.getElementById('cuil');
     if (cuilInput) {
-        cuilInput.addEventListener('blur', function() {
+        cuilInput.addEventListener('blur', function () {
             const cuil = this.value.trim();
             if (cuil) {
                 const validacion = validarCUIL(cuil);
@@ -3079,9 +3170,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-        
+
         // Auto-formato CUIL mientras escribe
-        cuilInput.addEventListener('input', function(e) {
+        cuilInput.addEventListener('input', function (e) {
             let valor = this.value.replace(/\D/g, ''); // Solo números
             if (valor.length > 2 && valor.length <= 10) {
                 valor = valor.slice(0, 2) + '-' + valor.slice(2);
@@ -3094,11 +3185,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Validación para nombre
     const nombreInput = document.getElementById('nombreCompleto');
     if (nombreInput) {
-        nombreInput.addEventListener('blur', function() {
+        nombreInput.addEventListener('blur', function () {
             const nombre = this.value.trim();
             if (!nombre || nombre.length < 3) {
                 mostrarErrorCampo('nombreCompleto', 'El nombre debe tener al menos 3 caracteres');
@@ -3107,11 +3198,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Validación para fecha de nacimiento
     const fechaNacInput = document.getElementById('fechaNacimiento');
     if (fechaNacInput) {
-        fechaNacInput.addEventListener('blur', function() {
+        fechaNacInput.addEventListener('blur', function () {
             const fecha = this.value;
             const validacion = validarFecha(fecha, 'Fecha de Nacimiento');
             if (!validacion.valido) {
@@ -3140,11 +3231,11 @@ function exportarBackup() {
                 }
             }
         };
-        
+
         const json = JSON.stringify(backup, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = `backup_rrhh_${new Date().toISOString().split('T')[0]}.json`;
@@ -3152,7 +3243,7 @@ function exportarBackup() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         alert(`✅ Backup exportado correctamente\n\n📦 Contenido:\n- ${empleados.length} empleados\n- ${tickets.length} tickets\n- Configuración del sistema`);
     } catch (error) {
         console.error('Error al exportar backup:', error);
@@ -3163,37 +3254,37 @@ function exportarBackup() {
 function importarBackup(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     if (!confirm('⚠️ ADVERTENCIA: Importar un backup sobrescribirá todos los datos actuales.\n\n¿Desea continuar?')) {
         event.target.value = '';
         return;
     }
-    
+
     const reader = new FileReader();
-    
-    reader.onload = async function(e) {
+
+    reader.onload = async function (e) {
         try {
             const backup = JSON.parse(e.target.result);
-            
+
             // Validar estructura del backup
             if (!backup.version || !backup.datos || !backup.datos.empleados) {
                 throw new Error('Archivo de backup inválido o corrupto');
             }
-            
+
             // Confirmar detalles del backup
             const mensaje = `📦 Información del Backup:\n\n` +
-                          `Versión: ${backup.version}\n` +
-                          `Fecha: ${new Date(backup.fecha).toLocaleString()}\n` +
-                          `Usuario: ${backup.usuario}\n` +
-                          `Empleados: ${backup.datos.empleados.length}\n` +
-                          `Tickets: ${backup.datos.tickets?.length || 0}\n\n` +
-                          `¿Confirma la importación?`;
-            
+                `Versión: ${backup.version}\n` +
+                `Fecha: ${new Date(backup.fecha).toLocaleString()}\n` +
+                `Usuario: ${backup.usuario}\n` +
+                `Empleados: ${backup.datos.empleados.length}\n` +
+                `Tickets: ${backup.datos.tickets?.length || 0}\n\n` +
+                `¿Confirma la importación?`;
+
             if (!confirm(mensaje)) {
                 event.target.value = '';
                 return;
             }
-            
+
             // Importar empleados
             for (const empleado of backup.datos.empleados) {
                 await fetch(`${API_URL}/empleados`, {
@@ -3202,7 +3293,7 @@ function importarBackup(event) {
                     body: JSON.stringify(empleado)
                 });
             }
-            
+
             // Importar tickets si existen
             if (backup.datos.tickets && backup.datos.tickets.length > 0) {
                 for (const ticket of backup.datos.tickets) {
@@ -3213,7 +3304,7 @@ function importarBackup(event) {
                     });
                 }
             }
-            
+
             // Aplicar configuración si existe
             if (backup.datos.configuracion) {
                 if (backup.datos.configuracion.paginacion) {
@@ -3221,28 +3312,28 @@ function importarBackup(event) {
                     document.getElementById('items-per-page').value = itemsPerPage;
                 }
             }
-            
+
             alert(`✅ Backup importado correctamente\n\n📥 Datos restaurados:\n- ${backup.datos.empleados.length} empleados\n- ${backup.datos.tickets?.length || 0} tickets`);
-            
+
             // Recargar datos
             await loadEmpleados();
             await loadTickets();
-            
+
             // Limpiar input file
             event.target.value = '';
-            
+
         } catch (error) {
             console.error('Error al importar backup:', error);
             alert('❌ Error al importar backup: ' + error.message);
             event.target.value = '';
         }
     };
-    
-    reader.onerror = function() {
+
+    reader.onerror = function () {
         alert('❌ Error al leer el archivo');
         event.target.value = '';
     };
-    
+
     reader.readAsText(file);
 }
 
@@ -3257,7 +3348,7 @@ function toggleDarkMode() {
 function applyTheme() {
     const themeToggle = document.getElementById('theme-toggle');
     const icon = themeToggle?.querySelector('i');
-    
+
     if (darkMode) {
         document.body.classList.add('dark-mode');
         if (icon) {
@@ -3276,10 +3367,10 @@ function applyTheme() {
 }
 
 // Event listener para toggle de tema
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Aplicar tema guardado
     applyTheme();
-    
+
     // Agregar evento al botón
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
@@ -3289,3 +3380,749 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Inicializar
 showLoginScreen();
+// ===== SISTEMA DE TICKETS =====
+
+// Cargar todos los tickets
+async function loadAllTickets() {
+    try {
+        const response = await fetch(`${API_URL}/tickets`);
+        const data = await response.json();
+        tickets = data;
+
+        // Actualizar estadísticas
+        actualizarEstadisticasTickets();
+
+        // Mostrar tickets
+        renderTicketsList(tickets);
+
+        // Cargar empleados ausentes
+        loadEmpleadosAusentes();
+    } catch (error) {
+        console.error('Error al cargar tickets:', error);
+        showToast('Error al cargar tickets', 'error');
+    }
+}
+
+// Actualizar estadísticas de tickets
+function actualizarEstadisticasTickets() {
+    const pendientes = tickets.filter(t => t.estado === 'pendiente').length;
+    const aprobados = tickets.filter(t => t.estado === 'aprobado').length;
+    const enProceso = tickets.filter(t => t.estado === 'en_proceso').length;
+
+    document.getElementById('stat-tickets-pendientes').textContent = pendientes;
+    document.getElementById('stat-tickets-aprobados').textContent = aprobados;
+    document.getElementById('stat-tickets-proceso').textContent = enProceso;
+}
+
+// Renderizar lista de tickets
+function renderTicketsList(ticketsData) {
+    const container = document.getElementById('tickets-list');
+
+    if (!ticketsData || ticketsData.length === 0) {
+        container.innerHTML = '<p class="empty-state">📋 No hay tickets registrados</p>';
+        return;
+    }
+
+    const ticketsHTML = ticketsData.map(ticket => `
+        <div class="ticket-card" data-ticket-id="${ticket.id}">
+            <div class="ticket-header">
+                <div class="ticket-info">
+                    ${getTicketTipoIcon(ticket.tipo)}
+                    <div>
+                        <h4>${ticket.titulo}</h4>
+                        <p class="ticket-empleado">${ticket.empleado_nombre || 'Empleado'} ${ticket.puesto ? `- ${ticket.puesto}` : ''}</p>
+                    </div>
+                </div>
+                <div class="ticket-badges">
+                    ${getTicketEstadoBadge(ticket.estado)}
+                    ${getTicketTipoBadge(ticket.tipo)}
+                </div>
+            </div>
+            
+            <div class="ticket-body">
+                ${ticket.descripcion ? `<p>${ticket.descripcion}</p>` : ''}
+                
+                ${ticket.fecha_desde && ticket.fecha_hasta ? `
+                    <p class="ticket-fecha">
+                        <i class="fas fa-calendar"></i>
+                        ${formatDate(ticket.fecha_desde)} - ${formatDate(ticket.fecha_hasta)}
+                        <span class="ticket-duracion">(${calcularDias(ticket.fecha_desde, ticket.fecha_hasta)} días)</span>
+                    </p>
+                ` : ''}
+                
+                ${ticket.fecha_evento ? `
+                    <p class="ticket-fecha">
+                        <i class="fas fa-calendar-day"></i>
+                        ${formatDate(ticket.fecha_evento)}
+                    </p>
+                ` : ''}
+                
+                ${ticket.valor_anterior && ticket.valor_nuevo ? `
+                    <p class="ticket-cambio">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span class="valor-anterior">${ticket.valor_anterior}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="valor-nuevo">${ticket.valor_nuevo}</span>
+                    </p>
+                ` : ''}
+            </div>
+            
+            <div class="ticket-footer">
+                <div class="ticket-meta">
+                    <span><i class="fas fa-user"></i> ${ticket.creado_por_nombre || 'Sistema'}</span>
+                    <span><i class="fas fa-clock"></i> ${formatDate(ticket.created_at)}</span>
+                </div>
+                <div class="ticket-actions">
+                    <button class="btn-icon" onclick="verDetalleTicket(${ticket.id})" title="Ver detalles">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    ${ticket.estado === 'pendiente' && canApproveTickets() ? `
+                        <button class="btn-icon btn-success" onclick="aprobarTicket(${ticket.id})" title="Aprobar">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn-icon btn-danger" onclick="rechazarTicket(${ticket.id})" title="Rechazar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    ` : ''}
+                    ${canEditTickets() ? `
+                        <button class="btn-icon" onclick="editarTicket(${ticket.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-danger" onclick="eliminarTicket(${ticket.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = ticketsHTML;
+}
+
+// Obtener ícono según tipo de ticket
+function getTicketTipoIcon(tipo) {
+    const icons = {
+        'vacaciones': '🏖️',
+        'viaje': '✈️',
+        'licencia_medica': '🏥',
+        'licencia_maternidad': '👶',
+        'permiso': '📋',
+        'cambio_puesto': '📈',
+        'cambio_area': '🏢',
+        'cambio_salario': '💰',
+        'desvinculacion': '🚪',
+        'reincorporacion': '↩️',
+        'cambio_personal': '👨‍👩‍👧',
+        'capacitacion': '📚',
+        'reconocimiento': '🏆',
+        'amonestacion': '⚠️',
+        'suspension': '⚠️',
+        'otro': '📝'
+    };
+    return `<span class="ticket-icon">${icons[tipo] || '📋'}</span>`;
+}
+
+// Obtener badge de estado
+function getTicketEstadoBadge(estado) {
+    const badges = {
+        'pendiente': '<span class="badge badge-warning">⏳ Pendiente</span>',
+        'aprobado': '<span class="badge badge-success">✅ Aprobado</span>',
+        'rechazado': '<span class="badge badge-danger">❌ Rechazado</span>',
+        'en_proceso': '<span class="badge badge-info">🔄 En Proceso</span>',
+        'completado': '<span class="badge badge-success">✔️ Completado</span>',
+        'cancelado': '<span class="badge badge-secondary">🚫 Cancelado</span>'
+    };
+    return badges[estado] || '<span class="badge">Estado</span>';
+}
+
+// Obtener badge de tipo
+function getTicketTipoBadge(tipo) {
+    const nombres = {
+        'vacaciones': 'Vacaciones',
+        'viaje': 'Viaje',
+        'licencia_medica': 'Licencia Médica',
+        'licencia_maternidad': 'Maternidad/Paternidad',
+        'permiso': 'Permiso',
+        'cambio_puesto': 'Cambio Puesto',
+        'cambio_area': 'Cambio Área',
+        'cambio_salario': 'Cambio Salario',
+        'desvinculacion': 'Desvinculación',
+        'reincorporacion': 'Reincorporación',
+        'cambio_personal': 'Cambio Personal',
+        'capacitacion': 'Capacitación',
+        'reconocimiento': 'Reconocimiento',
+        'amonestacion': 'Amonestación',
+        'suspension': 'Suspensión',
+        'otro': 'Otro'
+    };
+    return `<span class="badge badge-type">${nombres[tipo] || tipo}</span>`;
+}
+
+// Calcular días entre fechas
+function calcularDias(fechaInicio, fechaFin) {
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+    const diferencia = fin - inicio;
+    return Math.ceil(diferencia / (1000 * 60 * 60 * 24)) + 1;
+}
+
+// Obtener clase CSS para el marker del timeline
+function getTimelineMarkerClass(estado) {
+    return `estado-${estado}`;
+}
+
+// Mostrar modal para nuevo ticket
+async function mostrarModalNuevoTicket(empleadoId = null) {
+    // Cargar empleados en el select
+    await cargarEmpleadosEnSelect();
+
+    // Limpiar formulario
+    document.getElementById('ticket-form').reset();
+    document.getElementById('ticket-id').value = '';
+    document.getElementById('ticket-modal-title').textContent = '📋 Crear Nuevo Ticket';
+
+    // Si viene un empleado específico, pre-seleccionarlo
+    if (empleadoId) {
+        document.getElementById('ticket-empleado-select').value = empleadoId;
+        document.getElementById('ticket-empleado-select').disabled = true;
+    } else {
+        document.getElementById('ticket-empleado-select').disabled = false;
+    }
+
+    // Mostrar modal
+    document.getElementById('modal-ticket').classList.add('active');
+}
+
+// Cargar empleados en select
+async function cargarEmpleadosEnSelect() {
+    try {
+        if (empleados.length === 0) {
+            await loadEmpleados();
+        }
+
+        const select = document.getElementById('ticket-empleado-select');
+        select.innerHTML = '<option value="">Seleccionar empleado...</option>' +
+            empleados.map(emp =>
+                `<option value="${emp.id}">${emp.nombre} ${emp.apellido} - ${emp.puesto || 'Sin puesto'}</option>`
+            ).join('');
+    } catch (error) {
+        console.error('Error al cargar empleados:', error);
+    }
+}
+
+// Adaptar formulario según tipo de ticket
+function adaptarFormularioTicket() {
+    const tipo = document.getElementById('ticket-tipo').value;
+
+    // Ocultar todos los campos especiales
+    document.getElementById('ticket-campos-periodo').style.display = 'none';
+    document.getElementById('ticket-campos-evento').style.display = 'none';
+    document.getElementById('ticket-campos-cambio').style.display = 'none';
+
+    // Mostrar campos según tipo
+    const tiposConPeriodo = ['vacaciones', 'viaje', 'licencia_medica', 'licencia_maternidad', 'permiso', 'suspension', 'capacitacion'];
+    const tiposConEvento = ['desvinculacion', 'reincorporacion', 'cambio_personal', 'reconocimiento', 'amonestacion'];
+    const tiposConCambio = ['cambio_puesto', 'cambio_area', 'cambio_salario'];
+
+    if (tiposConPeriodo.includes(tipo)) {
+        document.getElementById('ticket-campos-periodo').style.display = 'block';
+    } else if (tiposConEvento.includes(tipo)) {
+        document.getElementById('ticket-campos-evento').style.display = 'block';
+    } else if (tiposConCambio.includes(tipo)) {
+        document.getElementById('ticket-campos-evento').style.display = 'block';
+        document.getElementById('ticket-campos-cambio').style.display = 'block';
+    }
+}
+
+// Cerrar modal de ticket
+function closeTicketModal() {
+    document.getElementById('modal-ticket').classList.remove('active');
+    document.getElementById('ticket-form').reset();
+}
+
+// Guardar ticket (crear o editar)
+if (document.getElementById('ticket-form')) {
+    document.getElementById('ticket-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const ticketId = document.getElementById('ticket-id').value;
+        const empleadoId = document.getElementById('ticket-empleado-select').value;
+        const tipo = document.getElementById('ticket-tipo').value;
+        const titulo = document.getElementById('ticket-titulo').value;
+        const descripcion = document.getElementById('ticket-descripcion').value;
+        const observaciones = document.getElementById('ticket-observaciones').value;
+        const estado = document.getElementById('ticket-estado').value;
+
+        const data = {
+            empleadoId,
+            tipo,
+            titulo,
+            descripcion,
+            observaciones,
+            estado,
+            creadoPor: currentUser.id
+        };
+
+        // Agregar campos según tipo
+        const tiposConPeriodo = ['vacaciones', 'viaje', 'licencia_medica', 'licencia_maternidad', 'permiso', 'suspension', 'capacitacion'];
+        if (tiposConPeriodo.includes(tipo)) {
+            data.fechaDesde = document.getElementById('ticket-fecha-desde').value;
+            data.fechaHasta = document.getElementById('ticket-fecha-hasta').value;
+        } else {
+            data.fechaEvento = document.getElementById('ticket-fecha-evento').value;
+        }
+
+        const tiposConCambio = ['cambio_puesto', 'cambio_area', 'cambio_salario'];
+        if (tiposConCambio.includes(tipo)) {
+            data.valorAnterior = document.getElementById('ticket-valor-anterior').value;
+            data.valorNuevo = document.getElementById('ticket-valor-nuevo').value;
+            data.actualizaEmpleado = document.getElementById('ticket-actualiza-empleado').checked;
+        }
+
+        try {
+            const url = ticketId ? `${API_URL}/tickets/${ticketId}` : `${API_URL}/tickets`;
+            const method = ticketId ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast(ticketId ? 'Ticket actualizado correctamente' : 'Ticket creado correctamente', 'success');
+                closeTicketModal();
+                loadAllTickets();
+            } else {
+                showToast('Error al guardar ticket: ' + (result.mensaje || 'Error desconocido'), 'error');
+            }
+        } catch (error) {
+            console.error('Error al guardar ticket:', error);
+            showToast('Error al guardar ticket', 'error');
+        }
+    });
+}
+
+// Aprobar ticket
+async function aprobarTicket(ticketId) {
+    if (!confirm('¿Deseas aprobar este ticket?')) return;
+
+    try {
+        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                estado: 'aprobado',
+                aprobadoPor: currentUser.id
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Ticket aprobado correctamente', 'success');
+            loadAllTickets();
+        } else {
+            showToast('Error al aprobar ticket', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al aprobar ticket', 'error');
+    }
+}
+
+// Rechazar ticket
+async function rechazarTicket(ticketId) {
+    const motivo = prompt('Motivo del rechazo (opcional):');
+    if (motivo === null) return;
+
+    try {
+        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                estado: 'rechazado',
+                aprobadoPor: currentUser.id,
+                observaciones: motivo
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Ticket rechazado', 'success');
+            loadAllTickets();
+        } else {
+            showToast('Error al rechazar ticket', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al rechazar ticket', 'error');
+    }
+}
+
+// Eliminar ticket
+async function eliminarTicket(ticketId) {
+    if (!confirm('¿Estás seguro de eliminar este ticket? Esta acción no se puede deshacer.')) return;
+
+    try {
+        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Ticket eliminado correctamente', 'success');
+            loadAllTickets();
+        } else {
+            showToast('Error al eliminar ticket', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al eliminar ticket', 'error');
+    }
+}
+
+// Ver detalle de ticket
+async function verDetalleTicket(ticketId) {
+    try {
+        const response = await fetch(`${API_URL}/tickets/${ticketId}`);
+        const ticket = await response.json();
+
+        const detalleHTML = `
+            <div class="ticket-detalle">
+                <h3>${getTicketTipoIcon(ticket.tipo)} ${ticket.titulo}</h3>
+                ${getTicketEstadoBadge(ticket.estado)}
+                ${getTicketTipoBadge(ticket.tipo)}
+                
+                <div class="detalle-section">
+                    <h4><i class="fas fa-user"></i> Empleado</h4>
+                    <p>${ticket.empleado_nombre} - ${ticket.puesto || 'Sin puesto'}</p>
+                </div>
+                
+                ${ticket.descripcion ? `
+                    <div class="detalle-section">
+                        <h4><i class="fas fa-align-left"></i> Descripción</h4>
+                        <p>${ticket.descripcion}</p>
+                    </div>
+                ` : ''}
+                
+                ${ticket.fecha_desde && ticket.fecha_hasta ? `
+                    <div class="detalle-section">
+                        <h4><i class="fas fa-calendar"></i> Período</h4>
+                        <p>Desde: ${formatDate(ticket.fecha_desde)}</p>
+                        <p>Hasta: ${formatDate(ticket.fecha_hasta)}</p>
+                        <p>Duración: ${calcularDias(ticket.fecha_desde, ticket.fecha_hasta)} días</p>
+                    </div>
+                ` : ''}
+                
+                ${ticket.fecha_evento ? `
+                    <div class="detalle-section">
+                        <h4><i class="fas fa-calendar-day"></i> Fecha del Evento</h4>
+                        <p>${formatDate(ticket.fecha_evento)}</p>
+                    </div>
+                ` : ''}
+                
+                ${ticket.valor_anterior && ticket.valor_nuevo ? `
+                    <div class="detalle-section">
+                        <h4><i class="fas fa-exchange-alt"></i> Cambio</h4>
+                        <p>Anterior: <strong>${ticket.valor_anterior}</strong></p>
+                        <p>Nuevo: <strong>${ticket.valor_nuevo}</strong></p>
+                        ${ticket.actualiza_empleado ? '<p class="badge badge-info">Actualiza empleado automáticamente</p>' : ''}
+                    </div>
+                ` : ''}
+                
+                ${ticket.observaciones ? `
+                    <div class="detalle-section">
+                        <h4><i class="fas fa-sticky-note"></i> Observaciones</h4>
+                        <p>${ticket.observaciones}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="detalle-section">
+                    <h4><i class="fas fa-info-circle"></i> Información</h4>
+                    <p>Creado por: ${ticket.creado_por_nombre || 'Sistema'}</p>
+                    <p>Fecha de creación: ${formatDate(ticket.created_at)}</p>
+                    ${ticket.aprobado_por_nombre ? `
+                        <p>Aprobado/Rechazado por: ${ticket.aprobado_por_nombre}</p>
+                        <p>Fecha: ${formatDate(ticket.fecha_aprobacion)}</p>
+                    ` : ''}
+                </div>
+                
+                <div class="detalle-actions">
+                    ${ticket.estado === 'pendiente' && canApproveTickets() ? `
+                        <button class="btn btn-success" onclick="aprobarTicket(${ticket.id}); closeTicketDetalleModal();">
+                            <i class="fas fa-check"></i> Aprobar
+                        </button>
+                        <button class="btn btn-danger" onclick="rechazarTicket(${ticket.id}); closeTicketDetalleModal();">
+                            <i class="fas fa-times"></i> Rechazar
+                        </button>
+                    ` : ''}
+                    ${canEditTickets() ? `
+                        <button class="btn btn-primary" onclick="editarTicket(${ticket.id}); closeTicketDetalleModal();">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                    ` : ''}
+                    <button class="btn btn-secondary" onclick="closeTicketDetalleModal()">Cerrar</button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('ticket-detalle-content').innerHTML = detalleHTML;
+        document.getElementById('modal-ticket-detalle').classList.add('active');
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al cargar detalle del ticket', 'error');
+    }
+}
+
+// Cerrar modal de detalle
+function closeTicketDetalleModal() {
+    document.getElementById('modal-ticket-detalle').classList.remove('active');
+}
+
+// Editar ticket
+async function editarTicket(ticketId) {
+    try {
+        const response = await fetch(`${API_URL}/tickets/${ticketId}`);
+        const ticket = await response.json();
+
+        // Cargar empleados
+        await cargarEmpleadosEnSelect();
+
+        // Llenar formulario
+        document.getElementById('ticket-id').value = ticket.id;
+        document.getElementById('ticket-empleado-select').value = ticket.empleado_id;
+        document.getElementById('ticket-tipo').value = ticket.tipo;
+        document.getElementById('ticket-titulo').value = ticket.titulo;
+        document.getElementById('ticket-descripcion').value = ticket.descripcion || '';
+        document.getElementById('ticket-observaciones').value = ticket.observaciones || '';
+        document.getElementById('ticket-estado').value = ticket.estado;
+
+        // Adaptar formulario
+        adaptarFormularioTicket();
+
+        // Llenar campos específicos
+        if (ticket.fecha_desde) document.getElementById('ticket-fecha-desde').value = ticket.fecha_desde.split('T')[0];
+        if (ticket.fecha_hasta) document.getElementById('ticket-fecha-hasta').value = ticket.fecha_hasta.split('T')[0];
+        if (ticket.fecha_evento) document.getElementById('ticket-fecha-evento').value = ticket.fecha_evento.split('T')[0];
+        if (ticket.valor_anterior) document.getElementById('ticket-valor-anterior').value = ticket.valor_anterior;
+        if (ticket.valor_nuevo) document.getElementById('ticket-valor-nuevo').value = ticket.valor_nuevo;
+        if (ticket.actualiza_empleado) document.getElementById('ticket-actualiza-empleado').checked = true;
+
+        document.getElementById('ticket-modal-title').textContent = '✏️ Editar Ticket';
+        document.getElementById('modal-ticket').classList.add('active');
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al cargar ticket', 'error');
+    }
+}
+
+// Filtrar tickets
+function filtrarTickets() {
+    const searchText = document.getElementById('ticket-search').value.toLowerCase();
+    const filterEstado = document.getElementById('ticket-filter-estado').value;
+    const filterTipo = document.getElementById('ticket-filter-tipo').value;
+
+    let filtrados = tickets;
+
+    if (searchText) {
+        filtrados = filtrados.filter(t =>
+            t.titulo.toLowerCase().includes(searchText) ||
+            (t.empleado_nombre && t.empleado_nombre.toLowerCase().includes(searchText)) ||
+            t.tipo.toLowerCase().includes(searchText)
+        );
+    }
+
+    if (filterEstado) {
+        filtrados = filtrados.filter(t => t.estado === filterEstado);
+    }
+
+    if (filterTipo) {
+        filtrados = filtrados.filter(t => t.tipo === filterTipo);
+    }
+
+    renderTicketsList(filtrados);
+}
+
+// Cargar empleados ausentes
+async function loadEmpleadosAusentes() {
+    try {
+        const response = await fetch(`${API_URL}/empleados/ausentes`);
+        const ausentes = await response.json();
+
+        document.getElementById('stat-empleados-ausentes').textContent = ausentes.length;
+
+        const container = document.getElementById('empleados-ausentes-list');
+
+        if (ausentes.length === 0) {
+            container.innerHTML = '<p class="empty-state">✅ No hay empleados ausentes hoy</p>';
+            return;
+        }
+
+        const ausentesHTML = ausentes.map(ausente => `
+            <div class="ausente-card">
+                <div class="ausente-info">
+                    <h4>${ausente.empleado}</h4>
+                    <p>${ausente.puesto} - ${ausente.area}</p>
+                </div>
+                <div class="ausente-detalle">
+                    <span class="badge ${getBadgeClassForMotivo(ausente.motivo_ausencia)}">
+                        ${getNombreTipo(ausente.motivo_ausencia)}
+                    </span>
+                    <p class="ausente-fechas">
+                        <i class="fas fa-calendar"></i>
+                        ${formatDate(ausente.fecha_desde)} - ${formatDate(ausente.fecha_hasta)}
+                    </p>
+                    <p class="ausente-dias">
+                        <strong>${ausente.dias_ausente}</strong> días ausente | 
+                        <strong>${ausente.dias_restantes}</strong> días restantes
+                    </p>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = ausentesHTML;
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('empleados-ausentes-list').innerHTML =
+            '<p class="error-state">Error al cargar empleados ausentes</p>';
+    }
+}
+
+// Obtener clase de badge según motivo
+function getBadgeClassForMotivo(motivo) {
+    const clases = {
+        'vacaciones': 'badge-info',
+        'licencia_medica': 'badge-warning',
+        'licencia_maternidad': 'badge-success',
+        'viaje': 'badge-primary',
+        'suspension': 'badge-danger'
+    };
+    return clases[motivo] || 'badge-secondary';
+}
+
+// Obtener nombre del tipo
+function getNombreTipo(tipo) {
+    const nombres = {
+        'vacaciones': '🏖️ Vacaciones',
+        'viaje': '✈️ Viaje',
+        'licencia_medica': '🏥 Licencia Médica',
+        'licencia_maternidad': '👶 Maternidad/Paternidad',
+        'suspension': '⚠️ Suspensión'
+    };
+    return nombres[tipo] || tipo;
+}
+
+// Permisos
+function canApproveTickets() {
+    return currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'rrhh' || currentUser.rol === 'manager');
+}
+
+function canEditTickets() {
+    return currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'rrhh');
+}
+
+function canEditEmployees() {
+    return currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'rrhh');
+}
+
+// Función para editar empleado
+function editarEmpleado(id) {
+    // Cerrar modal de perfil
+    modalPerfil.style.display = 'none';
+
+    // Cargar datos del empleado en el formulario
+    const empleado = empleados.find(e => e.id === id);
+    if (!empleado) {
+        showToast('error', 'Error', 'No se encontró el empleado');
+        return;
+    }
+
+    // Llenar el formulario con los datos
+    const dp = empleado.datosPersonales || {};
+    const dir = empleado.direccion || {};
+    const cont = empleado.contacto || {};
+
+    // Datos personales
+    if (document.getElementById('nombreCompleto')) document.getElementById('nombreCompleto').value = dp.nombreCompleto || empleado.nombreCompleto || '';
+    if (document.getElementById('cuil')) document.getElementById('cuil').value = dp.cuil || empleado.cuil || '';
+    if (document.getElementById('documento')) document.getElementById('documento').value = dp.documento || empleado.documento || '';
+    if (document.getElementById('fechaNacimiento')) document.getElementById('fechaNacimiento').value = dp.fechaNacimiento || '';
+    if (document.getElementById('sexo')) document.getElementById('sexo').value = dp.sexo || '';
+    if (document.getElementById('estadoCivil')) document.getElementById('estadoCivil').value = dp.estadoCivil || '';
+    if (document.getElementById('nacionalidad')) document.getElementById('nacionalidad').value = dp.nacionalidad || '';
+
+    // Contacto
+    if (document.getElementById('telefono')) document.getElementById('telefono').value = cont.telefono || '';
+    if (document.getElementById('email')) document.getElementById('email').value = cont.email || '';
+
+    // Dirección
+    if (document.getElementById('calle')) document.getElementById('calle').value = dir.calle || '';
+    if (document.getElementById('numero')) document.getElementById('numero').value = dir.numero || '';
+    if (document.getElementById('localidad')) document.getElementById('localidad').value = dir.localidad || '';
+    if (document.getElementById('provincia')) document.getElementById('provincia').value = dir.provincia || '';
+
+    // Guardar el ID del empleado que estamos editando
+    empleadoForm.dataset.editId = id;
+
+    // Cambiar a la pestaña de edición
+    document.querySelector('[data-tab="nuevo"]').click();
+
+    // Cambiar el título y el botón
+    const submitBtn = empleadoForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Actualizar Empleado';
+    }
+
+    showToast('info', 'Modo Edición', 'Modifica los datos y guarda los cambios');
+}
+
+// Event listeners para tabs de tickets
+document.querySelectorAll('.ticket-tab-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        document.querySelectorAll('.ticket-tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const tab = this.dataset.tickettab;
+        filtrarPorTab(tab);
+    });
+});
+
+function filtrarPorTab(tab) {
+    let filtrados = tickets;
+
+    switch (tab) {
+        case 'pendientes':
+            filtrados = tickets.filter(t => t.estado === 'pendiente');
+            break;
+        case 'ausentes':
+            loadEmpleadosAusentes();
+            return;
+        case 'vacaciones':
+            filtrados = tickets.filter(t => t.tipo === 'vacaciones');
+            break;
+        case 'cambios':
+            filtrados = tickets.filter(t =>
+                t.tipo.includes('cambio_') || t.tipo === 'desvinculacion' || t.tipo === 'reincorporacion'
+            );
+            break;
+    }
+
+    renderTicketsList(filtrados);
+}
+
+// Cerrar modales de tickets al hacer click fuera
+document.getElementById('modal-ticket')?.addEventListener('click', function (e) {
+    if (e.target === this) closeTicketModal();
+});
+
+document.getElementById('modal-ticket-detalle')?.addEventListener('click', function (e) {
+    if (e.target === this) closeTicketDetalleModal();
+});
+
+document.querySelector('.modal-close-ticket')?.addEventListener('click', closeTicketModal);
