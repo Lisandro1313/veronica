@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
 
         } else if (req.method === 'POST') {
             const empleadoData = req.body;
-            
+
             const { data, error } = await supabase
                 .from('empleados')
                 .insert([empleadoData])

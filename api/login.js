@@ -24,6 +24,8 @@ module.exports = async (req, res) => {
     try {
         const { usuario, password } = req.body;
 
+        console.log('Intentando login para:', usuario);
+
         // Buscar usuario con Supabase
         const { data, error } = await supabase
             .from('usuarios')
@@ -31,12 +33,17 @@ module.exports = async (req, res) => {
             .eq('username', usuario)
             .single();
 
+        console.log('Resultado Supabase:', { data: data ? 'encontrado' : 'no encontrado', error: error?.message });
+
         if (error || !data) {
+            console.log('Usuario no encontrado o error:', error?.message);
             return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
         }
 
         // Verificar contraseña
         const match = await bcrypt.compare(password, data.password);
+
+        console.log('Contraseña match:', match);
 
         if (match) {
             return res.json({
@@ -48,6 +55,6 @@ module.exports = async (req, res) => {
         }
     } catch (error) {
         console.error('Error en login:', error);
-        return res.status(500).json({ success: false, mensaje: error.message });
+        return res.status(500).json({ success: false, mensaje: error.message, stack: error.stack });
     }
 };
