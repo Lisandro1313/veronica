@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
 
         } else if (req.method === 'POST') {
             const d = req.body;
-            
+
             const ticketData = {
                 empleado_id: d.empleadoId,
                 tipo: d.tipo,
@@ -49,7 +49,7 @@ module.exports = async (req, res) => {
         } else if (req.method === 'PUT') {
             const id = req.url.split('/').pop();
             const d = req.body;
-            
+
             const updateData = {
                 estado: d.estado,
                 notas: d.notas

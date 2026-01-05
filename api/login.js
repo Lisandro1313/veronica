@@ -46,9 +46,53 @@ module.exports = async (req, res) => {
         console.log('Contraseña match:', match);
 
         if (match) {
+            // Definir permisos según rol
+            const permisos = {
+                superadmin: {
+                    empleados: { crear: true, editar: true, eliminar: true, ver: true },
+                    usuarios: { crear: true, editar: true, eliminar: true, ver: true },
+                    tickets: { crear: true, editar: true, eliminar: true, ver: true },
+                    exportar: { pdf: true, excel: true },
+                    reportes: { ver: true, avanzados: true },
+                    alertas: { ver: true, configurar: true }
+                },
+                admin: {
+                    empleados: { crear: true, editar: true, eliminar: true, ver: true },
+                    usuarios: { crear: false, editar: false, eliminar: false, ver: true },
+                    tickets: { crear: true, editar: true, eliminar: false, ver: true },
+                    exportar: { pdf: true, excel: true },
+                    reportes: { ver: true, avanzados: true },
+                    alertas: { ver: true, configurar: false }
+                },
+                manager: {
+                    empleados: { crear: true, editar: true, eliminar: false, ver: true },
+                    usuarios: { crear: false, editar: false, eliminar: false, ver: false },
+                    tickets: { crear: true, editar: true, eliminar: false, ver: true },
+                    exportar: { pdf: true, excel: true },
+                    reportes: { ver: true, avanzados: false },
+                    alertas: { ver: true, configurar: false }
+                },
+                viewer: {
+                    empleados: { crear: false, editar: false, eliminar: false, ver: true },
+                    usuarios: { crear: false, editar: false, eliminar: false, ver: false },
+                    tickets: { crear: false, editar: false, eliminar: false, ver: true },
+                    exportar: { pdf: false, excel: false },
+                    reportes: { ver: true, avanzados: false },
+                    alertas: { ver: true, configurar: false }
+                }
+            };
+
+            const rol = data.rol || 'viewer';
+            const userPermisos = permisos[rol] || permisos.viewer;
+
             return res.json({
                 success: true,
-                usuario: { id: data.id, nombre: data.nombre, rol: data.rol }
+                usuario: { 
+                    id: data.id, 
+                    nombre: data.nombre, 
+                    rol: rol,
+                    permisos: userPermisos
+                }
             });
         } else {
             return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
