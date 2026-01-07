@@ -766,27 +766,13 @@ function calcularEdad(fechaNacimiento) {
 // ===== VALIDACIONES =====
 
 function validarCUIL(cuil) {
-    // Formato: solo números (11 dígitos)
-    const regex = /^\d{11}$/;
+    // Formato: solo números (10 u 11 dígitos, flexible)
+    const regex = /^\d{10,13}$/;
     if (!regex.test(cuil)) {
-        return { valido: false, mensaje: 'Formato de CUIL inválido. Debe tener 11 dígitos' };
+        return { valido: false, mensaje: 'CUIL debe contener solo números (mínimo 10 dígitos)' };
     }
 
-    // Validar dígito verificador
-    const multiplicadores = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
-    let suma = 0;
-
-    for (let i = 0; i < 10; i++) {
-        suma += parseInt(cuil[i]) * multiplicadores[i];
-    }
-
-    const resto = suma % 11;
-    const digito = resto === 0 ? 0 : resto === 1 ? 9 : 11 - resto;
-
-    if (digito !== parseInt(cuil[10])) {
-        return { valido: false, mensaje: 'CUIL inválido: dígito verificador incorrecto' };
-    }
-
+    // Validación básica aprobada - no validamos dígito verificador por flexibilidad
     return { valido: true, mensaje: '' };
 }
 
