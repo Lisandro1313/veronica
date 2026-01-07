@@ -45,32 +45,59 @@ BEGIN
     END IF;
 END $$;
 
--- ===== 3. ACTUALIZAR CONSTRAINTS =====
--- Hacer campos opcionales (el único obligatorio es nombre_completo)
+-- ===== 3. ACTUALIZAR CONSTRAINTS (solo si las columnas existen) =====
+DO $$ 
+BEGIN
+    -- Hacer nombre opcional si existe
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'empleados' AND column_name = 'nombre') THEN
+        ALTER TABLE empleados ALTER COLUMN nombre DROP NOT NULL;
+    END IF;
+    
+    -- Hacer apellido opcional si existe
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'empleados' AND column_name = 'apellido') THEN
+        ALTER TABLE empleados ALTER COLUMN apellido DROP NOT NULL;
+    END IF;
+    
+    -- Hacer DNI opcional si existe
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'empleados' AND column_name = 'dni') THEN
+        ALTER TABLE empleados ALTER COLUMN dni DROP NOT NULL;
+    END IF;
+END $$;
 
-ALTER TABLE empleados ALTER COLUMN nombre DROP NOT NULL;
-ALTER TABLE empleados ALTER COLUMN apellido DROP NOT NULL;
-ALTER TABLE empleados ALTER COLUMN dni DROP NOT NULL;
+-- ===== 4. MIGRAR DATOS EXISTENTES (solo si las columnas existen) =====
+DO $$ 
+BEGIN
+    -- Si existen nombre y apellido pero no nombre_completo, crear nombre_completo
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'empleados' AND column_name = 'nombre')
+       AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'empleados' AND column_name = 'apellido')
+       AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'empleados' AND column_name = 'nombre_completo') THEN
+        
+        UPDATE empleados 
+        SET nombre_completo = COALESCE(
+            CASE 
+                WHEN nombre IS NOT NULL AND apellido IS NOT NULL THEN CONCAT(nombre, ' ', apellido)
+                WHEN nombre IS NOT NULL THEN nombre
+                WHEN apellido IS NOT NULL THEN apellido
+                ELSE 'Sin Nombre'
+            END,
+            'Sin Nombre'
+        )
+        WHERE nombre_completo IS NULL;
+        
+        RAISE NOTICE 'Datos migrados de nombre+apellido a nombre_completo';
+    ELSE
+        RAISE NOTICE 'No se requiere migración de datos (columnas nombre/apellido no existen o nombre_completo ya tiene datos)';
+    END IF;
+END $$;
 
--- ===== 4. MIGRAR DATOS EXISTENTES =====
--- Combinar nombre + apellido en nombre_completo para registros existentes
-
-UPDATE empleados 
-SET nombre_completo = COALESCE(
-    CASE 
-        WHEN nombre IS NOT NULL AND apellido IS NOT NULL THEN CONCAT(nombre, ' ', apellido)
-        WHEN nombre IS NOT NULL THEN nombre
-        WHEN apellido IS NOT NULL THEN apellido
-        ELSE 'Sin Nombre'
-    END,
-    'Sin Nombre'
-)
-WHERE nombre_completo IS NULL;
-
--- ===== 5. HACER nombre_completo OBLIGATORIO =====
--- Después de migrar los datos, hacerlo NOT NULL
-
-ALTER TABLE empleados ALTER COLUMN nombre_completo SET NOT NULL;
+-- ===== 5. HACER nombre_completo OBLIGATORIO (si existe) =====
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'empleados' AND column_name = 'nombre_completo') THEN
+        ALTER TABLE empleados ALTER COLUMN nombre_completo SET NOT NULL;
+        RAISE NOTICE 'Campo nombre_completo configurado como NOT NULL';
+    END IF;
+END $$;
 
 -- ===== 6. AGREGAR ÍNDICES PARA PERFORMANCE =====
 
