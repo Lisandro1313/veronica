@@ -77,7 +77,7 @@ module.exports = async (req, res) => {
             const apellido = nombreParts.length > 1 ? nombreParts.pop() : '';
             const nombre = nombreParts.join(' ') || d.nombreCompleto;
 
-            // Mapear los campos del frontend a los nombres de la BD - SOLO campos básicos
+            // VERSIÓN ULTRA SIMPLIFICADA - Solo campos que DEFINITIVAMENTE existen
             const empleadoData = {
                 nombre: nombre || 'Sin Nombre',
                 apellido: apellido || 'Sin Apellido',
@@ -93,21 +93,7 @@ module.exports = async (req, res) => {
                 antecedentes_penales: d.antecedentesPenales || 'no',
                 observaciones_antecedentes: d.observacionesAntecedentes || null,
                 integracion_familiar: d.integracionFamiliar || null,
-                observaciones: d.observaciones || null,
-                // Campos JSONB como objetos, no strings
-                datos_personales: {
-                    nombreCompleto: d.nombreCompleto,
-                    estadoCivil: d.estadoCivil,
-                    escolaridadFamiliar: d.escolaridadFamiliar
-                },
-                datos_laborales: {
-                    experienciaLaboral: d.experienciaLaboral
-                },
-                datos_adicionales: {
-                    fechaEntradaPais: d.fechaEntradaPais,
-                    tipoResidencia: d.tipoResidencia,
-                    entradasSalidasPais: d.entradasSalidasPais
-                }
+                observaciones: d.observaciones || null
             };
 
             const { data, error } = await supabase
@@ -117,8 +103,14 @@ module.exports = async (req, res) => {
                 .single();
 
             if (error) {
-                console.error('Error de Supabase:', error);
-                throw error;
+                console.error('ERROR SUPABASE COMPLETO:', JSON.stringify(error, null, 2));
+                return res.status(500).json({ 
+                    success: false, 
+                    mensaje: error.message,
+                    detalles: error.details,
+                    hint: error.hint,
+                    code: error.code
+                });
             }
             return res.json({ success: true, empleado: data });
 
