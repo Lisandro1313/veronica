@@ -1229,6 +1229,76 @@ async function verPerfil(id) {
         const response = await fetch(`${API_URL}/empleados/${id}`);
         const emp = await response.json();
 
+        // Adaptar campos con guiones bajos de Supabase
+        const nombreCompleto = emp.nombre_completo || 'Sin nombre';
+        const cuil = emp.cuil || '-';
+        const documento = emp.documento || '-';
+        const fechaNacimiento = emp.fecha_nacimiento || '-';
+        const estadoCivil = emp.estado_civil || '-';
+        const nivelEducativo = emp.nivel_educativo || '-';
+        const problemasSalud = emp.problemas_salud || 'Ninguno';
+        const esExtranjero = emp.es_extranjero || 'no';
+        const paisOrigen = emp.pais_origen || '-';
+        const puesto = emp.puesto || '-';
+        const fechaIngreso = emp.fecha_ingreso || '-';
+        const antecedentesPenales = emp.antecedentes_penales || 'no';
+
+        const perfilHTML = `
+            <div class="perfil-header">
+                <h2><i class="fas fa-user-circle"></i> ${escapeHtml(nombreCompleto)}</h2>
+                <span class="badge badge-success">Activo</span>
+            </div>
+            
+            <div class="perfil-tabs">
+                <button class="perfil-tab active" data-perfilTab="general">📋 General</button>
+                <button class="perfil-tab" data-perfilTab="laboral">💼 Laboral</button>
+                <button class="perfil-tab" data-perfilTab="salud">🏥 Salud</button>
+            </div>
+
+            <div class="perfil-tab-content active" data-perfilTabContent="general">
+                <h3>📋 Información Personal</h3>
+                <div class="info-grid">
+                    <div class="info-item"><label>Nombre Completo:</label><span>${escapeHtml(nombreCompleto)}</span></div>
+                    <div class="info-item"><label>CUIL:</label><span>${cuil}</span></div>
+                    <div class="info-item"><label>Documento:</label><span>${documento}</span></div>
+                    <div class="info-item"><label>Fecha Nacimiento:</label><span>${fechaNacimiento}</span></div>
+                    <div class="info-item"><label>Estado Civil:</label><span>${estadoCivil}</span></div>
+                    <div class="info-item"><label>Educación:</label><span>${nivelEducativo}</span></div>
+                    <div class="info-item"><label>Extranjero:</label><span>${esExtranjero === 'si' ? 'Sí' : 'No'}</span></div>
+                    ${esExtranjero === 'si' ? `<div class="info-item"><label>País Origen:</label><span>${paisOrigen}</span></div>` : ''}
+                </div>
+            </div>
+
+            <div class="perfil-tab-content" data-perfilTabContent="laboral">
+                <h3>💼 Información Laboral</h3>
+                <div class="info-grid">
+                    <div class="info-item"><label>Puesto:</label><span>${puesto}</span></div>
+                    <div class="info-item"><label>Fecha Ingreso:</label><span>${fechaIngreso}</span></div>
+                    <div class="info-item"><label>Experiencia:</label><span>${emp.experiencia_laboral || '-'}</span></div>
+                </div>
+            </div>
+
+            <div class="perfil-tab-content" data-perfilTabContent="salud">
+                <h3>🏥 Información de Salud</h3>
+                <div class="info-grid">
+                    <div class="info-item"><label>Problemas de Salud:</label><span>${problemasSalud}</span></div>
+                    <div class="info-item"><label>Antecedentes Penales:</label><span>${antecedentesPenales === 'si' ? 'Sí' : 'No'}</span></div>
+                    ${emp.observaciones ? `<div class="info-item"><label>Observaciones:</label><span>${escapeHtml(emp.observaciones)}</span></div>` : ''}
+                </div>
+            </div>
+        `;
+
+        document.getElementById('perfil-content').innerHTML = perfilHTML;
+        currentEmpleadoId = id;
+        modalPerfil.style.display = 'flex';
+        activatePerfilTabs();
+
+    } catch (error) {
+        console.error('Error al cargar perfil:', error);
+        alert('Error al cargar el perfil del empleado');
+    }
+}
+
         // Funciones auxiliares para formatear
         const dp = emp.datosPersonales || {};
         const dir = emp.direccion || {};
