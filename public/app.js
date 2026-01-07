@@ -1024,11 +1024,11 @@ function displayEmpleados(lista) {
             <tbody>
                 ${paginatedList.map(emp => `
                     <tr>
-                        <td><strong>${escapeHtml(emp.nombreCompleto)}</strong></td>
-                        <td>${escapeHtml(emp.cuil)}</td>
+                        <td><strong>${escapeHtml(emp.nombre_completo || emp.nombreCompleto || 'Sin nombre')}</strong></td>
+                        <td>${escapeHtml(emp.cuil || '-')}</td>
                         <td>${escapeHtml(emp.puesto || '-')}</td>
-                        <td>${emp.fechaIngreso ? formatDate(emp.fechaIngreso) : '-'}</td>
-                        <td>${emp.esExtranjero === 'si' ? '🌍 Sí' : 'No'}</td>
+                        <td>${emp.fecha_ingreso ? formatDate(emp.fecha_ingreso) : (emp.fechaIngreso ? formatDate(emp.fechaIngreso) : '-')}</td>
+                        <td>${emp.es_extranjero === 'si' || emp.esExtranjero === 'si' ? '🌍 Sí' : 'No'}</td>
                         <td>
                             <button class="btn-small btn-info" onclick="verPerfil(${emp.id})">👁️ Ver</button>
                             <button class="btn-small btn-warning" onclick="crearTicket(${emp.id})">📋 Ticket</button>
@@ -3692,7 +3692,7 @@ async function cargarEmpleadosEnSelect() {
         const select = document.getElementById('ticket-empleado-select');
         select.innerHTML = '<option value="">Seleccionar empleado...</option>' +
             empleados.map(emp =>
-                `<option value="${emp.id}">${emp.nombre} ${emp.apellido} - ${emp.puesto || 'Sin puesto'}</option>`
+                `<option value="${emp.id}">${emp.nombre_completo || emp.nombreCompleto || 'Sin nombre'} - ${emp.puesto || 'Sin puesto'}</option>`
             ).join('');
     } catch (error) {
         console.error('Error al cargar empleados:', error);
