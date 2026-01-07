@@ -32,8 +32,11 @@
 
     <!-- Pantalla Principal -->
     <div id="main-screen" class="screen">
+        <!-- Overlay para cerrar el menú en móvil -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-users-cog"></i>
                 <h3>Verapp</h3>
@@ -85,6 +88,9 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-bar">
+                <button class="btn-hamburger" id="hamburger-menu" aria-label="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <h1 id="page-title"><i class="fas fa-chart-line"></i> Dashboard</h1>
                 <div class="top-bar-actions">
                     <span id="role-badge" class="role-badge" style="display: none;">
@@ -478,7 +484,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="cuil">CUIL *</label>
-                                    <input type="text" id="cuil" required placeholder="20-12345678-9">
+                                    <input type="text" id="cuil" required placeholder="20123456789" maxlength="11">
                                 </div>
                             </div>
                             <div class="form-row">

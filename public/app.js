@@ -40,11 +40,40 @@ const API_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3000/api'
     : '/api';
 
+// ===== MENÚ HAMBURGUESA MÓVIL =====
+
+const hamburgerBtn = document.getElementById('hamburger-menu');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+// Toggle del menú
+if (hamburgerBtn) {
+    hamburgerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+    });
+}
+
+// Cerrar menú al hacer clic en el overlay
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+    });
+}
+
 // ===== NAVEGACIÓN SIDEBAR =====
 
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
         const tabName = btn.dataset.tab;
+
+        // Cerrar el menú en móvil después de seleccionar una opción
+        if (window.innerWidth <= 1024) {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        }
 
         // Actualizar navegación
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -737,25 +766,24 @@ function calcularEdad(fechaNacimiento) {
 // ===== VALIDACIONES =====
 
 function validarCUIL(cuil) {
-    // Formato: XX-XXXXXXXX-X
-    const regex = /^\d{2}-\d{8}-\d{1}$/;
+    // Formato: solo números (11 dígitos)
+    const regex = /^\d{11}$/;
     if (!regex.test(cuil)) {
-        return { valido: false, mensaje: 'Formato de CUIL inválido. Debe ser XX-XXXXXXXX-X' };
+        return { valido: false, mensaje: 'Formato de CUIL inválido. Debe tener 11 dígitos' };
     }
 
     // Validar dígito verificador
-    const nums = cuil.replace(/-/g, '');
     const multiplicadores = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
     let suma = 0;
 
     for (let i = 0; i < 10; i++) {
-        suma += parseInt(nums[i]) * multiplicadores[i];
+        suma += parseInt(cuil[i]) * multiplicadores[i];
     }
 
     const resto = suma % 11;
     const digito = resto === 0 ? 0 : resto === 1 ? 9 : 11 - resto;
 
-    if (digito !== parseInt(nums[10])) {
+    if (digito !== parseInt(cuil[10])) {
         return { valido: false, mensaje: 'CUIL inválido: dígito verificador incorrecto' };
     }
 
