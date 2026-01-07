@@ -23,33 +23,91 @@ module.exports = async (req, res) => {
                 .order('id', { ascending: false });
 
             if (error) throw error;
-            return res.json(data || []);
+            
+            // Transformar datos de BD al formato del frontend
+            const empleadosFormateados = (data || []).map(emp => {
+                const datosPersonales = typeof emp.datos_personales === 'string' 
+                    ? JSON.parse(emp.datos_personales || '{}') 
+                    : (emp.datos_personales || {});
+                const datosLaborales = typeof emp.datos_laborales === 'string'
+                    ? JSON.parse(emp.datos_laborales || '{}')
+                    : (emp.datos_laborales || {});
+                const datosAdicionales = typeof emp.datos_adicionales === 'string'
+                    ? JSON.parse(emp.datos_adicionales || '{}')
+                    : (emp.datos_adicionales || {});
+
+                return {
+                    id: emp.id,
+                    nombreCompleto: datosPersonales.nombreCompleto || `${emp.nombre} ${emp.apellido}`.trim(),
+                    cuil: emp.cuit || emp.dni,
+                    fechaNacimiento: emp.fecha_nacimiento,
+                    documento: emp.dni,
+                    estadoCivil: datosPersonales.estadoCivil || '',
+                    integracionFamiliar: emp.integracion_familiar || '',
+                    escolaridadFamiliar: datosPersonales.escolaridadFamiliar || '',
+                    nivelEducativo: emp.nivel_educativo || '',
+                    problemasSalud: emp.problemas_salud || '',
+                    esExtranjero: emp.es_extranjero || 'no',
+                    paisOrigen: emp.pais_origen || '',
+                    fechaEntradaPais: datosAdicionales.fechaEntradaPais || '',
+                    tipoResidencia: datosAdicionales.tipoResidencia || '',
+                    entradasSalidasPais: datosAdicionales.entradasSalidasPais || '',
+                    experienciaLaboral: datosLaborales.experienciaLaboral || '',
+                    fechaIngreso: emp.fecha_ingreso,
+                    puesto: emp.puesto || '',
+                    antecedentesPenales: emp.antecedentes_penales || 'no',
+                    observacionesAntecedentes: emp.observaciones_antecedentes || '',
+                    observaciones: emp.observaciones || '',
+                    laboral: {
+                        fechaIngreso: emp.fecha_ingreso,
+                        puesto: emp.puesto,
+                        area: emp.area,
+                        salario: emp.salario
+                    }
+                };
+            });
+            
+            return res.json(empleadosFormateados);
 
         } else if (req.method === 'POST') {
             const d = req.body;
 
+            // Separar nombre completo en nombre y apellido
+            const nombreParts = (d.nombreCompleto || '').trim().split(' ');
+            const apellido = nombreParts.length > 1 ? nombreParts.pop() : '';
+            const nombre = nombreParts.join(' ') || d.nombreCompleto;
+
             // Mapear los campos del frontend a los nombres de la BD
             const empleadoData = {
-                nombre_completo: d.nombreCompleto,
-                cuil: d.cuil,
-                fecha_nacimiento: d.fechaNacimiento,
-                documento: d.documento,
-                estado_civil: d.estadoCivil,
-                integracion_familiar: d.integracionFamiliar,
-                escolaridad_familiar: d.escolaridadFamiliar,
-                nivel_educativo: d.nivelEducativo,
-                problemas_salud: d.problemasSalud,
-                es_extranjero: d.esExtranjero === 'si',
+                nombre: nombre || 'Sin Nombre',
+                apellido: apellido || 'Sin Apellido',
+                dni: d.documento || d.cuil || '',
+                cuit: d.cuil || null,
+                fecha_nacimiento: d.fechaNacimiento || null,
+                es_extranjero: d.esExtranjero || 'no',
                 pais_origen: d.paisOrigen || null,
-                fecha_entrada_pais: d.fechaEntradaPais || null,
-                tipo_residencia: d.tipoResidencia || null,
-                entradas_salidas_pais: d.entradasSalidasPais || null,
-                experiencia_laboral: d.experienciaLaboral,
-                fecha_ingreso: d.fechaIngreso,
-                puesto: d.puesto,
-                antecedentes_penales: d.antecedentesPenales === 'si',
+                fecha_ingreso: d.fechaIngreso || null,
+                puesto: d.puesto || null,
+                nivel_educativo: d.nivelEducativo || null,
+                problemas_salud: d.problemasSalud || null,
+                antecedentes_penales: d.antecedentesPenales || 'no',
                 observaciones_antecedentes: d.observacionesAntecedentes || null,
-                observaciones: d.observaciones || null
+                integracion_familiar: d.integracionFamiliar || null,
+                observaciones: d.observaciones || null,
+                // Guardar datos adicionales en JSONB
+                datos_personales: JSON.stringify({
+                    nombreCompleto: d.nombreCompleto,
+                    estadoCivil: d.estadoCivil,
+                    escolaridadFamiliar: d.escolaridadFamiliar
+                }),
+                datos_laborales: JSON.stringify({
+                    experienciaLaboral: d.experienciaLaboral
+                }),
+                datos_adicionales: JSON.stringify({
+                    fechaEntradaPais: d.fechaEntradaPais,
+                    tipoResidencia: d.tipoResidencia,
+                    entradasSalidasPais: d.entradasSalidasPais
+                })
             };
 
             const { data, error } = await supabase
