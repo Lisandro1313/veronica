@@ -702,35 +702,37 @@ function mostrarAlertasDashboard(empleados) {
 
     // Generar alertas
     empleados.forEach(emp => {
-        // Antecedentes penales
-        if (emp.antecedentesPenales === 'si') {
+        // Antecedentes penales (usar campos snake_case)
+        if ((emp.antecedentes_penales || emp.antecedentesPenales) === 'si') {
             alertas.push({
                 tipo: 'critica',
                 icono: 'fas fa-exclamation-triangle',
                 titulo: 'Antecedentes Penales',
-                descripcion: `${emp.nombreCompleto} tiene antecedentes penales registrados.`,
+                descripcion: `${emp.nombre_completo || emp.nombreCompleto || 'Empleado'} tiene antecedentes penales registrados.`,
                 empleadoId: emp.id
             });
         }
 
         // Problemas de salud
-        if (emp.problemasSalud && emp.problemasSalud.trim() !== '') {
+        const problemas = emp.problemas_salud || emp.problemasSalud || '';
+        if (problemas.trim() !== '') {
             alertas.push({
                 tipo: 'info',
                 icono: 'fas fa-heartbeat',
                 titulo: 'Problema de Salud',
-                descripcion: `${emp.nombreCompleto}: ${emp.problemasSalud.substring(0, 60)}...`,
+                descripcion: `${emp.nombre_completo || emp.nombreCompleto || 'Empleado'}: ${problemas.substring(0, 60)}...`,
                 empleadoId: emp.id
             });
         }
 
         // Residencia temporaria o precaria
-        if (emp.tipoResidencia === 'temporaria' || emp.tipoResidencia === 'precaria') {
+        const residencia = emp.tipo_residencia || emp.tipoResidencia;
+        if (residencia === 'temporaria' || residencia === 'precaria') {
             alertas.push({
                 tipo: 'warning',
                 icono: 'fas fa-id-card',
-                titulo: 'Residencia ' + emp.tipoResidencia,
-                descripcion: `${emp.nombreCompleto} tiene residencia ${emp.tipoResidencia}. Verificar vencimiento.`,
+                titulo: 'Residencia ' + residencia,
+                descripcion: `${emp.nombre_completo || emp.nombreCompleto || 'Empleado'} tiene residencia ${residencia}. Verificar vencimiento.`,
                 empleadoId: emp.id
             });
         }
@@ -932,7 +934,7 @@ empleadoForm.addEventListener('submit', async (e) => {
         const editId = empleadoForm.dataset.editId;
         const isEdit = editId && editId !== '';
 
-        const url = isEdit ? `${API_URL}/empleados/${editId}` : `${API_URL}/empleados`;
+        const url = isEdit ? `${API_URL}/actualizar-empleado?id=${editId}` : `${API_URL}/empleados`;
         const method = isEdit ? 'PUT' : 'POST';
 
         const response = await fetch(url, {
@@ -1121,8 +1123,8 @@ function aplicarOrdenamiento() {
 
         switch (campo) {
             case 'nombre':
-                valorA = a.nombreCompleto?.toLowerCase() || '';
-                valorB = b.nombreCompleto?.toLowerCase() || '';
+                valorA = (a.nombre_completo || a.nombreCompleto || '').toLowerCase();
+                valorB = (b.nombre_completo || b.nombreCompleto || '').toLowerCase();
                 break;
 
             case 'fecha':
@@ -1182,10 +1184,10 @@ function aplicarOrdenamiento() {
 searchInput.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase();
     const filtered = empleados.filter(emp =>
-        emp.nombreCompleto.toLowerCase().includes(query) ||
-        emp.cuil.toLowerCase().includes(query) ||
-        (emp.documento && emp.documento.toLowerCase().includes(query)) ||
-        (emp.puesto && emp.puesto.toLowerCase().includes(query))
+        (emp.nombre_completo || emp.nombreCompleto || '').toLowerCase().includes(query) ||
+        (emp.cuil || '').toLowerCase().includes(query) ||
+        (emp.documento || '').toLowerCase().includes(query) ||
+        (emp.puesto || '').toLowerCase().includes(query)
     );
     currentPage = 1; // Resetear a la primera página al buscar
     displayEmpleados(filtered);
@@ -1302,501 +1304,7 @@ async function verPerfil(id) {
     }
 }
 
-async function loadTicketsEmpleado(empleadoId) {
-    try {
-        const response = await fetch(`${API_URL}/tickets/${empleadoId}`);
-        const cont = emp.contacto || {};
-        const edu = emp.educacion || {};
-        const sal = emp.salud || {};
-        const inm = emp.inmigracion || {};
-        const lab = emp.laboral || {};
-        const ant = emp.antecedentes || {};
-
-        const perfilHTML = `
-            <div class="perfil-header">
-                <h2><i class="fas fa-user-circle"></i> ${escapeHtml(dp.nombreCompleto || emp.nombreCompleto || 'Sin nombre')}</h2>
-                <span class="badge ${lab.estadoActual === 'Activo' ? 'badge-success' : 'badge-danger'}">
-                    ${lab.estadoActual || 'Activo'}
-                </span>
-            </div>
-            
-            <div class="perfil-tabs">
-                <button class="perfil-tab active" data-tab="personal">📋 Personal</button>
-                <button class="perfil-tab" data-tab="contacto">📞 Contacto</button>
-                <button class="perfil-tab" data-tab="familiares">👨‍👩‍👧 Familia</button>
-                <button class="perfil-tab" data-tab="laboral">💼 Laboral</button>
-                <button class="perfil-tab" data-tab="documentos">📄 Documentos</button>
-                <button class="perfil-tab" data-tab="historial">📊 Historial</button>
-            </div>
-            
-            <div class="perfil-tab-content active" id="perfil-tab-personal">
-                <div class="perfil-grid">
-                    <div class="perfil-section">
-                        <h3><i class="fas fa-id-card"></i> Datos Personales</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>CUIL:</label>
-                                <span>${escapeHtml(dp.cuil || emp.cuil || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Documento:</label>
-                                <span>${escapeHtml(dp.documento || emp.documento || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Fecha de Nacimiento:</label>
-                                <span>${dp.fechaNacimiento ? formatDate(dp.fechaNacimiento) : '-'} (${dp.edad || 'N/A'} años)</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Sexo:</label>
-                                <span>${dp.sexo === 'M' ? 'Masculino' : dp.sexo === 'F' ? 'Femenino' : '-'}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Estado Civil:</label>
-                                <span>${escapeHtml(dp.estadoCivil || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Nacionalidad:</label>
-                                <span>${escapeHtml(dp.nacionalidad || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Lugar de Nacimiento:</label>
-                                <span>${escapeHtml(dp.lugarNacimiento || '-')}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="perfil-section">
-                        <h3><i class="fas fa-map-marker-alt"></i> Dirección</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>Calle:</label>
-                                <span>${escapeHtml(dir.calle || '-')} ${escapeHtml(dir.numero || '')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Barrio:</label>
-                                <span>${escapeHtml(dir.barrio || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Localidad:</label>
-                                <span>${escapeHtml(dir.localidad || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Provincia:</label>
-                                <span>${escapeHtml(dir.provincia || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Código Postal:</label>
-                                <span>${escapeHtml(dir.codigoPostal || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Tipo de Vivienda:</label>
-                                <span>${escapeHtml(dir.tipoVivienda || '-')}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="perfil-section">
-                        <h3><i class="fas fa-graduation-cap"></i> Educación</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>Nivel Educativo:</label>
-                                <span>${escapeHtml(edu.nivelEducativo || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Título:</label>
-                                <span>${escapeHtml(edu.tituloObtenido || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Institución:</label>
-                                <span>${escapeHtml(edu.institucion || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Año de Egreso:</label>
-                                <span>${escapeHtml(edu.añoEgreso || '-')}</span>
-                            </div>
-                        </div>
-                        ${edu.cursos && edu.cursos.length > 0 ? `
-                            <p><strong>Cursos:</strong> ${edu.cursos.join(', ')}</p>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="perfil-section">
-                        <h3><i class="fas fa-heartbeat"></i> Salud</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>Grupo Sanguíneo:</label>
-                                <span>${escapeHtml(sal.grupoSanguineo || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Obra Social:</label>
-                                <span>${escapeHtml(sal.obraSocial || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Nro. Afiliado:</label>
-                                <span>${escapeHtml(sal.nroAfiliado || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Aptitud Laboral:</label>
-                                <span class="badge ${sal.aptitudLaboral === 'Apto' ? 'badge-success' : 'badge-warning'}">
-                                    ${escapeHtml(sal.aptitudLaboral || '-')}
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <label>Último Examen:</label>
-                                <span>${sal.ultimoExamenMedico ? formatDate(sal.ultimoExamenMedico) : '-'}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Próximo Examen:</label>
-                                <span>${sal.proximoExamenMedico ? formatDate(sal.proximoExamenMedico) : '-'}</span>
-                            </div>
-                        </div>
-                        ${sal.problemasSalud && sal.problemasSalud !== 'Ninguno' ? `
-                            <div class="alert alert-warning">
-                                <strong>⚠️ Problemas de Salud:</strong> ${escapeHtml(sal.problemasSalud)}
-                            </div>
-                        ` : ''}
-                        ${sal.alergias && sal.alergias !== 'Ninguna' ? `
-                            <div class="alert alert-info">
-                                <strong>🔔 Alergias:</strong> ${escapeHtml(sal.alergias)}
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    ${inm.esExtranjero ? `
-                    <div class="perfil-section">
-                        <h3><i class="fas fa-globe"></i> Información Migratoria</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>País de Origen:</label>
-                                <span>${escapeHtml(inm.paisOrigen || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Fecha de Entrada:</label>
-                                <span>${inm.fechaEntradaPais ? formatDate(inm.fechaEntradaPais) : '-'}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Tipo de Residencia:</label>
-                                <span>${escapeHtml(inm.tipoResidencia || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Nro. Residencia:</label>
-                                <span>${escapeHtml(inm.numeroResidencia || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Vencimiento:</label>
-                                <span>${inm.fechaVencimientoResidencia ? formatDate(inm.fechaVencimientoResidencia) : '-'}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Estado:</label>
-                                <span class="badge ${inm.estadoResidencia === 'Vigente' ? 'badge-success' : 'badge-warning'}">
-                                    ${escapeHtml(inm.estadoResidencia || '-')}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    ${ant.tieneAntecedentes ? `
-                    <div class="perfil-section">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Antecedentes</h3>
-                        <div class="alert alert-danger">
-                            <strong>⚠️ Tiene antecedentes penales</strong><br>
-                            ${escapeHtml(ant.detalles || 'Ver detalles en documentación')}
-                        </div>
-                        <p><strong>Fecha de Consulta:</strong> ${ant.fechaConsulta ? formatDate(ant.fechaConsulta) : '-'}</p>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-            
-            <div class="perfil-tab-content" id="perfil-tab-contacto">
-                <div class="perfil-section">
-                    <h3><i class="fas fa-phone"></i> Información de Contacto</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Teléfono Personal:</label>
-                            <span>${escapeHtml(cont.telefonoPersonal || '-')}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Celular:</label>
-                            <span>${escapeHtml(cont.telefonoCelular || '-')}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Email:</label>
-                            <span>${escapeHtml(cont.email || '-')}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Email Alternativo:</label>
-                            <span>${escapeHtml(cont.emailAlternativo || '-')}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="perfil-section">
-                    <h3><i class="fas fa-ambulance"></i> Contacto de Emergencia</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Nombre:</label>
-                            <span>${escapeHtml(cont.contactoEmergencia || '-')}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Relación:</label>
-                            <span>${escapeHtml(cont.relacionEmergencia || '-')}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Teléfono:</label>
-                            <span>${escapeHtml(cont.telefonoEmergencia || '-')}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="perfil-tab-content" id="perfil-tab-familiares">
-                <div class="perfil-section">
-                    <h3><i class="fas fa-users"></i> Grupo Familiar</h3>
-                    ${emp.familiares && emp.familiares.length > 0 ? `
-                        <div class="familiares-list">
-                            ${emp.familiares.map(fam => `
-                                <div class="familiar-card">
-                                    <div class="familiar-header">
-                                        <h4><i class="fas fa-user"></i> ${escapeHtml(fam.nombre || '')} ${escapeHtml(fam.apellido || '')}</h4>
-                                        <span class="badge badge-info">${escapeHtml(fam.relacion || '')}</span>
-                                    </div>
-                                    <div class="info-grid">
-                                        <div class="info-item">
-                                            <label>Documento:</label>
-                                            <span>${escapeHtml(fam.documento || 'No registrado')}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>CUIL:</label>
-                                            <span>${escapeHtml(fam.cuil || 'No registrado')}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Fecha de Nacimiento:</label>
-                                            <span>${fam.fechaNacimiento ? formatDate(fam.fechaNacimiento) : '-'} ${fam.edad ? `(${fam.edad} años)` : ''}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Sexo:</label>
-                                            <span>${fam.sexo === 'M' ? 'Masculino' : fam.sexo === 'F' ? 'Femenino' : '-'}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Nivel Educativo:</label>
-                                            <span>${escapeHtml(fam.nivelEducativo || '-')}</span>
-                                        </div>
-                                        ${fam.escuela ? `
-                                        <div class="info-item">
-                                            <label>Escuela:</label>
-                                            <span>${escapeHtml(fam.escuela)}</span>
-                                        </div>
-                                        ` : ''}
-                                        <div class="info-item">
-                                            <label>Ocupación:</label>
-                                            <span>${escapeHtml(fam.ocupacion || '-')}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>A Cargo:</label>
-                                            <span class="badge ${fam.aCargo ? 'badge-success' : 'badge-secondary'}">
-                                                ${fam.aCargo ? 'Sí' : 'No'}
-                                            </span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Obra Social:</label>
-                                            <span>${escapeHtml(fam.obraSocial || 'No tiene')}</span>
-                                        </div>
-                                    </div>
-                                    ${fam.observaciones ? `<p><strong>Observaciones:</strong> ${escapeHtml(fam.observaciones)}</p>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '<p class="text-muted">No hay familiares registrados</p>'}
-                </div>
-            </div>
-            
-            <div class="perfil-tab-content" id="perfil-tab-laboral">
-                <div class="perfil-grid">
-                    <div class="perfil-section">
-                        <h3><i class="fas fa-briefcase"></i> Información Laboral</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>Legajo:</label>
-                                <span>${escapeHtml(lab.legajo || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Puesto:</label>
-                                <span>${escapeHtml(lab.puesto || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Área:</label>
-                                <span>${escapeHtml(lab.area || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Sector:</label>
-                                <span>${escapeHtml(lab.sector || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Fecha de Ingreso:</label>
-                                <span>${lab.fechaIngreso ? formatDate(lab.fechaIngreso) : '-'}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Antigüedad:</label>
-                                <span>${escapeHtml(lab.antiguedad || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Tipo de Contrato:</label>
-                                <span>${escapeHtml(lab.tipoContrato || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Jornada:</label>
-                                <span>${escapeHtml(lab.jornada || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Horario:</label>
-                                <span>${escapeHtml(lab.horario || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Salario Básico:</label>
-                                <span>$${lab.salarioBasico ? lab.salarioBasico.toLocaleString('es-AR') : '-'}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Banco:</label>
-                                <span>${escapeHtml(lab.banco || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>CBU:</label>
-                                <span>${escapeHtml(lab.cbu || '-')}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Supervisor:</label>
-                                <span>${escapeHtml(lab.supervisor || '-')}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    ${emp.experienciaPrevia && emp.experienciaPrevia.length > 0 ? `
-                    <div class="perfil-section">
-                        <h3><i class="fas fa-history"></i> Experiencia Previa</h3>
-                        ${emp.experienciaPrevia.map(exp => `
-                            <div class="experiencia-card">
-                                <h4>${escapeHtml(exp.puesto || '')}</h4>
-                                <p class="text-muted">${escapeHtml(exp.empresa || '')} | ${exp.desde || ''} - ${exp.hasta || ''} (${exp.duracion || ''})</p>
-                                <p><strong>Tareas:</strong> ${escapeHtml(exp.tareas || '')}</p>
-                                <p><strong>Motivo de Salida:</strong> ${escapeHtml(exp.motivoSalida || '')}</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-            
-            <div class="perfil-tab-content" id="perfil-tab-documentos">
-                <div class="perfil-section">
-                    <h3><i class="fas fa-file-alt"></i> Documentos</h3>
-                    ${emp.documentos && emp.documentos.length > 0 ? `
-                        <div class="documentos-list">
-                            ${emp.documentos.map(doc => `
-                                <div class="documento-card">
-                                    <div class="documento-header">
-                                        <h4><i class="fas fa-file"></i> ${escapeHtml(doc.tipo || '')}</h4>
-                                        <span class="badge ${doc.estado === 'Vigente' ? 'badge-success' : 'badge-danger'}">
-                                            ${escapeHtml(doc.estado || '')}
-                                        </span>
-                                    </div>
-                                    <div class="info-grid">
-                                        ${doc.numero ? `
-                                        <div class="info-item">
-                                            <label>Número:</label>
-                                            <span>${escapeHtml(doc.numero)}</span>
-                                        </div>
-                                        ` : ''}
-                                        ${doc.fechaEmision ? `
-                                        <div class="info-item">
-                                            <label>Emisión:</label>
-                                            <span>${formatDate(doc.fechaEmision)}</span>
-                                        </div>
-                                        ` : ''}
-                                        ${doc.fechaVencimiento ? `
-                                        <div class="info-item">
-                                            <label>Vencimiento:</label>
-                                            <span>${formatDate(doc.fechaVencimiento)}</span>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                    ${doc.observaciones ? `<p class="text-muted">${escapeHtml(doc.observaciones)}</p>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '<p class="text-muted">No hay documentos registrados</p>'}
-                </div>
-            </div>
-            
-            <div class="perfil-tab-content" id="perfil-tab-historial">
-                <div class="perfil-section">
-                    <h3><i class="fas fa-timeline"></i> Historial Laboral y Eventos</h3>
-                    ${emp.historialLaboral && emp.historialLaboral.length > 0 ? `
-                        <div class="timeline">
-                            ${emp.historialLaboral.map(evento => `
-                                <div class="timeline-item">
-                                    <div class="timeline-marker ${getEventoClass(evento.tipo)}"></div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-header">
-                                            <strong>${getEventoIcon(evento.tipo)} ${escapeHtml(evento.descripcion || '')}</strong>
-                                            <span class="timeline-date">${evento.fecha ? formatDate(evento.fecha) : ''}</span>
-                                        </div>
-                                        <p class="timeline-details">${escapeHtml(evento.detalles || '')}</p>
-                                        <small class="text-muted">Registrado por: ${escapeHtml(evento.usuario || '')}</small>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '<p class="text-muted">No hay historial registrado</p>'}
-                </div>
-                
-                <div class="perfil-section">
-                    <h3><i class="fas fa-clipboard-list"></i> Tickets y Notificaciones</h3>
-                    <div id="tickets-empleado-${emp.id}">
-                        <p class="loading">Cargando tickets...</p>
-                    </div>
-                </div>
-            </div>
-            
-            ${emp.observaciones ? `
-            <div class="perfil-section">
-                <h3><i class="fas fa-sticky-note"></i> Observaciones Generales</h3>
-                <p>${escapeHtml(emp.observaciones)}</p>
-            </div>
-            ` : ''}
-            
-            <div class="perfil-actions" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--border-color); display: flex; gap: 1rem; justify-content: flex-end;">
-                ${canEditEmployees() ? `
-                    <button class="btn btn-primary" onclick="editarEmpleado(${id})">
-                        <i class="fas fa-edit"></i> Editar Empleado
-                    </button>
-                ` : ''}
-                <button class="btn btn-secondary" onclick="modalPerfil.style.display='none'">
-                    <i class="fas fa-times"></i> Cerrar
-                </button>
-            </div>
-        `;
-
-        document.getElementById('perfil-content').innerHTML = perfilHTML;
-        modalPerfil.style.display = 'block';
-
-        // Activar tabs del perfil
-        activatePerfilTabs();
-
-        // Cargar tickets del empleado
-        loadTicketsEmpleado(emp.id);
-
-    } catch (error) {
-        alert('❌ Error al cargar perfil');
-        console.error(error);
-    }
-}
-
-async function loadTicketsEmpleado(empleadoId) {
-    try {
-        const response = await fetch(`${API_URL}/tickets/${empleadoId}`);
-        const ticketsEmp = await response.json();
+// ===== TICKETS =====
 
         const container = document.getElementById(`tickets-empleado-${empleadoId}`);
 
@@ -1925,7 +1433,7 @@ ticketForm.addEventListener('submit', async (e) => {
 
     // Obtener nombre del empleado
     const empleado = empleados.find(e => e.id === ticketData.empleadoId);
-    ticketData.empleadoNombre = empleado ? empleado.nombreCompleto : 'Desconocido';
+    ticketData.empleadoNombre = empleado ? (empleado.nombre_completo || empleado.nombreCompleto || 'Sin nombre') : 'Desconocido';
 
     try {
         const response = await fetch(`${API_URL}/tickets`, {
@@ -3773,7 +3281,7 @@ if (document.getElementById('ticket-form')) {
         }
 
         try {
-            const url = ticketId ? `${API_URL}/tickets/${ticketId}` : `${API_URL}/tickets`;
+            const url = ticketId ? `${API_URL}/actualizar-ticket?id=${ticketId}` : `${API_URL}/tickets`;
             const method = ticketId ? 'PUT' : 'POST';
 
             const response = await fetch(url, {
@@ -3803,7 +3311,7 @@ async function aprobarTicket(ticketId) {
     if (!confirm('¿Deseas aprobar este ticket?')) return;
 
     try {
-        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
+        const response = await fetch(`${API_URL}/actualizar-ticket?id=${ticketId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -3832,7 +3340,7 @@ async function rechazarTicket(ticketId) {
     if (motivo === null) return;
 
     try {
-        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
+        const response = await fetch(`${API_URL}/actualizar-ticket?id=${ticketId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -3861,7 +3369,7 @@ async function eliminarTicket(ticketId) {
     if (!confirm('¿Estás seguro de eliminar este ticket? Esta acción no se puede deshacer.')) return;
 
     try {
-        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
+        const response = await fetch(`${API_URL}/eliminar-ticket?id=${ticketId}`, {
             method: 'DELETE'
         });
 
@@ -3882,7 +3390,7 @@ async function eliminarTicket(ticketId) {
 // Ver detalle de ticket
 async function verDetalleTicket(ticketId) {
     try {
-        const response = await fetch(`${API_URL}/tickets/${ticketId}`);
+        const response = await fetch(`${API_URL}/ticket?id=${ticketId}`);
         const ticket = await response.json();
 
         const detalleHTML = `
@@ -3980,7 +3488,7 @@ function closeTicketDetalleModal() {
 // Editar ticket
 async function editarTicket(ticketId) {
     try {
-        const response = await fetch(`${API_URL}/tickets/${ticketId}`);
+        const response = await fetch(`${API_URL}/ticket?id=${ticketId}`);
         const ticket = await response.json();
 
         // Cargar empleados
@@ -4135,19 +3643,27 @@ function editarEmpleado(id) {
         return;
     }
 
-    // Llenar el formulario con los datos
-    const dp = empleado.datosPersonales || {};
-    const dir = empleado.direccion || {};
-    const cont = empleado.contacto || {};
-
-    // Datos personales
-    if (document.getElementById('nombreCompleto')) document.getElementById('nombreCompleto').value = dp.nombreCompleto || empleado.nombreCompleto || '';
-    if (document.getElementById('cuil')) document.getElementById('cuil').value = dp.cuil || empleado.cuil || '';
-    if (document.getElementById('documento')) document.getElementById('documento').value = dp.documento || empleado.documento || '';
-    if (document.getElementById('fechaNacimiento')) document.getElementById('fechaNacimiento').value = dp.fechaNacimiento || '';
-    if (document.getElementById('sexo')) document.getElementById('sexo').value = dp.sexo || '';
-    if (document.getElementById('estadoCivil')) document.getElementById('estadoCivil').value = dp.estadoCivil || '';
-    if (document.getElementById('nacionalidad')) document.getElementById('nacionalidad').value = dp.nacionalidad || '';
+    // Datos personales (usar snake_case de Supabase)
+    if (document.getElementById('nombreCompleto')) document.getElementById('nombreCompleto').value = empleado.nombre_completo || '';
+    if (document.getElementById('cuil')) document.getElementById('cuil').value = empleado.cuil || '';
+    if (document.getElementById('documento')) document.getElementById('documento').value = empleado.documento || '';
+    if (document.getElementById('fechaNacimiento')) document.getElementById('fechaNacimiento').value = empleado.fecha_nacimiento || '';
+    if (document.getElementById('estadoCivil')) document.getElementById('estadoCivil').value = empleado.estado_civil || '';
+    if (document.getElementById('integracionFamiliar')) document.getElementById('integracionFamiliar').value = empleado.integracion_familiar || '';
+    if (document.getElementById('escolaridadFamiliar')) document.getElementById('escolaridadFamiliar').value = empleado.escolaridad_familiar || '';
+    if (document.getElementById('nivelEducativo')) document.getElementById('nivelEducativo').value = empleado.nivel_educativo || '';
+    if (document.getElementById('problemasSalud')) document.getElementById('problemasSalud').value = empleado.problemas_salud || '';
+    if (document.getElementById('esExtranjero')) document.getElementById('esExtranjero').value = empleado.es_extranjero || 'no';
+    if (document.getElementById('paisOrigen')) document.getElementById('paisOrigen').value = empleado.pais_origen || '';
+    if (document.getElementById('fechaEntradaPais')) document.getElementById('fechaEntradaPais').value = empleado.fecha_entrada_pais || '';
+    if (document.getElementById('tipoResidencia')) document.getElementById('tipoResidencia').value = empleado.tipo_residencia || '';
+    if (document.getElementById('entradasSalidasPais')) document.getElementById('entradasSalidasPais').value = empleado.entradas_salidas_pais || '';
+    if (document.getElementById('experienciaLaboral')) document.getElementById('experienciaLaboral').value = empleado.experiencia_laboral || '';
+    if (document.getElementById('fechaIngreso')) document.getElementById('fechaIngreso').value = empleado.fecha_ingreso || '';
+    if (document.getElementById('puesto')) document.getElementById('puesto').value = empleado.puesto || '';
+    if (document.getElementById('antecedentesPenales')) document.getElementById('antecedentesPenales').value = empleado.antecedentes_penales || 'no';
+    if (document.getElementById('observacionesAntecedentes')) document.getElementById('observacionesAntecedentes').value = empleado.observaciones_antecedentes || '';
+    if (document.getElementById('observaciones')) document.getElementById('observaciones').value = empleado.observaciones || '';
 
     // Contacto
     if (document.getElementById('telefono')) document.getElementById('telefono').value = cont.telefono || '';
