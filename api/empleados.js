@@ -72,15 +72,9 @@ module.exports = async (req, res) => {
         } else if (req.method === 'POST') {
             const d = req.body;
 
-            // Separar nombre completo en nombre y apellido
-            const nombreParts = (d.nombreCompleto || '').trim().split(' ');
-            const apellido = nombreParts.length > 1 ? nombreParts.pop() : '';
-            const nombre = nombreParts.join(' ') || d.nombreCompleto;
-
-            // VERSIÓN ULTRA SIMPLIFICADA - Solo campos que DEFINITIVAMENTE existen
+            // Usar solo los campos que EXISTEN en Supabase
             const empleadoData = {
-                nombre: nombre || 'Sin Nombre',
-                apellido: apellido || 'Sin Apellido',
+                nombre: d.nombreCompleto || 'Sin Nombre',
                 dni: d.documento || d.cuil || 'SIN_DNI',
                 cuit: d.cuil || null,
                 fecha_nacimiento: d.fechaNacimiento || null,
