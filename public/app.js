@@ -850,7 +850,7 @@ function validarFormulario() {
         limpiarErrorCampo('nombreCompleto');
     }
 
-    // Validar CUIL
+    // Validar CUIL (opcional, solo si se ingresó)
     const cuil = document.getElementById('cuil').value.trim();
     if (cuil) {
         const validacionCUIL = validarCUIL(cuil);
@@ -859,6 +859,8 @@ function validarFormulario() {
         } else {
             limpiarErrorCampo('cuil');
         }
+    } else {
+        limpiarErrorCampo('cuil');
     }
 
     // Validar fecha de nacimiento
