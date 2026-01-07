@@ -125,8 +125,8 @@ SELECT
     COUNT(nombre_completo) as con_nombre_completo,
     COUNT(cuil) as con_cuil,
     COUNT(documento) as con_documento,
-    COUNT(telefono) as con_telefono,
-    COUNT(email) as con_email
+    COUNT(fecha_nacimiento) as con_fecha_nacimiento,
+    COUNT(puesto) as con_puesto
 FROM empleados;
 
 -- ========================================
