@@ -1032,6 +1032,7 @@ function displayEmpleados(lista) {
                         <td>
                             <button class="btn-small btn-info" onclick="verPerfil(${emp.id})">👁️ Ver</button>
                             <button class="btn-small btn-warning" onclick="crearTicket(${emp.id})">📋 Ticket</button>
+                            <button class="btn-small btn-primary" onclick="editarEmpleado(${emp.id})">✏️ Editar</button>
                             <button class="btn-small btn-danger" onclick="eliminarEmpleado(${emp.id})">🗑️</button>
                         </td>
                     </tr>
@@ -1202,7 +1203,7 @@ async function eliminarEmpleado(id) {
     }
 
     try {
-        const response = await fetch(`${API_URL}/empleados/${id}`, {
+        const response = await fetch(`${API_URL}/eliminar-empleado?id=${id}`, {
             method: 'DELETE'
         });
 
@@ -1228,7 +1229,7 @@ function imprimirPerfil() {
 
 async function verPerfil(id) {
     try {
-        const response = await fetch(`${API_URL}/empleados/${id}`);
+        const response = await fetch(`${API_URL}/empleado?id=${id}`);
         const emp = await response.json();
 
         // Adaptar campos con guiones bajos de Supabase
@@ -1902,11 +1903,14 @@ function crearTicket(empleadoId) {
 }
 
 function closeTicketModal() {
-    modalTicket.style.display = 'none';
+    const modal = document.getElementById('modal-ticket');
+    if (modal) modal.style.display = 'none';
     currentEmpleadoId = null;
 }
 
-modalCloseTicket.addEventListener('click', closeTicketModal);
+if (modalCloseTicket) {
+    modalCloseTicket.addEventListener('click', closeTicketModal);
+}
 
 ticketForm.addEventListener('submit', async (e) => {
     e.preventDefault();
