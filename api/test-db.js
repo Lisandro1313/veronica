@@ -29,8 +29,7 @@ module.exports = async (req, res) => {
         const { data: insertData, error: insertError } = await supabase
             .from('empleados')
             .insert([{
-                nombre: 'TEST',
-                apellido: 'PRUEBA',
+                nombre: 'TEST PRUEBA',
                 dni: 'TEST' + Date.now()
             }])
             .select()
