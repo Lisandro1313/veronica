@@ -77,11 +77,11 @@ module.exports = async (req, res) => {
             const apellido = nombreParts.length > 1 ? nombreParts.pop() : '';
             const nombre = nombreParts.join(' ') || d.nombreCompleto;
 
-            // Mapear los campos del frontend a los nombres de la BD
+            // Mapear los campos del frontend a los nombres de la BD - SOLO campos básicos
             const empleadoData = {
                 nombre: nombre || 'Sin Nombre',
                 apellido: apellido || 'Sin Apellido',
-                dni: d.documento || d.cuil || '',
+                dni: d.documento || d.cuil || 'SIN_DNI',
                 cuit: d.cuil || null,
                 fecha_nacimiento: d.fechaNacimiento || null,
                 es_extranjero: d.esExtranjero || 'no',
@@ -94,20 +94,20 @@ module.exports = async (req, res) => {
                 observaciones_antecedentes: d.observacionesAntecedentes || null,
                 integracion_familiar: d.integracionFamiliar || null,
                 observaciones: d.observaciones || null,
-                // Guardar datos adicionales en JSONB
-                datos_personales: JSON.stringify({
+                // Campos JSONB como objetos, no strings
+                datos_personales: {
                     nombreCompleto: d.nombreCompleto,
                     estadoCivil: d.estadoCivil,
                     escolaridadFamiliar: d.escolaridadFamiliar
-                }),
-                datos_laborales: JSON.stringify({
+                },
+                datos_laborales: {
                     experienciaLaboral: d.experienciaLaboral
-                }),
-                datos_adicionales: JSON.stringify({
+                },
+                datos_adicionales: {
                     fechaEntradaPais: d.fechaEntradaPais,
                     tipoResidencia: d.tipoResidencia,
                     entradasSalidasPais: d.entradasSalidasPais
-                })
+                }
             };
 
             const { data, error } = await supabase
@@ -116,7 +116,10 @@ module.exports = async (req, res) => {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Error de Supabase:', error);
+                throw error;
+            }
             return res.json({ success: true, empleado: data });
 
         } else {
