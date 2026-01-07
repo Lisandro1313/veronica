@@ -20,19 +20,27 @@ CREATE TABLE IF NOT EXISTS empleados (
     id SERIAL PRIMARY KEY,
     
     -- Datos personales básicos
-    nombre VARCHAR(100) NOT NULL,
-    apellido VARCHAR(100) NOT NULL,
-    dni VARCHAR(20) UNIQUE NOT NULL,
-    cuit VARCHAR(20),
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    nombre_completo VARCHAR(200) NOT NULL,
+    dni VARCHAR(20) UNIQUE,
+    cuil VARCHAR(20),
+    documento VARCHAR(50),
     fecha_nacimiento DATE,
     nacionalidad VARCHAR(50),
+    estado_civil VARCHAR(50),
     es_extranjero VARCHAR(2),
     pais_origen VARCHAR(50),
+    fecha_entrada_pais DATE,
+    tipo_residencia VARCHAR(50),
     
     -- Datos de contacto
     telefono VARCHAR(20),
     email VARCHAR(100),
     direccion TEXT,
+    calle VARCHAR(200),
+    numero VARCHAR(20),
+    localidad VARCHAR(100),
     ciudad VARCHAR(100),
     provincia VARCHAR(100),
     codigo_postal VARCHAR(10),
@@ -43,11 +51,13 @@ CREATE TABLE IF NOT EXISTS empleados (
     area VARCHAR(100),
     salario DECIMAL(12,2),
     tipo_contrato VARCHAR(50),
+    experiencia_laboral TEXT,
     
     -- Educación
     nivel_educativo VARCHAR(100),
     titulo VARCHAR(200),
     institucion VARCHAR(200),
+    escolaridad_familiar TEXT,
     
     -- Contacto de emergencia
     emergencia_nombre VARCHAR(100),
@@ -65,6 +75,9 @@ CREATE TABLE IF NOT EXISTS empleados (
     
     -- Integración familiar
     integracion_familiar TEXT,
+    
+    -- Viajes internacionales
+    entradas_salidas_pais TEXT,
     
     -- Observaciones generales
     observaciones TEXT,

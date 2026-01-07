@@ -395,8 +395,8 @@ function calcularMetricasAvanzadas() {
 
     // Antigüedad promedio
     const antiguedades = empleados
-        .filter(e => e.laboral && e.laboral.fechaIngreso)
-        .map(e => calcularAntiguedad(e.laboral.fechaIngreso));
+        .filter(e => e.fecha_ingreso || e.fechaIngreso)
+        .map(e => calcularAntiguedad(e.fecha_ingreso || e.fechaIngreso));
 
     const antiguedadPromedio = antiguedades.length > 0
         ? (antiguedades.reduce((sum, ant) => sum + ant, 0) / antiguedades.length).toFixed(1)
@@ -406,8 +406,8 @@ function calcularMetricasAvanzadas() {
 
     // Salario promedio
     const salarios = empleados
-        .filter(e => e.laboral && e.laboral.salario)
-        .map(e => e.laboral.salario);
+        .filter(e => e.salario)
+        .map(e => parseFloat(e.salario) || 0);
 
     const salarioPromedio = salarios.length > 0
         ? Math.round(salarios.reduce((sum, sal) => sum + sal, 0) / salarios.length)
@@ -424,8 +424,9 @@ function calcularMetricasAvanzadas() {
     // Área con más personal
     const areaCount = {};
     empleados.forEach(e => {
-        if (e.laboral && e.laboral.area) {
-            areaCount[e.laboral.area] = (areaCount[e.laboral.area] || 0) + 1;
+        const area = e.area || e.laboral?.area;
+        if (area) {
+            areaCount[area] = (areaCount[area] || 0) + 1;
         }
     });
 
@@ -442,7 +443,7 @@ function calcularMetricasAvanzadas() {
 
     // Porcentaje con estudios superiores
     const conEstudiosSuperiores = empleados.filter(e => {
-        const nivel = e.educacion?.nivelMaximo || e.nivelEducativo || '';
+        const nivel = e.nivel_educativo || e.nivelEducativo || '';
         return nivel.toLowerCase().includes('universitario') ||
             nivel.toLowerCase().includes('terciario');
     }).length;
@@ -468,15 +469,17 @@ function calcularTendencias() {
 
     // Filtrar empleados del mes actual
     const empleadosMesActual = empleados.filter(e => {
-        if (!e.laboral || !e.laboral.fechaIngreso) return false;
-        const fecha = new Date(e.laboral.fechaIngreso);
+        const fechaIng = e.fecha_ingreso || e.fechaIngreso;
+        if (!fechaIng) return false;
+        const fecha = new Date(fechaIng);
         return fecha.getMonth() === mesActual && fecha.getFullYear() === añoActual;
     });
 
     // Filtrar empleados del mes anterior
     const empleadosMesAnterior = empleados.filter(e => {
-        if (!e.laboral || !e.laboral.fechaIngreso) return false;
-        const fecha = new Date(e.laboral.fechaIngreso);
+        const fechaIng = e.fecha_ingreso || e.fechaIngreso;
+        if (!fechaIng) return false;
+        const fecha = new Date(fechaIng);
         return fecha.getMonth() === mesAnterior && fecha.getFullYear() === añoMesAnterior;
     });
 
@@ -529,12 +532,12 @@ function calcularTendencias() {
 
     // 4. Costo Promedio
     const salariosMesActual = empleadosMesActual
-        .filter(e => e.laboral && e.laboral.salario)
-        .map(e => e.laboral.salario);
+        .filter(e => e.salario)
+        .map(e => parseFloat(e.salario) || 0);
 
     const salariosMesAnterior = empleadosMesAnterior
-        .filter(e => e.laboral && e.laboral.salario)
-        .map(e => e.laboral.salario);
+        .filter(e => e.salario)
+        .map(e => parseFloat(e.salario) || 0);
 
     const costoPromedioActual = salariosMesActual.length > 0
         ? Math.round(salariosMesActual.reduce((sum, s) => sum + s, 0) / salariosMesActual.length)
@@ -752,17 +755,6 @@ function mostrarAlertasDashboard(empleados) {
             </div>
         </div>
     `).join('');
-}
-
-function calcularEdad(fechaNacimiento) {
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-        edad--;
-    }
-    return edad;
 }
 
 // ===== VALIDACIONES =====
@@ -1128,18 +1120,18 @@ function aplicarOrdenamiento() {
                 break;
 
             case 'fecha':
-                valorA = a.laboral?.fechaIngreso ? new Date(a.laboral.fechaIngreso) : new Date(0);
-                valorB = b.laboral?.fechaIngreso ? new Date(b.laboral.fechaIngreso) : new Date(0);
+                valorA = (a.fecha_ingreso || a.fechaIngreso) ? new Date(a.fecha_ingreso || a.fechaIngreso) : new Date(0);
+                valorB = (b.fecha_ingreso || b.fechaIngreso) ? new Date(b.fecha_ingreso || b.fechaIngreso) : new Date(0);
                 break;
 
             case 'salario':
-                valorA = parseFloat(a.laboral?.salario) || 0;
-                valorB = parseFloat(b.laboral?.salario) || 0;
+                valorA = parseFloat(a.salario) || 0;
+                valorB = parseFloat(b.salario) || 0;
                 break;
 
             case 'area':
-                valorA = a.laboral?.area?.toLowerCase() || '';
-                valorB = b.laboral?.area?.toLowerCase() || '';
+                valorA = (a.area || '').toLowerCase();
+                valorB = (b.area || '').toLowerCase();
                 break;
 
             case 'edad':
@@ -1841,10 +1833,7 @@ function toggleAdvancedSearch() {
 
 function populateFilterDropdowns() {
     // Poblar dropdown de puestos únicos
-    const puestos = [...new Set(empleados.map(e => {
-        const laboral = e.laboral || {};
-        return laboral.puesto || e.puesto;
-    }).filter(p => p))];
+    const puestos = [...new Set(empleados.map(e => e.puesto || e.laboral?.puesto).filter(p => p))];
 
     const puestoSelect = document.getElementById('filter-puesto');
     puestoSelect.innerHTML = '<option value="">Todos los puestos</option>' +
@@ -1874,44 +1863,32 @@ function applyAdvancedFilters() {
 
     // Aplicar filtros
     if (filters.puesto) {
-        filtered = filtered.filter(e => {
-            const laboral = e.laboral || {};
-            return (laboral.puesto || e.puesto) === filters.puesto;
-        });
+        filtered = filtered.filter(e => (e.puesto || e.laboral?.puesto) === filters.puesto);
     }
 
     if (filters.area) {
-        filtered = filtered.filter(e => {
-            const laboral = e.laboral || {};
-            return (laboral.area || e.area) === filters.area;
-        });
+        filtered = filtered.filter(e => (e.area || e.laboral?.area) === filters.area);
     }
 
     if (filters.nacionalidad) {
-        filtered = filtered.filter(e => {
-            const dp = e.datosPersonales || {};
-            return (dp.nacionalidad || e.paisOrigen) === filters.nacionalidad;
-        });
+        filtered = filtered.filter(e => (e.pais_origen || e.paisOrigen || e.datosPersonales?.nacionalidad) === filters.nacionalidad);
     }
 
     if (filters.educacion) {
         filtered = filtered.filter(e => {
-            const edu = e.educacion || {};
-            const nivel = edu.nivelEducativo || e.nivelEducativo || '';
+            const nivel = e.nivel_educativo || e.nivelEducativo || e.educacion?.nivelEducativo || '';
             return nivel.toLowerCase().includes(filters.educacion.toLowerCase());
         });
     }
 
     if (filters.salud === 'sin-problemas') {
         filtered = filtered.filter(e => {
-            const salud = e.salud || {};
-            const problemas = salud.problemasSalud || e.problemasSalud || '';
+            const problemas = e.problemas_salud || e.problemasSalud || e.salud?.problemasSalud || '';
             return !problemas || problemas === 'Ninguno' || problemas === '';
         });
     } else if (filters.salud === 'con-problemas') {
         filtered = filtered.filter(e => {
-            const salud = e.salud || {};
-            const problemas = salud.problemasSalud || e.problemasSalud || '';
+            const problemas = e.problemas_salud || e.problemasSalud || e.salud?.problemasSalud || '';
             return problemas && problemas !== 'Ninguno' && problemas !== '';
         });
     }
@@ -1919,8 +1896,7 @@ function applyAdvancedFilters() {
     // Filtro de estado activo/inactivo
     if (filters.estado) {
         filtered = filtered.filter(e => {
-            const laboral = e.laboral || {};
-            const estado = laboral.estado || e.estado || 'activo';
+            const estado = e.estado || e.laboral?.estado || 'activo';
             return estado.toLowerCase() === filters.estado;
         });
     }
@@ -1928,8 +1904,7 @@ function applyAdvancedFilters() {
     // Filtro de rango de salario
     if (filters.salario) {
         filtered = filtered.filter(e => {
-            const laboral = e.laboral || {};
-            const salario = parseFloat(laboral.salario || e.salario || 0);
+            const salario = parseFloat(e.salario || e.laboral?.salario || 0);
 
             if (filters.salario === '200000+') {
                 return salario > 200000;
@@ -1950,8 +1925,8 @@ function applyAdvancedFilters() {
 
     if (filters.edadMin || filters.edadMax) {
         filtered = filtered.filter(e => {
-            const dp = e.datosPersonales || {};
-            const edad = dp.edad || calcularEdad(e.fechaNacimiento || dp.fechaNacimiento);
+            const fechaNac = e.fecha_nacimiento || e.fechaNacimiento || e.datosPersonales?.fechaNacimiento;
+            const edad = fechaNac ? calcularEdad(fechaNac) : null;
             if (!edad) return true;
             if (filters.edadMin && edad < parseInt(filters.edadMin)) return false;
             if (filters.edadMax && edad > parseInt(filters.edadMax)) return false;
@@ -1961,8 +1936,7 @@ function applyAdvancedFilters() {
 
     if (filters.antiguedad) {
         filtered = filtered.filter(e => {
-            const laboral = e.laboral || {};
-            const fechaIngreso = laboral.fechaIngreso || e.fechaIngreso;
+            const fechaIngreso = e.fecha_ingreso || e.fechaIngreso || e.laboral?.fechaIngreso;
             if (!fechaIngreso) return false;
 
             const años = calcularAntiguedad(fechaIngreso);
@@ -2249,8 +2223,9 @@ function generarNotificaciones() {
         }
 
         // 6. Aniversario laboral próximo
-        if (emp.laboral && emp.laboral.fechaIngreso) {
-            const ingreso = new Date(emp.laboral.fechaIngreso);
+        const fechaIngreso = emp.fecha_ingreso || emp.fechaIngreso || emp.laboral?.fechaIngreso;
+        if (fechaIngreso) {
+            const ingreso = new Date(fechaIngreso);
             const aniversario = new Date(hoy.getFullYear(), ingreso.getMonth(), ingreso.getDate());
             const diasHastaAniv = Math.ceil((aniversario - hoy) / (1000 * 60 * 60 * 24));
             const anos = hoy.getFullYear() - ingreso.getFullYear();
@@ -2417,14 +2392,15 @@ async function exportarAPDF() {
         const tableData = empleados.map(emp => {
             const datos = emp.datosPersonales || emp;
             const edad = calcularEdad(datos.fechaNacimiento);
-            const antiguedad = emp.laboral ? calcularAntiguedad(emp.laboral.fechaIngreso) : 0;
+            const fechaIngreso = emp.fecha_ingreso || emp.fechaIngreso || emp.laboral?.fechaIngreso;
+            const antiguedad = fechaIngreso ? calcularAntiguedad(fechaIngreso) : 0;
 
             return [
                 datos.nombre + ' ' + datos.apellido,
                 datos.dni || datos.cuil || '-',
                 datos.nacionalidad || '-',
                 `${edad} años`,
-                emp.laboral?.puesto || '-',
+                emp.puesto || emp.laboral?.puesto || '-',
                 `${antiguedad} años`,
                 datos.estadoCivil || '-'
             ];
@@ -2543,7 +2519,8 @@ function exportarAExcelMejorado() {
         const empleadosData = empleados.map(emp => {
             const datos = emp.datosPersonales || emp;
             const edad = calcularEdad(datos.fechaNacimiento);
-            const antiguedad = emp.laboral ? calcularAntiguedad(emp.laboral.fechaIngreso) : 0;
+            const fechaIngreso = emp.fecha_ingreso || emp.fechaIngreso || emp.laboral?.fechaIngreso;
+            const antiguedad = fechaIngreso ? calcularAntiguedad(fechaIngreso) : 0;
 
             return {
                 'ID': emp.id,
@@ -2556,17 +2533,17 @@ function exportarAExcelMejorado() {
                 'País Nacimiento': datos.paisNacimiento || '-',
                 'Estado Civil': datos.estadoCivil || '-',
                 'Género': datos.genero || '-',
-                'Teléfono': emp.contacto?.telefono || '-',
-                'Email': emp.contacto?.email || '-',
-                'Dirección': emp.direccion ? `${emp.direccion.calle}, ${emp.direccion.ciudad}` : '-',
-                'Provincia': emp.direccion?.provincia || '-',
-                'CP': emp.direccion?.codigoPostal || '-',
-                'Puesto': emp.laboral?.puesto || '-',
-                'Área': emp.laboral?.area || '-',
-                'Fecha Ingreso': emp.laboral?.fechaIngreso || '-',
+                'Teléfono': emp.telefono || emp.contacto?.telefono || '-',
+                'Email': emp.email || emp.contacto?.email || '-',
+                'Dirección': emp.direccion_completa || (emp.direccion ? `${emp.direccion.calle}, ${emp.direccion.ciudad}` : '-'),
+                'Provincia': emp.provincia || emp.direccion?.provincia || '-',
+                'CP': emp.codigo_postal || emp.codigoPostal || emp.direccion?.codigoPostal || '-',
+                'Puesto': emp.puesto || emp.laboral?.puesto || '-',
+                'Área': emp.area || emp.laboral?.area || '-',
+                'Fecha Ingreso': emp.fecha_ingreso || emp.fechaIngreso || emp.laboral?.fechaIngreso || '-',
                 'Antigüedad (años)': antiguedad,
-                'Tipo Contrato': emp.laboral?.tipoContrato || '-',
-                'Salario': emp.laboral?.salario || '-'
+                'Tipo Contrato': emp.tipo_contrato || emp.tipoContrato || emp.laboral?.tipoContrato || '-',
+                'Salario': emp.salario || emp.laboral?.salario || '-'
             };
         });
 
@@ -3589,8 +3566,12 @@ async function loadEmpleadosAusentes() {
         container.innerHTML = ausentesHTML;
     } catch (error) {
         console.error('Error:', error);
+        // Si la API no existe, mostrar mensaje informativo
+        if (document.getElementById('stat-empleados-ausentes')) {
+            document.getElementById('stat-empleados-ausentes').textContent = '-';
+        }
         document.getElementById('empleados-ausentes-list').innerHTML =
-            '<p class="error-state">Error al cargar empleados ausentes</p>';
+            '<p class="empty-state"><i class="fas fa-info-circle"></i> Función de ausentes pendiente de implementación</p>';
     }
 }
 
@@ -3664,16 +3645,6 @@ function editarEmpleado(id) {
     if (document.getElementById('antecedentesPenales')) document.getElementById('antecedentesPenales').value = empleado.antecedentes_penales || 'no';
     if (document.getElementById('observacionesAntecedentes')) document.getElementById('observacionesAntecedentes').value = empleado.observaciones_antecedentes || '';
     if (document.getElementById('observaciones')) document.getElementById('observaciones').value = empleado.observaciones || '';
-
-    // Contacto
-    if (document.getElementById('telefono')) document.getElementById('telefono').value = cont.telefono || '';
-    if (document.getElementById('email')) document.getElementById('email').value = cont.email || '';
-
-    // Dirección
-    if (document.getElementById('calle')) document.getElementById('calle').value = dir.calle || '';
-    if (document.getElementById('numero')) document.getElementById('numero').value = dir.numero || '';
-    if (document.getElementById('localidad')) document.getElementById('localidad').value = dir.localidad || '';
-    if (document.getElementById('provincia')) document.getElementById('provincia').value = dir.provincia || '';
 
     // Guardar el ID del empleado que estamos editando
     empleadoForm.dataset.editId = id;
