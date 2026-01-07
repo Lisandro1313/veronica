@@ -1300,8 +1300,8 @@ async function verPerfil(id) {
 }
 
 async function loadTicketsEmpleado(empleadoId) {
-        const dp = emp.datosPersonales || {};
-        const dir = emp.direccion || {};
+    try {
+        const response = await fetch(`${API_URL}/tickets/${empleadoId}`);
         const cont = emp.contacto || {};
         const edu = emp.educacion || {};
         const sal = emp.salud || {};
