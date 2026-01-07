@@ -1299,7 +1299,7 @@ async function verPerfil(id) {
     }
 }
 
-        // Funciones auxiliares para formatear
+async function loadTicketsEmpleado(empleadoId) {
         const dp = emp.datosPersonales || {};
         const dir = emp.direccion || {};
         const cont = emp.contacto || {};
