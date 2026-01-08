@@ -329,11 +329,20 @@ async function loadDashboard() {
 }
 
 function calcularKPIs(empleados) {
+    // 📊 EXPLICACIÓN DE CÁLCULOS DEL DASHBOARD:
+    
+    // 1. EXTRANJEROS: Cuenta empleados con campo "esExtranjero" = "si"
     const extranjeros = empleados.filter(e => e.esExtranjero === 'si').length;
+    
+    // 2. CON ANTECEDENTES: Cuenta empleados con campo "antecedentesPenales" = "si"
     const conAntecedentes = empleados.filter(e => e.antecedentesPenales === 'si').length;
+    
+    // 3. CON PROBLEMAS DE SALUD: Cuenta empleados que tienen texto en campo "problemasSalud"
     const conProblemasSalud = empleados.filter(e => e.problemasSalud && e.problemasSalud.trim() !== '').length;
 
-    // Calcular menores en familias (estimación basada en composición familiar)
+    // 4. MENORES EN FAMILIAS: Busca números seguidos de palabras como "hijo", "hija", "menor", "niño"
+    //    en el campo "integracionFamiliar" y suma los números encontrados
+    //    Ejemplo: "2 hijos menores" → suma 2 al contador
     let menoresEstimados = 0;
     empleados.forEach(e => {
         if (e.integracionFamiliar) {
@@ -347,19 +356,21 @@ function calcularKPIs(empleados) {
         }
     });
 
-    // Empleados de viaje (basado en tickets recientes)
+    // 5. DE VIAJE: Cuenta tickets de tipo "vacaciones" creados en los últimos 30 días
+    //    NOTA: Depende de la variable global "tickets" cargada previamente
     const deViaje = tickets.filter(t =>
         t.tipo === 'vacaciones' &&
         new Date(t.fecha) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     ).length;
 
     return {
-        total: empleados.length,
-        extranjeros,
-        conAntecedentes,
-        menores: menoresEstimados,
-        conProblemasSalud,
-        deViaje
+        total: empleados.length,              // Total de empleados en la base de datos
+        extranjeros,                          // Empleados extranjeros
+        conAntecedentes,                      // Empleados con antecedentes penales
+        menores: menoresEstimados,            // Total estimado de menores en familias
+        conProblemasSalud,                    // Empleados con problemas de salud registrados
+        deViaje,                              // Empleados actualmente de vacaciones
+        sueldoPromedio: calcularSueldoPromedio(empleados)  // Sueldo promedio de los empleados
     };
 }
 
@@ -370,6 +381,14 @@ function mostrarKPIs(kpis) {
     document.getElementById('kpi-menores').textContent = kpis.menores;
     document.getElementById('kpi-salud').textContent = kpis.conProblemasSalud;
     document.getElementById('kpi-viaje').textContent = kpis.deViaje;
+    
+    // Mostrar sueldo promedio formateado
+    const sueldoElement = document.getElementById('kpi-sueldo-promedio');
+    if (sueldoElement) {
+        sueldoElement.textContent = kpis.sueldoPromedio > 0 
+            ? `$${kpis.sueldoPromedio.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`
+            : '$0';
+    }
 
     // Calcular y mostrar métricas avanzadas
     calcularMetricasAvanzadas();
@@ -378,13 +397,26 @@ function mostrarKPIs(kpis) {
     calcularTendencias();
 }
 
+function calcularSueldoPromedio(empleados) {
+    if (!empleados || empleados.length === 0) return 0;
+    
+    const empleadosConSueldo = empleados.filter(e => e.sueldo && parseFloat(e.sueldo) > 0);
+    
+    if (empleadosConSueldo.length === 0) return 0;
+    
+    const totalSueldos = empleadosConSueldo.reduce((sum, e) => sum + parseFloat(e.sueldo), 0);
+    return Math.round(totalSueldos / empleadosConSueldo.length);
+}
+
 function calcularMetricasAvanzadas() {
     if (empleados.length === 0) return;
 
-    // Edad promedio
+    // 📈 MÉTRICAS AVANZADAS DEL DASHBOARD:
+
+    // 1. EDAD PROMEDIO: Calcula la edad de cada empleado usando su fechaNacimiento
+    //    y luego saca el promedio. Usa la función calcularEdad() definida más abajo.
     const edades = empleados.map(e => {
-        const datos = e.datosPersonales || e;
-        return calcularEdad(datos.fechaNacimiento);
+        return calcularEdad(e.fecha_nacimiento);
     }).filter(edad => edad > 0);
 
     const edadPromedio = edades.length > 0
@@ -393,10 +425,11 @@ function calcularMetricasAvanzadas() {
 
     document.getElementById('kpi-edad-promedio').textContent = `${edadPromedio} años`;
 
-    // Antigüedad promedio
+    // 2. ANTIGÜEDAD PROMEDIO: Calcula años trabajando desde la fecha_ingreso/fechaIngreso
+    //    hasta hoy usando la función calcularAntiguedad()
     const antiguedades = empleados
-        .filter(e => e.fecha_ingreso || e.fechaIngreso)
-        .map(e => calcularAntiguedad(e.fecha_ingreso || e.fechaIngreso));
+        .filter(e => e.fecha_ingreso)
+        .map(e => calcularAntiguedad(e.fecha_ingreso));
 
     const antiguedadPromedio = antiguedades.length > 0
         ? (antiguedades.reduce((sum, ant) => sum + ant, 0) / antiguedades.length).toFixed(1)
@@ -404,7 +437,7 @@ function calcularMetricasAvanzadas() {
 
     document.getElementById('kpi-antiguedad-promedio').textContent = `${antiguedadPromedio} años`;
 
-    // Salario promedio
+    // 3. SALARIO PROMEDIO: Suma todos los salarios y divide por cantidad de empleados con salario
     const salarios = empleados
         .filter(e => e.salario)
         .map(e => parseFloat(e.salario) || 0);
@@ -416,15 +449,15 @@ function calcularMetricasAvanzadas() {
     document.getElementById('kpi-salario-promedio').textContent =
         `$${salarioPromedio.toLocaleString('es-AR')}`;
 
-    // Costo laboral total
+    // 4. COSTO LABORAL TOTAL: Suma de todos los salarios de todos los empleados
     const costoTotal = salarios.reduce((sum, sal) => sum + sal, 0);
     document.getElementById('kpi-costo-total').textContent =
         `$${costoTotal.toLocaleString('es-AR')}`;
 
-    // Área con más personal
+    // 5. ÁREA CON MÁS PERSONAL: Cuenta empleados por área y muestra la que tiene más
     const areaCount = {};
     empleados.forEach(e => {
-        const area = e.area || e.laboral?.area;
+        const area = e.area;
         if (area) {
             areaCount[area] = (areaCount[area] || 0) + 1;
         }
@@ -441,7 +474,7 @@ function calcularMetricasAvanzadas() {
 
     document.getElementById('kpi-area-mayor').textContent = areaMayor;
 
-    // Porcentaje con estudios superiores
+    // 6. EDUCACIÓN SUPERIOR: Porcentaje de empleados con nivel educativo "universitario" o "terciario"
     const conEstudiosSuperiores = empleados.filter(e => {
         const nivel = e.nivel_educativo || e.nivelEducativo || '';
         return nivel.toLowerCase().includes('universitario') ||
@@ -908,6 +941,7 @@ empleadoForm.addEventListener('submit', async (e) => {
         experienciaLaboral: document.getElementById('experienciaLaboral').value,
         fechaIngreso: document.getElementById('fechaIngreso').value,
         puesto: document.getElementById('puesto').value,
+        sueldo: document.getElementById('sueldo').value,
 
         antecedentesPenales: document.getElementById('antecedentesPenales').value,
         observacionesAntecedentes: document.getElementById('observacionesAntecedentes').value,
@@ -944,6 +978,22 @@ empleadoForm.addEventListener('submit', async (e) => {
             empleadoForm.reset();
             delete empleadoForm.dataset.editId;
 
+            // Restaurar títulos originales
+            const navButton = document.querySelector('[data-tab="nuevo"]');
+            if (navButton) {
+                navButton.innerHTML = '<i class="fas fa-user-plus"></i><span>Nuevo Empleado</span>';
+            }
+            
+            const pageTitle = document.getElementById('page-title');
+            if (pageTitle) {
+                pageTitle.innerHTML = '<i class="fas fa-users"></i> Gestión de Personal';
+            }
+
+            const registroTitle = document.querySelector('.tab-content[data-tab="nuevo"] h3');
+            if (registroTitle) {
+                registroTitle.innerHTML = '<i class="fas fa-user-plus"></i> Registrar Nuevo Empleado';
+            }
+
             // Restaurar texto del botón
             submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Registrar Empleado';
 
@@ -955,8 +1005,10 @@ empleadoForm.addEventListener('submit', async (e) => {
         console.error(error);
     } finally {
         // Restaurar botón
-        submitBtn.classList.remove('btn-loading');
-        submitBtn.disabled = false;
+        if (submitBtn) {
+            submitBtn.classList.remove('btn-loading');
+            submitBtn.disabled = false;
+        }
     }
 });
 
@@ -1225,9 +1277,11 @@ async function verPerfil(id) {
     try {
         const response = await fetch(`${API_URL}/empleado?id=${id}`);
         const emp = await response.json();
+        console.log('👤 Datos del empleado:', emp);
 
         // Adaptar campos con guiones bajos de Supabase
-        const nombreCompleto = emp.nombre_completo || 'Sin nombre';
+        const nombreCompleto = `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'Sin nombre';
+        console.log('📝 Nombre completo construido:', nombreCompleto);
         const cuil = emp.cuil || '-';
         const documento = emp.documento || '-';
         const fechaNacimiento = emp.fecha_nacimiento || '-';
@@ -1250,6 +1304,7 @@ async function verPerfil(id) {
                 <button class="perfil-tab active" data-perfilTab="general">📋 General</button>
                 <button class="perfil-tab" data-perfilTab="laboral">💼 Laboral</button>
                 <button class="perfil-tab" data-perfilTab="salud">🏥 Salud</button>
+                <button class="perfil-tab" data-perfilTab="historial">📜 Historial</button>
             </div>
 
             <div class="perfil-tab-content active" data-perfilTabContent="general">
@@ -1271,6 +1326,7 @@ async function verPerfil(id) {
                 <div class="info-grid">
                     <div class="info-item"><label>Puesto:</label><span>${puesto}</span></div>
                     <div class="info-item"><label>Fecha Ingreso:</label><span>${fechaIngreso}</span></div>
+                    <div class="info-item"><label>Sueldo:</label><span>${emp.sueldo ? `$${parseFloat(emp.sueldo).toLocaleString('es-AR', {minimumFractionDigits: 2})}` : '-'}</span></div>
                     <div class="info-item"><label>Experiencia:</label><span>${emp.experiencia_laboral || '-'}</span></div>
                 </div>
             </div>
@@ -1283,6 +1339,13 @@ async function verPerfil(id) {
                     ${emp.observaciones ? `<div class="info-item"><label>Observaciones:</label><span>${escapeHtml(emp.observaciones)}</span></div>` : ''}
                 </div>
             </div>
+
+            <div class="perfil-tab-content" data-perfilTabContent="historial">
+                <h3>📜 Historial de Tickets</h3>
+                <div id="tickets-empleado-${id}">
+                    <p class="loading">Cargando historial...</p>
+                </div>
+            </div>
         `;
 
         document.getElementById('perfil-content').innerHTML = perfilHTML;
@@ -1290,14 +1353,108 @@ async function verPerfil(id) {
         modalPerfil.style.display = 'flex';
         activatePerfilTabs();
 
+        // Cargar tickets del empleado
+        await cargarHistorialTickets(id);
+
     } catch (error) {
         console.error('Error al cargar perfil:', error);
         alert('Error al cargar el perfil del empleado');
     }
 }
 
+// Cargar historial de tickets de un empleado
+async function cargarHistorialTickets(empleadoId) {
+    try {
+        console.log(`📋 Cargando tickets del empleado ${empleadoId}`);
+        const response = await fetch(`${API_URL}/tickets/${empleadoId}`);
+        const ticketsEmp = await response.json();
+        console.log(`✅ Tickets recibidos:`, ticketsEmp);
+
+        const container = document.getElementById(`tickets-empleado-${empleadoId}`);
+
+        if (!Array.isArray(ticketsEmp) || ticketsEmp.length === 0) {
+            console.log('ℹ️ No hay tickets para este empleado');
+            container.innerHTML = '<p class="empty-state">📋 No hay tickets registrados para este empleado.</p>';
+            return;
+        }
+
+        // Ordenar por fecha descendente
+        ticketsEmp.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        // Crear timeline de tickets
+        const timelineHTML = `
+            <div class="timeline-tickets">
+                ${ticketsEmp.map(t => `
+                    <div class="timeline-item">
+                        <div class="timeline-marker ${getTimelineMarkerClass(t.estado)}">
+                            ${getTicketTipoIcon(t.tipo)}
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-header">
+                                <h4>${escapeHtml(t.titulo || 'Sin título')}</h4>
+                                <div class="timeline-badges">
+                                    ${getTicketEstadoBadge(t.estado)}
+                                    ${getTicketTipoBadge(t.tipo)}
+                                </div>
+                            </div>
+                            
+                            ${t.descripcion ? `<p>${escapeHtml(t.descripcion)}</p>` : ''}
+                            
+                            ${t.fecha_desde && t.fecha_hasta ? `
+                                <div class="timeline-dates">
+                                    <i class="fas fa-calendar"></i>
+                                    ${formatDate(t.fecha_desde)} - ${formatDate(t.fecha_hasta)}
+                                    <span class="timeline-duracion">(${calcularDias(t.fecha_desde, t.fecha_hasta)} días)</span>
+                                </div>
+                            ` : t.fecha_evento ? `
+                                <div class="timeline-dates">
+                                    <i class="fas fa-calendar-day"></i>
+                                    ${formatDate(t.fecha_evento)}
+                                </div>
+                            ` : ''}
+                            
+                            ${t.valor_anterior && t.valor_nuevo ? `
+                                <div class="timeline-cambio">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    <span class="valor-anterior">${escapeHtml(t.valor_anterior)}</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                    <span class="valor-nuevo">${escapeHtml(t.valor_nuevo)}</span>
+                                </div>
+                            ` : ''}
+                            
+                            ${t.observaciones ? `
+                                <div class="timeline-observaciones">
+                                    <i class="fas fa-comment"></i>
+                                    ${escapeHtml(t.observaciones)}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="timeline-footer">
+                                <span><i class="fas fa-clock"></i> ${formatDate(t.created_at)}</span>
+                                <button class="btn-small btn-info" onclick="verDetalleTicket(${t.id})">
+                                    <i class="fas fa-eye"></i> Ver Detalle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        container.innerHTML = timelineHTML;
+    } catch (error) {
+        console.error('Error al cargar tickets del empleado:', error);
+        const container = document.getElementById(`tickets-empleado-${empleadoId}`);
+        if (container) {
+            container.innerHTML = '<p class="error-state">❌ Error al cargar historial de tickets</p>';
+        }
+    }
+}
+
 // ===== TICKETS =====
 
+async function cargarTicketsEmpleado(empleadoId, ticketsEmp) {
+    try {
         const container = document.getElementById(`tickets-empleado-${empleadoId}`);
 
         if (ticketsEmp.length === 0) {
@@ -1380,9 +1537,11 @@ async function verPerfil(id) {
 }
 
 // Cerrar modal
-modalClose.addEventListener('click', () => {
-    modalPerfil.style.display = 'none';
-});
+if (modalClose) {
+    modalClose.addEventListener('click', () => {
+        modalPerfil.style.display = 'none';
+    });
+}
 
 window.addEventListener('click', (e) => {
     if (e.target === modalPerfil) {
@@ -1412,39 +1571,8 @@ if (modalCloseTicket) {
     modalCloseTicket.addEventListener('click', closeTicketModal);
 }
 
-ticketForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const ticketData = {
-        empleadoId: parseInt(document.getElementById('ticket-empleadoId').value),
-        tipo: document.getElementById('ticket-tipo').value,
-        descripcion: document.getElementById('ticket-descripcion').value,
-        fecha: document.getElementById('ticket-fecha').value,
-        creadoPor: currentUser.nombre
-    };
-
-    // Obtener nombre del empleado
-    const empleado = empleados.find(e => e.id === ticketData.empleadoId);
-    ticketData.empleadoNombre = empleado ? (empleado.nombre_completo || empleado.nombreCompleto || 'Sin nombre') : 'Desconocido';
-
-    try {
-        const response = await fetch(`${API_URL}/tickets`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(ticketData)
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            alert('✅ Ticket creado correctamente');
-            closeTicketModal();
-        }
-    } catch (error) {
-        alert('❌ Error al crear ticket');
-        console.error(error);
-    }
-});
+// NOTA: El handler del formulario de tickets está más abajo (línea ~3252)
+// para usar el sistema completo con todos los tipos de tickets
 
 async function loadAllTickets() {
     try {
@@ -1648,19 +1776,19 @@ function generarReporte(tipo) {
             nombreReporte = 'Reporte General de Personal';
             break;
         case 'extranjeros':
-            filteredData = empleados.filter(e => e.esExtranjero === 'si');
+            filteredData = empleados.filter(e => e.es_extranjero === 'si');
             nombreReporte = 'Reporte de Personal Extranjero';
             break;
         case 'antecedentes':
-            filteredData = empleados.filter(e => e.antecedentesPenales === 'si');
+            filteredData = empleados.filter(e => e.antecedentes_penales === 'si');
             nombreReporte = 'Reporte de Personal con Antecedentes';
             break;
         case 'salud':
-            filteredData = empleados.filter(e => e.problemasSalud && e.problemasSalud.trim() !== '');
+            filteredData = empleados.filter(e => e.problemas_salud && e.problemas_salud.trim() !== '');
             nombreReporte = 'Reporte de Problemas de Salud';
             break;
         case 'familias':
-            filteredData = empleados.filter(e => e.integracionFamiliar && e.integracionFamiliar.trim() !== '');
+            filteredData = empleados.filter(e => e.integracion_familiar && e.integracion_familiar.trim() !== '');
             nombreReporte = 'Reporte de Composición Familiar';
             break;
         case 'educacion':
@@ -1693,23 +1821,25 @@ function generarReporte(tipo) {
                     </tr>
                 </thead>
                 <tbody>
-                    ${filteredData.map(emp => `
+                    ${filteredData.map(emp => {
+                        const nombreCompleto = `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'Sin nombre';
+                        return `
                         <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${emp.nombreCompleto}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${nombreCompleto}</td>
                             <td style="border: 1px solid #ddd; padding: 8px;">${emp.cuil}</td>
                             <td style="border: 1px solid #ddd; padding: 8px;">${emp.puesto || '-'}</td>
                             ${tipo === 'extranjeros' ? `
-                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.paisOrigen || '-'}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.tipoResidencia || '-'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.pais_origen || '-'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.tipo_residencia || '-'}</td>
                             ` : ''}
                             ${tipo === 'salud' ? `
-                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.problemasSalud || '-'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.problemas_salud || '-'}</td>
                             ` : ''}
                             ${tipo === 'educacion' ? `
-                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.nivelEducativo || '-'}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.nivel_educativo || '-'}</td>
                             ` : ''}
                         </tr>
-                    `).join('')}
+                    `}).join('')}
                 </tbody>
             </table>
         </div>
@@ -1730,10 +1860,10 @@ function exportarExcel() {
     }
 
     // Crear CSV
-    let csv = 'Nombre,CUIL,Fecha Nacimiento,Puesto,Es Extranjero,País Origen,Tipo Residencia,Nivel Educativo,Antecedentes,Fecha Ingreso\n';
+    let csv = 'Nombre,Apellido,CUIL,Fecha Nacimiento,Puesto,Es Extranjero,País Origen,Tipo Residencia,Nivel Educativo,Antecedentes,Fecha Ingreso\n';
 
     empleados.forEach(emp => {
-        csv += `"${emp.nombreCompleto}","${emp.cuil}","${emp.fechaNacimiento || ''}","${emp.puesto || ''}","${emp.esExtranjero}","${emp.paisOrigen || ''}","${emp.tipoResidencia || ''}","${emp.nivelEducativo || ''}","${emp.antecedentesPenales}","${emp.fechaIngreso || ''}"\n`;
+        csv += `"${emp.nombre || ''}","${emp.apellido || ''}","${emp.cuil}","${emp.fecha_nacimiento || ''}","${emp.puesto || ''}","${emp.es_extranjero}","${emp.pais_origen || ''}","${emp.tipo_residencia || ''}","${emp.nivel_educativo || ''}","${emp.antecedentes_penales}","${emp.fecha_ingreso || ''}"\n`;
     });
 
     // Descargar
@@ -1760,8 +1890,11 @@ function activatePerfilTabs() {
 
             // Activar el seleccionado
             tab.classList.add('active');
-            const tabName = tab.dataset.tab;
-            document.getElementById(`perfil-tab-${tabName}`).classList.add('active');
+            const tabName = tab.getAttribute('data-perfiltab');
+            const targetContent = document.querySelector(`[data-perfiltabcontent="${tabName}"]`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
         });
     });
 }
@@ -2296,7 +2429,7 @@ function mostrarNotificaciones() {
     }
 
     lista.innerHTML = notifFiltradas.map(n => `
-        <div class="notif-item ${n.tipo} ${n.leida ? 'leida' : ''}" onclick="verEmpleadoDesdeNotif('${n.empleadoId}')">
+        <div class="notif-item ${n.tipo} ${n.leida ? 'leida' : ''}">
             <div class="notif-icon">
                 <i class="${n.icono}"></i>
             </div>
@@ -2305,9 +2438,14 @@ function mostrarNotificaciones() {
                 <p>${n.mensaje}</p>
                 <small>${formatearFecha(n.fecha)}</small>
             </div>
-            <button class="notif-mark-read" onclick="event.stopPropagation(); marcarLeida('${n.id}')">
-                <i class="fas fa-check"></i>
-            </button>
+            <div class="notif-actions">
+                <button class="btn-small btn-primary" onclick="event.stopPropagation(); verPerfil(${n.empleadoId})" title="Ver Perfil">
+                    <i class="fas fa-user"></i>
+                </button>
+                <button class="notif-mark-read" onclick="event.stopPropagation(); marcarLeida('${n.id}')" title="Marcar como leída">
+                    <i class="fas fa-check"></i>
+                </button>
+            </div>
         </div>
     `).join('');
 }
@@ -2964,7 +3102,18 @@ async function loadAllTickets() {
     try {
         const response = await fetch(`${API_URL}/tickets`);
         const data = await response.json();
-        tickets = data;
+        
+        // Verificar que data sea un array
+        if (Array.isArray(data)) {
+            tickets = data;
+        } else if (data.success && Array.isArray(data.data)) {
+            tickets = data.data;
+        } else {
+            console.warn('Respuesta inesperada del servidor:', data);
+            tickets = [];
+        }
+
+        console.log(`📋 ${tickets.length} tickets cargados`);
 
         // Actualizar estadísticas
         actualizarEstadisticasTickets();
@@ -2976,12 +3125,18 @@ async function loadAllTickets() {
         loadEmpleadosAusentes();
     } catch (error) {
         console.error('Error al cargar tickets:', error);
-        showToast('Error al cargar tickets', 'error');
+        tickets = [];  // Asegurar que tickets sea un array
+        showToast('error', 'Error', 'Error al cargar tickets');
     }
 }
 
 // Actualizar estadísticas de tickets
 function actualizarEstadisticasTickets() {
+    if (!Array.isArray(tickets)) {
+        console.error('tickets no es un array:', tickets);
+        tickets = [];
+    }
+    
     const pendientes = tickets.filter(t => t.estado === 'pendiente').length;
     const aprobados = tickets.filter(t => t.estado === 'aprobado').length;
     const enProceso = tickets.filter(t => t.estado === 'en_proceso').length;
@@ -3178,11 +3333,20 @@ async function cargarEmpleadosEnSelect() {
             await loadEmpleados();
         }
 
+        console.log('Cargando empleados en select. Total:', empleados.length);
         const select = document.getElementById('ticket-empleado-select');
+        
+        if (!select) {
+            console.error('No se encontró el elemento ticket-empleado-select');
+            return;
+        }
+        
         select.innerHTML = '<option value="">Seleccionar empleado...</option>' +
             empleados.map(emp =>
                 `<option value="${emp.id}">${emp.nombre_completo || emp.nombreCompleto || 'Sin nombre'} - ${emp.puesto || 'Sin puesto'}</option>`
             ).join('');
+        
+        console.log('Select actualizado con', select.options.length - 1, 'empleados');
     } catch (error) {
         console.error('Error al cargar empleados:', error);
     }
@@ -3220,8 +3384,10 @@ function closeTicketModal() {
 
 // Guardar ticket (crear o editar)
 if (document.getElementById('ticket-form')) {
+    console.log('✅ Configurando handler de tickets (sistema completo)');
     document.getElementById('ticket-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log('📝 Formulario de ticket enviado');
 
         const ticketId = document.getElementById('ticket-id').value;
         const empleadoId = document.getElementById('ticket-empleado-select').value;
@@ -3231,14 +3397,21 @@ if (document.getElementById('ticket-form')) {
         const observaciones = document.getElementById('ticket-observaciones').value;
         const estado = document.getElementById('ticket-estado').value;
 
+        console.log('Datos del ticket:', { empleadoId, tipo, titulo });
+
+        if (!empleadoId) {
+            showToast('error', 'Error', 'Debes seleccionar un empleado');
+            return;
+        }
+
         const data = {
-            empleadoId,
+            empleadoId: parseInt(empleadoId),
             tipo,
             titulo,
             descripcion,
             observaciones,
-            estado,
-            creadoPor: currentUser.id
+            estado: estado || 'pendiente',
+            creadoPor: currentUser ? currentUser.id : 1
         };
 
         // Agregar campos según tipo
@@ -3258,8 +3431,11 @@ if (document.getElementById('ticket-form')) {
         }
 
         try {
-            const url = ticketId ? `${API_URL}/actualizar-ticket?id=${ticketId}` : `${API_URL}/tickets`;
+            const url = ticketId ? `${API_URL}/tickets/${ticketId}` : `${API_URL}/tickets`;
             const method = ticketId ? 'PUT' : 'POST';
+
+            console.log(`📤 Enviando ${method} a ${url}`);
+            console.log('Datos:', data);
 
             const response = await fetch(url, {
                 method,
@@ -3268,17 +3444,19 @@ if (document.getElementById('ticket-form')) {
             });
 
             const result = await response.json();
+            console.log('Respuesta del servidor:', result);
 
             if (result.success) {
-                showToast(ticketId ? 'Ticket actualizado correctamente' : 'Ticket creado correctamente', 'success');
+                showToast('success', ticketId ? 'Actualizado' : 'Creado', 
+                    ticketId ? 'Ticket actualizado correctamente' : 'Ticket creado correctamente');
                 closeTicketModal();
                 loadAllTickets();
             } else {
-                showToast('Error al guardar ticket: ' + (result.mensaje || 'Error desconocido'), 'error');
+                showToast('error', 'Error', 'Error al guardar ticket: ' + (result.mensaje || 'Error desconocido'));
             }
         } catch (error) {
-            console.error('Error al guardar ticket:', error);
-            showToast('Error al guardar ticket', 'error');
+            console.error('❌ Error al guardar ticket:', error);
+            showToast('error', 'Error', 'Error al guardar ticket: ' + error.message);
         }
     });
 }
@@ -3439,6 +3617,16 @@ async function verDetalleTicket(ticketId) {
                             <i class="fas fa-times"></i> Rechazar
                         </button>
                     ` : ''}
+                    ${(ticket.estado === 'aprobado' || ticket.estado === 'en_proceso') && canEditTickets() ? `
+                        <button class="btn btn-info" onclick="cambiarEstadoTicket(${ticket.id}, 'completado'); closeTicketDetalleModal();">
+                            <i class="fas fa-check-circle"></i> Completar
+                        </button>
+                    ` : ''}
+                    ${ticket.estado !== 'cancelado' && ticket.estado !== 'completado' && canEditTickets() ? `
+                        <button class="btn btn-warning" onclick="if(confirm('¿Cancelar este ticket?')) { cambiarEstadoTicket(${ticket.id}, 'cancelado'); closeTicketDetalleModal(); }">
+                            <i class="fas fa-ban"></i> Cancelar
+                        </button>
+                    ` : ''}
                     ${canEditTickets() ? `
                         <button class="btn btn-primary" onclick="editarTicket(${ticket.id}); closeTicketDetalleModal();">
                             <i class="fas fa-edit"></i> Editar
@@ -3450,16 +3638,16 @@ async function verDetalleTicket(ticketId) {
         `;
 
         document.getElementById('ticket-detalle-content').innerHTML = detalleHTML;
-        document.getElementById('modal-ticket-detalle').classList.add('active');
+        document.getElementById('modal-ticket-detalle').style.display = 'block';
     } catch (error) {
         console.error('Error:', error);
-        showToast('Error al cargar detalle del ticket', 'error');
+        showToast('error', 'Error', 'Error al cargar detalle del ticket');
     }
 }
 
 // Cerrar modal de detalle
 function closeTicketDetalleModal() {
-    document.getElementById('modal-ticket-detalle').classList.remove('active');
+    document.getElementById('modal-ticket-detalle').style.display = 'none';
 }
 
 // Editar ticket
@@ -3508,11 +3696,17 @@ function filtrarTickets() {
     let filtrados = tickets;
 
     if (searchText) {
-        filtrados = filtrados.filter(t =>
-            t.titulo.toLowerCase().includes(searchText) ||
-            (t.empleado_nombre && t.empleado_nombre.toLowerCase().includes(searchText)) ||
-            t.tipo.toLowerCase().includes(searchText)
-        );
+        filtrados = filtrados.filter(t => {
+            const titulo = (t.titulo || '').toLowerCase();
+            const empleadoNombre = (t.empleado_nombre || '').toLowerCase();
+            const tipo = (t.tipo || '').toLowerCase();
+            const descripcion = (t.descripcion || '').toLowerCase();
+            
+            return titulo.includes(searchText) ||
+                   empleadoNombre.includes(searchText) ||
+                   tipo.includes(searchText) ||
+                   descripcion.includes(searchText);
+        });
     }
 
     if (filterEstado) {
@@ -3530,7 +3724,10 @@ function filtrarTickets() {
 async function loadEmpleadosAusentes() {
     try {
         const response = await fetch(`${API_URL}/empleados/ausentes`);
-        const ausentes = await response.json();
+        const data = await response.json();
+        
+        // Asegurar que ausentes sea un array
+        const ausentes = Array.isArray(data) ? data : (data.success === false ? [] : []);
 
         document.getElementById('stat-empleados-ausentes').textContent = ausentes.length;
 
@@ -3601,11 +3798,38 @@ function getNombreTipo(tipo) {
 
 // Permisos
 function canApproveTickets() {
-    return currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'rrhh' || currentUser.rol === 'manager');
+    const can = currentUser && (currentUser.rol === 'superadmin' || currentUser.rol === 'admin' || currentUser.rol === 'rrhh' || currentUser.rol === 'manager');
+    console.log('canApproveTickets:', can, '(rol:', currentUser?.rol, ')');
+    return can;
 }
 
 function canEditTickets() {
-    return currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'rrhh');
+    const can = currentUser && (currentUser.rol === 'superadmin' || currentUser.rol === 'admin' || currentUser.rol === 'rrhh');
+    console.log('canEditTickets:', can, '(rol:', currentUser?.rol, ')');
+    return can;
+}
+
+// Cambiar estado de ticket
+async function cambiarEstadoTicket(ticketId, nuevoEstado) {
+    try {
+        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado: nuevoEstado })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            showToast(`✅ Ticket ${nuevoEstado}`, 'success');
+            // Recargar tickets
+            loadAllTickets();
+        } else {
+            showToast('❌ Error al actualizar ticket', 'error');
+        }
+    } catch (error) {
+        console.error('Error al cambiar estado:', error);
+        showToast('❌ Error al actualizar ticket', 'error');
+    }
 }
 
 function canEditEmployees() {
@@ -3624,11 +3848,17 @@ function editarEmpleado(id) {
         return;
     }
 
+    // Helper para formatear fechas (extraer solo YYYY-MM-DD)
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        return dateStr.split('T')[0];
+    };
+
     // Datos personales (usar snake_case de Supabase)
     if (document.getElementById('nombreCompleto')) document.getElementById('nombreCompleto').value = empleado.nombre_completo || '';
     if (document.getElementById('cuil')) document.getElementById('cuil').value = empleado.cuil || '';
     if (document.getElementById('documento')) document.getElementById('documento').value = empleado.documento || '';
-    if (document.getElementById('fechaNacimiento')) document.getElementById('fechaNacimiento').value = empleado.fecha_nacimiento || '';
+    if (document.getElementById('fechaNacimiento')) document.getElementById('fechaNacimiento').value = formatDate(empleado.fecha_nacimiento);
     if (document.getElementById('estadoCivil')) document.getElementById('estadoCivil').value = empleado.estado_civil || '';
     if (document.getElementById('integracionFamiliar')) document.getElementById('integracionFamiliar').value = empleado.integracion_familiar || '';
     if (document.getElementById('escolaridadFamiliar')) document.getElementById('escolaridadFamiliar').value = empleado.escolaridad_familiar || '';
@@ -3636,12 +3866,13 @@ function editarEmpleado(id) {
     if (document.getElementById('problemasSalud')) document.getElementById('problemasSalud').value = empleado.problemas_salud || '';
     if (document.getElementById('esExtranjero')) document.getElementById('esExtranjero').value = empleado.es_extranjero || 'no';
     if (document.getElementById('paisOrigen')) document.getElementById('paisOrigen').value = empleado.pais_origen || '';
-    if (document.getElementById('fechaEntradaPais')) document.getElementById('fechaEntradaPais').value = empleado.fecha_entrada_pais || '';
+    if (document.getElementById('fechaEntradaPais')) document.getElementById('fechaEntradaPais').value = formatDate(empleado.fecha_entrada_pais);
     if (document.getElementById('tipoResidencia')) document.getElementById('tipoResidencia').value = empleado.tipo_residencia || '';
     if (document.getElementById('entradasSalidasPais')) document.getElementById('entradasSalidasPais').value = empleado.entradas_salidas_pais || '';
     if (document.getElementById('experienciaLaboral')) document.getElementById('experienciaLaboral').value = empleado.experiencia_laboral || '';
-    if (document.getElementById('fechaIngreso')) document.getElementById('fechaIngreso').value = empleado.fecha_ingreso || '';
+    if (document.getElementById('fechaIngreso')) document.getElementById('fechaIngreso').value = formatDate(empleado.fecha_ingreso);
     if (document.getElementById('puesto')) document.getElementById('puesto').value = empleado.puesto || '';
+    if (document.getElementById('sueldo')) document.getElementById('sueldo').value = empleado.sueldo || '';
     if (document.getElementById('antecedentesPenales')) document.getElementById('antecedentesPenales').value = empleado.antecedentes_penales || 'no';
     if (document.getElementById('observacionesAntecedentes')) document.getElementById('observacionesAntecedentes').value = empleado.observaciones_antecedentes || '';
     if (document.getElementById('observaciones')) document.getElementById('observaciones').value = empleado.observaciones || '';
@@ -3651,6 +3882,23 @@ function editarEmpleado(id) {
 
     // Cambiar a la pestaña de edición
     document.querySelector('[data-tab="nuevo"]').click();
+
+    // Cambiar el título del sidebar y de la página
+    const navButton = document.querySelector('[data-tab="nuevo"]');
+    if (navButton) {
+        navButton.innerHTML = '<i class="fas fa-user-edit"></i><span>Editar Empleado</span>';
+    }
+    
+    const pageTitle = document.getElementById('page-title');
+    if (pageTitle) {
+        pageTitle.innerHTML = '<i class="fas fa-user-edit"></i> Editar Empleado';
+    }
+
+    // Cambiar el título de la sección de registro
+    const registroTitle = document.querySelector('.tab-content[data-tab="nuevo"] h3');
+    if (registroTitle) {
+        registroTitle.innerHTML = '<i class="fas fa-user-edit"></i> Editar Información del Empleado';
+    }
 
     // Cambiar el título y el botón
     const submitBtn = empleadoForm.querySelector('button[type="submit"]');

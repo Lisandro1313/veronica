@@ -2555,74 +2555,108 @@ fieldset legend {
 }
 
 @media print {
-    /* Ocultar elementos innecesarios */
-    .sidebar,
-    .top-bar,
-    .modal-close,
-    .modal-header-perfil button,
-    #toast-container,
-    .btn,
-    .pagination,
-    .filters,
-    .sort-controls,
-    .search-bar {
+    /* Ocultar TODOS los elementos excepto el modal de perfil */
+    body * {
+        visibility: hidden;
+    }
+    
+    /* Mostrar SOLO el contenido del modal de perfil */
+    #modal-perfil,
+    #modal-perfil * {
+        visibility: visible;
+    }
+    
+    /* Ocultar botones y elementos de UI dentro del modal */
+    #modal-perfil .modal-close,
+    #modal-perfil .modal-header-perfil button,
+    #modal-perfil .btn,
+    #modal-perfil button {
         display: none !important;
     }
     
-    /* Ajustar modal para impresión */
-    .modal {
-        display: block !important;
-        position: static !important;
+    /* Posicionar el modal para impresión */
+    #modal-perfil {
+        position: absolute;
+        left: 0;
+        top: 0;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: auto;
         background: white !important;
     }
     
-    .modal-content {
+    #modal-perfil .modal-content {
+        position: static;
         max-width: 100% !important;
+        width: 100% !important;
         margin: 0 !important;
-        padding: 20mm !important;
+        padding: 10mm !important;
         box-shadow: none !important;
         background: white !important;
         color: black !important;
-    }
-    
-    /* Ajustar contenido principal */
-    .main-content {
-        margin-left: 0 !important;
+        border: none !important;
     }
     
     /* Estilos de página */
     @page {
         size: A4;
-        margin: 15mm;
+        margin: 10mm;
     }
     
     body {
         background: white !important;
         color: black !important;
+        margin: 0;
+        padding: 0;
     }
     
     /* Asegurar que las secciones no se corten */
     .perfil-section {
         page-break-inside: avoid;
+        margin-bottom: 15px;
     }
     
     /* Tablas y listas */
     table {
         border-collapse: collapse;
         width: 100%;
+        font-size: 10pt;
     }
     
     th, td {
-        border: 1px solid #ddd;
-        padding: 8px;
+        border: 1px solid #333;
+        padding: 6px;
         text-align: left;
     }
     
-    /* Colores para impresión */
-    .kpi-card,
-    .card {
-        border: 1px solid #ddd !important;
-        box-shadow: none !important;
+    th {
+        background-color: #f0f0f0 !important;
+        font-weight: bold;
+    }
+    
+    /* Títulos más compactos */
+    h2, h3 {
+        margin-top: 10px;
+        margin-bottom: 8px;
+        font-size: 14pt;
+    }
+    
+    /* Filas de información más compactas */
+    .perfil-row {
+        margin-bottom: 8px;
+    }
+    
+    /* Ocultar elementos innecesarios que no estén en modal */
+    .sidebar,
+    .top-bar,
+    #toast-container,
+    .pagination,
+    .filters,
+    .sort-controls,
+    .search-bar,
+    .main-content {
+        display: none !important;
     }
 }
 /* ===== SISTEMA DE TICKETS ===== */

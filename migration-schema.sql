@@ -26,6 +26,9 @@ ALTER TABLE empleados ADD COLUMN IF NOT EXISTS experiencia_laboral TEXT;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS escolaridad_familiar TEXT;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS entradas_salidas_pais TEXT;
 
+-- Datos financieros
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS sueldo NUMERIC(10, 2);
+
 -- ===== 2. CAMBIAR CUIT A CUIL (si existe) =====
 -- En Argentina el término correcto es CUIL (Código Único de Identificación Laboral)
 -- Comentar estas líneas si ya existe como 'cuil'

@@ -24,9 +24,9 @@ if (usePg) {
     console.log('🐘 Iniciando conexión a PostgreSQL...');
     pgPool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' 
-            ? { rejectUnauthorized: false } 
-            : false
+        ssl: { 
+            rejectUnauthorized: false 
+        }
     });
 
     pgPool.on('connect', () => {
