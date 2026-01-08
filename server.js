@@ -772,6 +772,80 @@ app.post('/api/ticket', async (req, res) => {
     }
 });
 
+// ===== RUTAS DE AUDITORÍA =====
+
+// Obtener log de auditoría
+app.get('/api/auditoria', async (req, res) => {
+    try {
+        const { usuario, accion, fecha, limite } = req.query;
+        
+        let query = 'SELECT * FROM auditoria WHERE 1=1';
+        const params = [];
+        let paramCount = 1;
+        
+        if (usuario) {
+            query += ` AND usuario_id = $${paramCount}`;
+            params.push(usuario);
+            paramCount++;
+        }
+        
+        if (accion) {
+            query += ` AND accion = $${paramCount}`;
+            params.push(accion);
+            paramCount++;
+        }
+        
+        if (fecha) {
+            query += ` AND DATE(created_at) = $${paramCount}`;
+            params.push(fecha);
+            paramCount++;
+        }
+        
+        query += ' ORDER BY created_at DESC';
+        
+        if (limite) {
+            query += ` LIMIT $${paramCount}`;
+            params.push(parseInt(limite));
+        } else {
+            query += ' LIMIT 100';
+        }
+        
+        const result = await db.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener auditoría:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener auditoría' });
+    }
+});
+
+// Crear registro de auditoría
+app.post('/api/auditoria', async (req, res) => {
+    try {
+        const {
+            usuarioId, usuarioNombre, accion, tipo, descripcion,
+            entidad, entidadId, datosAntes, datosDespues
+        } = req.body;
+        
+        const result = await db.query(
+            `INSERT INTO auditoria (
+                usuario_id, usuario_nombre, accion, tipo, descripcion,
+                entidad, entidad_id, datos_antes, datos_despues
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            [
+                usuarioId, usuarioNombre, accion, tipo, descripcion,
+                entidad, entidadId,
+                datosAntes ? JSON.stringify(datosAntes) : null,
+                datosDespues ? JSON.stringify(datosDespues) : null
+            ]
+        );
+        
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al crear registro de auditoría:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al crear registro de auditoría' });
+    }
+});
+
 // ===== INICIAR SERVIDOR =====
 
 // Solo iniciar servidor si no está en Vercel (serverless)

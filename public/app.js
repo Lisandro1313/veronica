@@ -92,7 +92,8 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             'nuevo': '<i class="fas fa-user-plus"></i> Nuevo Empleado',
             'tickets': '<i class="fas fa-clipboard-list"></i> Tickets',
             'reportes': '<i class="fas fa-file-pdf"></i> Reportes',
-            'alertas': '<i class="fas fa-bell"></i> Alertas'
+            'alertas': '<i class="fas fa-bell"></i> Alertas',
+            'auditoria': '<i class="fas fa-history"></i> Auditoría'
         };
         pageTitle.innerHTML = titles[tabName];
 
@@ -105,6 +106,8 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             loadAllTickets();
         } else if (tabName === 'alertas') {
             loadAlertas();
+        } else if (tabName === 'auditoria') {
+            loadAuditoria();
         }
     });
 });
@@ -3951,5 +3954,199 @@ document.getElementById('modal-ticket')?.addEventListener('click', function (e) 
 document.getElementById('modal-ticket-detalle')?.addEventListener('click', function (e) {
     if (e.target === this) closeTicketDetalleModal();
 });
+
+// ===== AUDITORÍA =====
+
+let auditoriaData = [];
+
+// Cargar auditoría
+async function loadAuditoria() {
+    try {
+        const response = await fetch(`${API_URL}/auditoria?limite=100`);
+        auditoriaData = await response.json();
+        console.log(`📝 ${auditoriaData.length} registros de auditoría cargados`);
+        
+        // Cargar usuarios para filtro
+        await cargarUsuariosFiltroAuditoria();
+        
+        // Mostrar auditoría
+        mostrarAuditoria(auditoriaData);
+    } catch (error) {
+        console.error('Error al cargar auditoría:', error);
+        document.getElementById('auditoria-list').innerHTML = 
+            '<p class="empty-state">❌ Error al cargar el registro de actividades</p>';
+    }
+}
+
+// Cargar usuarios para filtro
+async function cargarUsuariosFiltroAuditoria() {
+    try {
+        // Obtener usuarios únicos del registro de auditoría
+        const usuariosUnicos = [...new Set(auditoriaData.map(a => a.usuario_nombre))];
+        
+        const select = document.getElementById('auditoria-usuario-filter');
+        select.innerHTML = '<option value="">Todos los usuarios</option>';
+        
+        usuariosUnicos.forEach(nombre => {
+            if (nombre) {
+                select.innerHTML += `<option value="${nombre}">${nombre}</option>`;
+            }
+        });
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+    }
+}
+
+// Mostrar auditoría
+function mostrarAuditoria(data) {
+    const container = document.getElementById('auditoria-list');
+    
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p class="empty-state">📋 No hay registros de actividad</p>';
+        return;
+    }
+    
+    const auditoriaHTML = data.map(registro => `
+        <div class="auditoria-item">
+            <div class="auditoria-icon ${getAuditoriaIconClass(registro.accion)}">
+                ${getAuditoriaIcon(registro.accion)}
+            </div>
+            <div class="auditoria-content">
+                <div class="auditoria-header">
+                    <strong>${escapeHtml(registro.usuario_nombre || 'Sistema')}</strong>
+                    <span class="auditoria-badge ${getAuditoriaBadgeClass(registro.accion)}">
+                        ${getAccionLabel(registro.accion)}
+                    </span>
+                </div>
+                <p class="auditoria-descripcion">${escapeHtml(registro.descripcion)}</p>
+                <div class="auditoria-meta">
+                    <span><i class="fas fa-clock"></i> ${formatDateTime(registro.created_at)}</span>
+                    ${registro.tipo ? `<span><i class="fas fa-tag"></i> ${escapeHtml(registro.tipo)}</span>` : ''}
+                    ${registro.entidad ? `<span><i class="fas fa-cube"></i> ${escapeHtml(registro.entidad)} #${registro.entidad_id}</span>` : ''}
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = auditoriaHTML;
+}
+
+// Filtrar auditoría
+function filtrarAuditoria() {
+    const usuario = document.getElementById('auditoria-usuario-filter').value;
+    const accion = document.getElementById('auditoria-accion-filter').value;
+    const fecha = document.getElementById('auditoria-fecha-filter').value;
+    
+    let filtrados = auditoriaData;
+    
+    if (usuario) {
+        filtrados = filtrados.filter(a => a.usuario_nombre === usuario);
+    }
+    
+    if (accion) {
+        filtrados = filtrados.filter(a => a.accion === accion);
+    }
+    
+    if (fecha) {
+        filtrados = filtrados.filter(a => {
+            const auditoriaFecha = new Date(a.created_at).toISOString().split('T')[0];
+            return auditoriaFecha === fecha;
+        });
+    }
+    
+    mostrarAuditoria(filtrados);
+}
+
+// Limpiar filtros
+function limpiarFiltrosAuditoria() {
+    document.getElementById('auditoria-usuario-filter').value = '';
+    document.getElementById('auditoria-accion-filter').value = '';
+    document.getElementById('auditoria-fecha-filter').value = '';
+    mostrarAuditoria(auditoriaData);
+}
+
+// Registrar actividad
+async function registrarActividad(accion, tipo, descripcion, entidad = null, entidadId = null) {
+    if (!currentUser) return;
+    
+    try {
+        await fetch(`${API_URL}/auditoria`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                usuarioId: currentUser.id,
+                usuarioNombre: currentUser.nombre,
+                accion,
+                tipo,
+                descripcion,
+                entidad,
+                entidadId
+            })
+        });
+    } catch (error) {
+        console.error('Error al registrar actividad:', error);
+    }
+}
+
+// Helpers para auditoría
+function getAuditoriaIcon(accion) {
+    const icons = {
+        'crear': '<i class="fas fa-plus"></i>',
+        'editar': '<i class="fas fa-edit"></i>',
+        'eliminar': '<i class="fas fa-trash"></i>',
+        'aprobar': '<i class="fas fa-check"></i>',
+        'rechazar': '<i class="fas fa-times"></i>',
+        'login': '<i class="fas fa-sign-in-alt"></i>',
+        'logout': '<i class="fas fa-sign-out-alt"></i>'
+    };
+    return icons[accion] || '<i class="fas fa-circle"></i>';
+}
+
+function getAuditoriaIconClass(accion) {
+    const classes = {
+        'crear': 'icon-success',
+        'editar': 'icon-info',
+        'eliminar': 'icon-danger',
+        'aprobar': 'icon-success',
+        'rechazar': 'icon-danger'
+    };
+    return classes[accion] || 'icon-secondary';
+}
+
+function getAuditoriaBadgeClass(accion) {
+    const classes = {
+        'crear': 'badge-success',
+        'editar': 'badge-info',
+        'eliminar': 'badge-danger',
+        'aprobar': 'badge-success',
+        'rechazar': 'badge-danger'
+    };
+    return classes[accion] || 'badge-secondary';
+}
+
+function getAccionLabel(accion) {
+    const labels = {
+        'crear': 'Creado',
+        'editar': 'Editado',
+        'eliminar': 'Eliminado',
+        'aprobar': 'Aprobado',
+        'rechazar': 'Rechazado',
+        'login': 'Inicio de sesión',
+        'logout': 'Cierre de sesión'
+    };
+    return labels[accion] || accion;
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleString('es-AR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
 
 document.querySelector('.modal-close-ticket')?.addEventListener('click', closeTicketModal);
