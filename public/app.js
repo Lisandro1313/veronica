@@ -3469,26 +3469,29 @@ async function aprobarTicket(ticketId) {
     if (!confirm('¿Deseas aprobar este ticket?')) return;
 
     try {
-        const response = await fetch(`${API_URL}/actualizar-ticket?id=${ticketId}`, {
+        console.log('🔄 Aprobando ticket:', ticketId);
+        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 estado: 'aprobado',
-                aprobadoPor: currentUser.id
+                aprobadoPor: currentUser?.id
             })
         });
 
         const result = await response.json();
+        console.log('📝 Resultado:', result);
 
         if (result.success) {
-            showToast('Ticket aprobado correctamente', 'success');
+            showToast('✅ Ticket aprobado correctamente', 'success');
+            await registrarActividad('aprobar', 'ticket', `Aprobó ticket #${ticketId}`, 'tickets', ticketId);
             loadAllTickets();
         } else {
-            showToast('Error al aprobar ticket', 'error');
+            showToast(`❌ Error: ${result.mensaje || 'Error desconocido'}`, 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
-        showToast('Error al aprobar ticket', 'error');
+        console.error('❌ Error al aprobar:', error);
+        showToast('❌ Error al aprobar ticket', 'error');
     }
 }
 
@@ -3498,27 +3501,30 @@ async function rechazarTicket(ticketId) {
     if (motivo === null) return;
 
     try {
-        const response = await fetch(`${API_URL}/actualizar-ticket?id=${ticketId}`, {
+        console.log('🔄 Rechazando ticket:', ticketId);
+        const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 estado: 'rechazado',
-                aprobadoPor: currentUser.id,
+                aprobadoPor: currentUser?.id,
                 observaciones: motivo
             })
         });
 
         const result = await response.json();
+        console.log('📝 Resultado:', result);
 
         if (result.success) {
-            showToast('Ticket rechazado', 'success');
+            showToast('✅ Ticket rechazado', 'success');
+            await registrarActividad('rechazar', 'ticket', `Rechazó ticket #${ticketId}`, 'tickets', ticketId);
             loadAllTickets();
         } else {
-            showToast('Error al rechazar ticket', 'error');
+            showToast(`❌ Error: ${result.mensaje || 'Error desconocido'}`, 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
-        showToast('Error al rechazar ticket', 'error');
+        console.error('❌ Error al rechazar:', error);
+        showToast('❌ Error al rechazar ticket', 'error');
     }
 }
 
