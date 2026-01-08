@@ -1825,7 +1825,7 @@ function generarReporte(tipo) {
                 </thead>
                 <tbody>
                     ${filteredData.map(emp => {
-                        const nombreCompleto = `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'Sin nombre';
+                        const nombreCompleto = emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'Sin nombre';
                         return `
                         <tr>
                             <td style="border: 1px solid #ddd; padding: 8px;">${nombreCompleto}</td>
@@ -1863,10 +1863,11 @@ function exportarExcel() {
     }
 
     // Crear CSV
-    let csv = 'Nombre,Apellido,CUIL,Fecha Nacimiento,Puesto,Es Extranjero,País Origen,Tipo Residencia,Nivel Educativo,Antecedentes,Fecha Ingreso\n';
+    let csv = 'Nombre Completo,CUIL,Fecha Nacimiento,Puesto,Es Extranjero,País Origen,Tipo Residencia,Nivel Educativo,Antecedentes,Fecha Ingreso\n';
 
     empleados.forEach(emp => {
-        csv += `"${emp.nombre || ''}","${emp.apellido || ''}","${emp.cuil}","${emp.fecha_nacimiento || ''}","${emp.puesto || ''}","${emp.es_extranjero}","${emp.pais_origen || ''}","${emp.tipo_residencia || ''}","${emp.nivel_educativo || ''}","${emp.antecedentes_penales}","${emp.fecha_ingreso || ''}"\n`;
+        const nombreCompleto = emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'Sin nombre';
+        csv += `"${nombreCompleto}","${emp.cuil}","${emp.fecha_nacimiento || ''}","${emp.puesto || ''}","${emp.es_extranjero}","${emp.pais_origen || ''}","${emp.tipo_residencia || ''}","${emp.nivel_educativo || ''}","${emp.antecedentes_penales}","${emp.fecha_ingreso || ''}"\n`;
     });
 
     // Descargar
