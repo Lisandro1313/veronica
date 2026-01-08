@@ -1280,8 +1280,8 @@ async function verPerfil(id) {
         console.log('👤 Datos del empleado:', emp);
 
         // Adaptar campos con guiones bajos de Supabase
-        const nombreCompleto = `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'Sin nombre';
-        console.log('📝 Nombre completo construido:', nombreCompleto);
+        const nombreCompleto = emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'Sin nombre';
+        console.log('📝 Nombre completo:', nombreCompleto);
         const cuil = emp.cuil || '-';
         const documento = emp.documento || '-';
         const fechaNacimiento = emp.fecha_nacimiento || '-';

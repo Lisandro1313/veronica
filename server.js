@@ -310,21 +310,48 @@ app.delete('/api/empleados/:id', async (req, res) => {
 app.get('/api/tickets/:empleadoId', async (req, res) => {
     try {
         console.log('📋 Obteniendo tickets para empleado:', req.params.empleadoId);
+        
+        // Primero intentar sin JOIN para ver si el problema está ahí
         const result = await db.query(
-            `SELECT t.*, 
-                    COALESCE(u1.nombre, u1.username) as creado_por_nombre, 
-                    COALESCE(u2.nombre, u2.username) as aprobado_por_nombre
+            `SELECT t.* 
              FROM tickets t
-             LEFT JOIN usuarios u1 ON t.creado_por = u1.id
-             LEFT JOIN usuarios u2 ON t.aprobado_por = u2.id
              WHERE t.empleado_id = $1 
              ORDER BY t.created_at DESC`,
             [req.params.empleadoId]
         );
+        
+        // Agregar nombres de usuarios después si hay tickets
+        if (result.rows && result.rows.length > 0) {
+            // Intentar obtener nombres de usuarios si existen
+            for (let ticket of result.rows) {
+                try {
+                    if (ticket.creado_por) {
+                        const userResult = await db.query(
+                            'SELECT COALESCE(nombre, username) as nombre FROM usuarios WHERE id = $1',
+                            [ticket.creado_por]
+                        );
+                        ticket.creado_por_nombre = userResult.rows[0]?.nombre || 'Sistema';
+                    }
+                    if (ticket.aprobado_por) {
+                        const userResult = await db.query(
+                            'SELECT COALESCE(nombre, username) as nombre FROM usuarios WHERE id = $1',
+                            [ticket.aprobado_por]
+                        );
+                        ticket.aprobado_por_nombre = userResult.rows[0]?.nombre || '';
+                    }
+                } catch (userError) {
+                    console.log('⚠️ No se pudo obtener nombre de usuario:', userError.message);
+                    ticket.creado_por_nombre = 'Sistema';
+                    ticket.aprobado_por_nombre = '';
+                }
+            }
+        }
+        
         console.log('✅ Tickets encontrados:', result.rows.length);
         res.json(result.rows);
     } catch (error) {
         console.error('❌ Error al obtener tickets:', error);
+        console.error('❌ Stack:', error.stack);
         res.status(500).json({ success: false, mensaje: 'Error al obtener tickets', error: error.message });
     }
 });
