@@ -726,7 +726,7 @@ function mostrarAlertasDashboard(empleados) {
     const alertasPersonalizadas = JSON.parse(localStorage.getItem('alertasPersonalizadas')) || [];
     alertasPersonalizadas.filter(a => a.estado === 'activa').forEach(alerta => {
         const empleado = alerta.empleadoId ? empleados.find(e => e.id == alerta.empleadoId) : null;
-        
+
         const iconosMap = {
             'vacaciones': 'fas fa-umbrella-beach',
             'permiso': 'fas fa-clipboard-check',
@@ -1098,7 +1098,8 @@ function displayEmpleados(lista) {
                         <td>${emp.esExtranjero === 'si' ? '🌍 Sí' : 'No'}</td>
                         <td>
                             <button class="btn-small btn-info" onclick="verPerfil(${emp.id})">👁️ Ver</button>
-                            <button class="btn-small btn-warning" onclick="crearTicket(${emp.id})">📋 Ticket</button>
+                            <button class="btn-small btn-warning" onclick="editarEmpleado(${emp.id})">✏️ Editar</button>
+                            <button class="btn-small btn-primary" onclick="crearTicket(${emp.id})">📋 Ticket</button>
                             <button class="btn-small btn-danger" onclick="eliminarEmpleado(${emp.id})">🗑️</button>
                         </td>
                     </tr>
@@ -3586,12 +3587,12 @@ document.getElementById('alerta-form')?.addEventListener('submit', async (e) => 
         // Agregar nueva alerta
         alertasPersonalizadas.push(alerta);
     }
-    
+
     localStorage.setItem('alertasPersonalizadas', JSON.stringify(alertasPersonalizadas));
 
-    showToast('success', esEdicion ? 'Alerta Actualizada' : 'Alerta Creada', 
+    showToast('success', esEdicion ? 'Alerta Actualizada' : 'Alerta Creada',
         esEdicion ? 'La alerta se ha actualizado correctamente' : 'La alerta se ha creado correctamente');
-    
+
     closeAlertaModal();
     delete document.getElementById('alerta-form').dataset.editId;
     loadDashboard(); // Recargar dashboard
@@ -4590,29 +4591,45 @@ function editarEmpleado(id) {
         return;
     }
 
-    // Llenar el formulario con los datos
-    const dp = empleado.datosPersonales || {};
-    const dir = empleado.direccion || {};
-    const cont = empleado.contacto || {};
+    // Llenar el formulario con los datos actuales
+    if (document.getElementById('nombreCompleto')) document.getElementById('nombreCompleto').value = empleado.nombreCompleto || '';
+    if (document.getElementById('cuil')) document.getElementById('cuil').value = empleado.cuil || '';
+    if (document.getElementById('fechaNacimiento')) document.getElementById('fechaNacimiento').value = empleado.fechaNacimiento || '';
+    if (document.getElementById('documento')) document.getElementById('documento').value = empleado.documento || '';
 
-    // Datos personales
-    if (document.getElementById('nombreCompleto')) document.getElementById('nombreCompleto').value = dp.nombreCompleto || empleado.nombreCompleto || '';
-    if (document.getElementById('cuil')) document.getElementById('cuil').value = dp.cuil || empleado.cuil || '';
-    if (document.getElementById('documento')) document.getElementById('documento').value = dp.documento || empleado.documento || '';
-    if (document.getElementById('fechaNacimiento')) document.getElementById('fechaNacimiento').value = dp.fechaNacimiento || '';
-    if (document.getElementById('sexo')) document.getElementById('sexo').value = dp.sexo || '';
-    if (document.getElementById('estadoCivil')) document.getElementById('estadoCivil').value = dp.estadoCivil || '';
-    if (document.getElementById('nacionalidad')) document.getElementById('nacionalidad').value = dp.nacionalidad || '';
+    // Composición Familiar
+    if (document.getElementById('estadoCivil')) document.getElementById('estadoCivil').value = empleado.estadoCivil || '';
+    if (document.getElementById('tienePareja')) document.getElementById('tienePareja').value = empleado.tienePareja || 'no';
+    if (document.getElementById('cantidadHijos')) document.getElementById('cantidadHijos').value = empleado.cantidadHijos || 0;
+    if (document.getElementById('hijosACargo')) document.getElementById('hijosACargo').value = empleado.hijosACargo || 0;
+    if (document.getElementById('hijosConviven')) document.getElementById('hijosConviven').value = empleado.hijosConviven || 0;
+    if (document.getElementById('familiaresACargo')) document.getElementById('familiaresACargo').value = empleado.familiaresACargo || 0;
+    if (document.getElementById('escolaridadFamiliar')) document.getElementById('escolaridadFamiliar').value = empleado.escolaridadFamiliar || '';
 
-    // Contacto
-    if (document.getElementById('telefono')) document.getElementById('telefono').value = cont.telefono || '';
-    if (document.getElementById('email')) document.getElementById('email').value = cont.email || '';
+    // Educación
+    if (document.getElementById('nivelEducativo')) document.getElementById('nivelEducativo').value = empleado.nivelEducativo || '';
 
-    // Dirección
-    if (document.getElementById('calle')) document.getElementById('calle').value = dir.calle || '';
-    if (document.getElementById('numero')) document.getElementById('numero').value = dir.numero || '';
-    if (document.getElementById('localidad')) document.getElementById('localidad').value = dir.localidad || '';
-    if (document.getElementById('provincia')) document.getElementById('provincia').value = dir.provincia || '';
+    // Salud
+    if (document.getElementById('problemasSalud')) document.getElementById('problemasSalud').value = empleado.problemasSalud || '';
+
+    // Datos Migratorios
+    if (document.getElementById('esExtranjero')) document.getElementById('esExtranjero').value = empleado.esExtranjero || 'no';
+    if (document.getElementById('paisOrigen')) document.getElementById('paisOrigen').value = empleado.paisOrigen || '';
+    if (document.getElementById('fechaEntradaPais')) document.getElementById('fechaEntradaPais').value = empleado.fechaEntradaPais || '';
+    if (document.getElementById('tipoResidencia')) document.getElementById('tipoResidencia').value = empleado.tipoResidencia || '';
+    if (document.getElementById('entradasSalidasPais')) document.getElementById('entradasSalidasPais').value = empleado.entradasSalidasPais || '';
+
+    // Datos Laborales
+    if (document.getElementById('experienciaLaboral')) document.getElementById('experienciaLaboral').value = empleado.experienciaLaboral || '';
+    if (document.getElementById('fechaIngreso')) document.getElementById('fechaIngreso').value = empleado.fechaIngreso || '';
+    if (document.getElementById('puesto')) document.getElementById('puesto').value = empleado.puesto || '';
+
+    // Antecedentes
+    if (document.getElementById('antecedentesPenales')) document.getElementById('antecedentesPenales').value = empleado.antecedentesPenales || 'no';
+    if (document.getElementById('observacionesAntecedentes')) document.getElementById('observacionesAntecedentes').value = empleado.observacionesAntecedentes || '';
+
+    // Observaciones
+    if (document.getElementById('observaciones')) document.getElementById('observaciones').value = empleado.observaciones || '';
 
     // Guardar el ID del empleado que estamos editando
     empleadoForm.dataset.editId = id;
