@@ -9,17 +9,17 @@ const supabase = createClient(
 // Función para convertir snake_case a camelCase
 function toCamelCase(obj) {
     if (!obj || typeof obj !== 'object') return obj;
-    
+
     const camelObj = {};
     for (const key in obj) {
         const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
         let value = obj[key];
-        
-        // Convertir booleanos a 'si'/'no' para campos específicos
-        if (key === 'tiene_pareja' || key === 'es_extranjero' || key === 'antecedentes_penales') {
+
+        // Convertir booleanos a 'si'/'no' solo para tiene_pareja
+        if (key === 'tiene_pareja') {
             value = value ? 'si' : 'no';
         }
-        
+
         camelObj[camelKey] = value;
     }
     return camelObj;
@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
                     .order('id', { ascending: false });
 
                 if (error) throw error;
-                
+
                 // Convertir todos los empleados a camelCase
                 const empleadosCamelCase = (data || []).map(emp => toCamelCase(emp));
                 return res.json(empleadosCamelCase);
@@ -75,7 +75,7 @@ module.exports = async (req, res) => {
                 fecha_nacimiento: d.fechaNacimiento || null,
                 documento: d.documento || null,
                 estado_civil: d.estadoCivil || null,
-                
+
                 // Composición Familiar
                 tiene_pareja: d.tienePareja === 'si',
                 cantidad_hijos: d.cantidadHijos || 0,
@@ -83,10 +83,10 @@ module.exports = async (req, res) => {
                 hijos_conviven: d.hijosConviven || 0,
                 familiares_a_cargo: d.familiaresACargo || 0,
                 escolaridad_familiar: d.escolaridadFamiliar || null,
-                
+
                 nivel_educativo: d.nivelEducativo || null,
                 problemas_salud: d.problemasSalud || null,
-                es_extranjero: d.esExtranjero === 'si',
+                es_extranjero: d.esExtranjero || 'no',
                 pais_origen: d.paisOrigen || null,
                 fecha_entrada_pais: d.fechaEntradaPais || null,
                 tipo_residencia: d.tipoResidencia || null,
@@ -94,7 +94,8 @@ module.exports = async (req, res) => {
                 experiencia_laboral: d.experienciaLaboral || null,
                 fecha_ingreso: d.fechaIngreso || null,
                 puesto: d.puesto || null,
-                antecedentes_penales: d.antecedentesPenales === 'si',
+                sueldo: d.sueldo ? parseFloat(d.sueldo) : null,
+                antecedentes_penales: d.antecedentesPenales || 'no',
                 observaciones_antecedentes: d.observacionesAntecedentes || null,
                 observaciones: d.observaciones || null
             };
@@ -126,7 +127,7 @@ module.exports = async (req, res) => {
                 fecha_nacimiento: d.fechaNacimiento || null,
                 documento: d.documento || null,
                 estado_civil: d.estadoCivil || null,
-                
+
                 // Composición Familiar
                 tiene_pareja: d.tienePareja === 'si',
                 cantidad_hijos: d.cantidadHijos || 0,
@@ -134,10 +135,10 @@ module.exports = async (req, res) => {
                 hijos_conviven: d.hijosConviven || 0,
                 familiares_a_cargo: d.familiaresACargo || 0,
                 escolaridad_familiar: d.escolaridadFamiliar || null,
-                
+
                 nivel_educativo: d.nivelEducativo || null,
                 problemas_salud: d.problemasSalud || null,
-                es_extranjero: d.esExtranjero === 'si',
+                es_extranjero: d.esExtranjero || 'no',
                 pais_origen: d.paisOrigen || null,
                 fecha_entrada_pais: d.fechaEntradaPais || null,
                 tipo_residencia: d.tipoResidencia || null,
@@ -145,7 +146,8 @@ module.exports = async (req, res) => {
                 experiencia_laboral: d.experienciaLaboral || null,
                 fecha_ingreso: d.fechaIngreso || null,
                 puesto: d.puesto || null,
-                antecedentes_penales: d.antecedentesPenales === 'si',
+                sueldo: d.sueldo ? parseFloat(d.sueldo) : null,
+                antecedentes_penales: d.antecedentesPenales || 'no',
                 observaciones_antecedentes: d.observacionesAntecedentes || null,
                 observaciones: d.observaciones || null
             };

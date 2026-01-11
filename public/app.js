@@ -970,6 +970,7 @@ empleadoForm.addEventListener('submit', async (e) => {
         experienciaLaboral: document.getElementById('experienciaLaboral').value,
         fechaIngreso: document.getElementById('fechaIngreso').value,
         puesto: document.getElementById('puesto').value,
+        sueldo: document.getElementById('sueldo')?.value || null,
 
         antecedentesPenales: document.getElementById('antecedentesPenales').value,
         observacionesAntecedentes: document.getElementById('observacionesAntecedentes').value,
