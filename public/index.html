@@ -332,6 +332,14 @@
                                     <option value="Administración">Administración</option>
                                     <option value="Ventas">Ventas</option>
                                     <option value="Logística">Logística</option>
+                                    <option value="Recursos Humanos">Recursos Humanos</option>
+                                    <option value="Finanzas">Finanzas</option>
+                                    <option value="IT/Sistemas">IT/Sistemas</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Compras">Compras</option>
+                                    <option value="Calidad">Calidad</option>
+                                    <option value="Mantenimiento">Mantenimiento</option>
+                                    <option value="Operaciones">Operaciones</option>
                                 </select>
                             </div>
                             <div class="filter-group">
@@ -340,8 +348,19 @@
                                     <option value="">Todas</option>
                                     <option value="Argentina">Argentina</option>
                                     <option value="Bolivia">Bolivia</option>
+                                    <option value="Brasil">Brasil</option>
+                                    <option value="Chile">Chile</option>
+                                    <option value="Colombia">Colombia</option>
+                                    <option value="Ecuador">Ecuador</option>
                                     <option value="Paraguay">Paraguay</option>
                                     <option value="Perú">Perú</option>
+                                    <option value="Uruguay">Uruguay</option>
+                                    <option value="Venezuela">Venezuela</option>
+                                    <option value="México">México</option>
+                                    <option value="España">España</option>
+                                    <option value="Italia">Italia</option>
+                                    <option value="China">China</option>
+                                    <option value="Otro">Otro</option>
                                 </select>
                             </div>
                             <div class="filter-group">
@@ -496,24 +515,49 @@
                         <!-- COMPOSICIÓN FAMILIAR -->
                         <fieldset>
                             <legend>👨‍👩‍👧‍👦 Composición Familiar</legend>
-                            <div class="form-group">
-                                <label for="estadoCivil">Estado Civil</label>
-                                <select id="estadoCivil">
-                                    <option value="">Seleccionar...</option>
-                                    <option value="soltero">Soltero/a</option>
-                                    <option value="casado">Casado/a</option>
-                                    <option value="divorciado">Divorciado/a</option>
-                                    <option value="viudo">Viudo/a</option>
-                                    <option value="union">Unión de hecho</option>
-                                </select>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="estadoCivil">Estado Civil</label>
+                                    <select id="estadoCivil">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="soltero">Soltero/a</option>
+                                        <option value="casado">Casado/a</option>
+                                        <option value="divorciado">Divorciado/a</option>
+                                        <option value="viudo">Viudo/a</option>
+                                        <option value="union">Unión de hecho</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="tienePareja">¿Tiene pareja?</label>
+                                    <select id="tienePareja">
+                                        <option value="no">No</option>
+                                        <option value="si">Sí</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="cantidadHijos">Cantidad de Hijos</label>
+                                    <input type="number" id="cantidadHijos" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="hijosACargo">Hijos a Cargo</label>
+                                    <input type="number" id="hijosACargo" min="0" value="0">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="hijosConviven">Hijos que Conviven</label>
+                                    <input type="number" id="hijosConviven" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="familiaresACargo">Otros Familiares a Cargo</label>
+                                    <input type="number" id="familiaresACargo" min="0" value="0">
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label for="integracionFamiliar">Integración Familiar (ej: cónyuge, 2 hijos)</label>
-                                <textarea id="integracionFamiliar" rows="3" placeholder="Describe la composición familiar..."></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="escolaridadFamiliar">Escolaridad Familiar</label>
-                                <textarea id="escolaridadFamiliar" rows="3" placeholder="Nivel educativo de los integrantes..."></textarea>
+                                <label for="escolaridadFamiliar">Observaciones de Escolaridad Familiar</label>
+                                <textarea id="escolaridadFamiliar" rows="2" placeholder="Nivel educativo de los hijos o familiares..."></textarea>
                             </div>
                         </fieldset>
 
@@ -789,14 +833,42 @@
             <!-- Tab: Alertas -->
             <div id="tab-alertas" class="tab-content">
                 <div class="card">
-                    <h3><i class="fas fa-bell"></i> Alertas y Notificaciones</h3>
+                    <div class="alertas-header">
+                        <h3><i class="fas fa-bell"></i> Alertas y Notificaciones</h3>
+                        <button class="btn btn-primary" onclick="mostrarModalNuevaAlerta()">
+                            <i class="fas fa-plus"></i> Nueva Alerta
+                        </button>
+                    </div>
                     <div class="alertas-tabs">
                         <button class="alerta-tab-btn active" data-alerta="todas">Todas</button>
                         <button class="alerta-tab-btn" data-alerta="criticas">Críticas</button>
                         <button class="alerta-tab-btn" data-alerta="migratorio">Migratorio</button>
                         <button class="alerta-tab-btn" data-alerta="salud">Salud</button>
+                        <button class="alerta-tab-btn" data-alerta="avisos">Avisos</button>
                     </div>
                     <div id="alertas-list" class="alertas-list"></div>
+                </div>
+                
+                <!-- Sección de Auditoría -->
+                <div class="card">
+                    <h3><i class="fas fa-history"></i> Auditoría del Sistema</h3>
+                    <div class="auditoria-filters">
+                        <select id="auditoria-usuario" onchange="loadAuditoria()">
+                            <option value="">Todos los usuarios</option>
+                        </select>
+                        <select id="auditoria-accion" onchange="loadAuditoria()">
+                            <option value="">Todas las acciones</option>
+                            <option value="creado">Creado</option>
+                            <option value="editado">Editado</option>
+                            <option value="eliminado">Eliminado</option>
+                            <option value="aprobado">Aprobado</option>
+                            <option value="rechazado">Rechazado</option>
+                        </select>
+                        <input type="date" id="auditoria-fecha" onchange="loadAuditoria()">
+                    </div>
+                    <div id="auditoria-list" class="auditoria-list">
+                        <p class="loading">Cargando auditoría...</p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -944,6 +1016,64 @@
         <div class="modal-content modal-medium">
             <span class="modal-close" onclick="closeTicketDetalleModal()">&times;</span>
             <div id="ticket-detalle-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Nueva Alerta -->
+    <div id="modal-alerta" class="modal">
+        <div class="modal-content modal-medium">
+            <span class="modal-close" onclick="closeAlertaModal()">&times;</span>
+            <h3>🔔 Crear Nueva Alerta</h3>
+            <form id="alerta-form">
+                <div class="form-group">
+                    <label for="alerta-empleado">Empleado (opcional)</label>
+                    <select id="alerta-empleado">
+                        <option value="">Alerta general del sistema</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="alerta-tipo">Tipo de Alerta *</label>
+                    <select id="alerta-tipo" required>
+                        <option value="">Seleccionar tipo...</option>
+                        <option value="vacaciones">🏖️ Solicitud de Vacaciones</option>
+                        <option value="permiso">📋 Solicitud de Permiso</option>
+                        <option value="licencia">🏥 Solicitud de Licencia</option>
+                        <option value="vencimiento">⏰ Vencimiento de Documento</option>
+                        <option value="cumpleaños">🎂 Cumpleaños</option>
+                        <option value="aniversario">🎉 Aniversario</option>
+                        <option value="recordatorio">📌 Recordatorio General</option>
+                        <option value="urgente">🚨 Urgente</option>
+                        <option value="info">ℹ️ Informativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="alerta-titulo">Título *</label>
+                    <input type="text" id="alerta-titulo" required placeholder="Título de la alerta">
+                </div>
+                <div class="form-group">
+                    <label for="alerta-mensaje">Mensaje *</label>
+                    <textarea id="alerta-mensaje" rows="4" required placeholder="Descripción detallada de la alerta..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="alerta-fecha">Fecha de la Alerta</label>
+                        <input type="date" id="alerta-fecha">
+                    </div>
+                    <div class="form-group">
+                        <label for="alerta-prioridad">Prioridad</label>
+                        <select id="alerta-prioridad">
+                            <option value="baja">Baja</option>
+                            <option value="media" selected>Media</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Guardar Alerta</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAlertaModal()">Cancelar</button>
+                </div>
+            </form>
         </div>
     </div>
 

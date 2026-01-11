@@ -67,6 +67,18 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         };
         pageTitle.innerHTML = titles[tabName];
 
+        // Resetear formulario y botón cuando se cambia de tab
+        if (tabName === 'nuevo') {
+            if (empleadoForm.dataset.editId) {
+                empleadoForm.removeAttribute('data-edit-id');
+                empleadoForm.reset();
+                const submitBtn = empleadoForm.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Empleado';
+                }
+            }
+        }
+
         // Cargar datos según la tab
         if (tabName === 'dashboard') {
             loadDashboard();
@@ -882,8 +894,12 @@ empleadoForm.addEventListener('submit', async (e) => {
         documento: document.getElementById('documento').value,
 
         estadoCivil: document.getElementById('estadoCivil').value,
-        integracionFamiliar: document.getElementById('integracionFamiliar').value,
-        escolaridadFamiliar: document.getElementById('escolaridadFamiliar').value,
+        tienePareja: document.getElementById('tienePareja')?.value || 'no',
+        cantidadHijos: parseInt(document.getElementById('cantidadHijos')?.value || '0'),
+        hijosACargo: parseInt(document.getElementById('hijosACargo')?.value || '0'),
+        hijosConviven: parseInt(document.getElementById('hijosConviven')?.value || '0'),
+        familiaresACargo: parseInt(document.getElementById('familiaresACargo')?.value || '0'),
+        escolaridadFamiliar: document.getElementById('escolaridadFamiliar')?.value || '',
 
         nivelEducativo: document.getElementById('nivelEducativo').value,
 
@@ -928,6 +944,14 @@ empleadoForm.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (data.success) {
+            // Registrar en auditoría
+            registrarAuditoria(
+                isEdit ? 'editado' : 'creado',
+                'empleado',
+                `${empleadoData.nombreCompleto} - CUIL: ${empleadoData.cuil}`,
+                data.data?.id || editId
+            );
+
             showToast('success', isEdit ? 'Empleado Actualizado' : 'Empleado Registrado',
                 isEdit ? 'Los cambios se guardaron correctamente' : 'El empleado se ha registrado correctamente');
 
@@ -935,10 +959,13 @@ empleadoForm.addEventListener('submit', async (e) => {
             delete empleadoForm.dataset.editId;
 
             // Restaurar texto del botón
-            submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Registrar Empleado';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Empleado';
 
             // Cambiar a la tab de lista
             document.querySelector('[data-tab="lista"]').click();
+
+            // Recargar empleados
+            await loadEmpleados();
         }
     } catch (error) {
         showToast('error', 'Error', 'No se pudo guardar el empleado');
@@ -1181,6 +1208,12 @@ async function eliminarEmpleado(id) {
         return;
     }
 
+    const empleado = empleados.find(e => e.id === id);
+    if (!empleado) {
+        alert('❌ Empleado no encontrado');
+        return;
+    }
+
     if (!confirm('¿Estás seguro de eliminar este empleado? Esta acción no se puede deshacer.')) {
         return;
     }
@@ -1193,11 +1226,19 @@ async function eliminarEmpleado(id) {
         const data = await response.json();
 
         if (data.success) {
-            alert('✅ Empleado eliminado');
+            // Registrar en auditoría
+            registrarAuditoria(
+                'eliminado',
+                'empleado',
+                `${empleado.nombreCompleto} - CUIL: ${empleado.cuil}`,
+                id
+            );
+
+            showToast('success', 'Empleado Eliminado', 'El empleado se ha eliminado correctamente');
             loadEmpleados();
         }
     } catch (error) {
-        alert('❌ Error al eliminar empleado');
+        showToast('error', 'Error', 'No se pudo eliminar el empleado');
         console.error(error);
     }
 }
@@ -2051,31 +2092,38 @@ function mostrarAlertasFiltradas(alertas, filtro) {
 function generarReporte(tipo) {
     let filteredData = [];
     let nombreReporte = '';
+    let columnas = [];
 
     switch (tipo) {
         case 'general':
             filteredData = empleados;
             nombreReporte = 'Reporte General de Personal';
+            columnas = ['Nombre', 'CUIL', 'F. Nacimiento', 'Puesto', 'Área', 'Email', 'Teléfono', 'F. Ingreso'];
             break;
         case 'extranjeros':
             filteredData = empleados.filter(e => e.esExtranjero === 'si');
             nombreReporte = 'Reporte de Personal Extranjero';
+            columnas = ['Nombre', 'CUIL', 'País', 'Residencia', 'Puesto'];
             break;
         case 'antecedentes':
             filteredData = empleados.filter(e => e.antecedentesPenales === 'si');
             nombreReporte = 'Reporte de Personal con Antecedentes';
+            columnas = ['Nombre', 'CUIL', 'Puesto', 'Observaciones'];
             break;
         case 'salud':
             filteredData = empleados.filter(e => e.problemasSalud && e.problemasSalud.trim() !== '');
             nombreReporte = 'Reporte de Problemas de Salud';
+            columnas = ['Nombre', 'CUIL', 'Puesto', 'Problema de Salud'];
             break;
         case 'familias':
-            filteredData = empleados.filter(e => e.integracionFamiliar && e.integracionFamiliar.trim() !== '');
+            filteredData = empleados;
             nombreReporte = 'Reporte de Composición Familiar';
+            columnas = ['Nombre', 'CUIL', 'Estado Civil', 'Tiene Pareja', 'Cant. Hijos', 'Hijos a Cargo'];
             break;
         case 'educacion':
             filteredData = empleados;
             nombreReporte = 'Reporte de Nivel Educativo';
+            columnas = ['Nombre', 'CUIL', 'Puesto', 'Nivel Educativo'];
             break;
     }
 
@@ -2091,35 +2139,74 @@ function generarReporte(tipo) {
             <p><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES')}</p>
             <p><strong>Total de registros:</strong> ${filteredData.length}</p>
             <hr>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px;">
                 <thead>
                     <tr style="background: #f0f0f0;">
-                        <th style="border: 1px solid #ddd; padding: 8px;">Nombre</th>
-                        <th style="border: 1px solid #ddd; padding: 8px;">CUIL</th>
-                        <th style="border: 1px solid #ddd; padding: 8px;">Puesto</th>
-                        ${tipo === 'extranjeros' ? '<th style="border: 1px solid #ddd; padding: 8px;">País</th><th style="border: 1px solid #ddd; padding: 8px;">Residencia</th>' : ''}
-                        ${tipo === 'salud' ? '<th style="border: 1px solid #ddd; padding: 8px;">Problema de Salud</th>' : ''}
-                        ${tipo === 'educacion' ? '<th style="border: 1px solid #ddd; padding: 8px;">Nivel Educativo</th>' : ''}
+                        ${columnas.map(col => `<th style="border: 1px solid #ddd; padding: 6px;">${col}</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>
-                    ${filteredData.map(emp => `
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${emp.nombreCompleto}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${emp.cuil}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${emp.puesto || '-'}</td>
-                            ${tipo === 'extranjeros' ? `
-                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.paisOrigen || '-'}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.tipoResidencia || '-'}</td>
-                            ` : ''}
-                            ${tipo === 'salud' ? `
-                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.problemasSalud || '-'}</td>
-                            ` : ''}
-                            ${tipo === 'educacion' ? `
-                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.nivelEducativo || '-'}</td>
-                            ` : ''}
-                        </tr>
-                    `).join('')}
+                    ${filteredData.map(emp => {
+        let row = '';
+        switch (tipo) {
+            case 'general':
+                row = `
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.nombreCompleto || ''}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.cuil || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.fechaNacimiento ? formatDate(emp.fechaNacimiento) : '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.puesto || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.area || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.email || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.telefono || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.fechaIngreso ? formatDate(emp.fechaIngreso) : '-'}</td>
+                                `;
+                break;
+            case 'extranjeros':
+                row = `
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.nombreCompleto}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.cuil}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.paisOrigen || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.tipoResidencia || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.puesto || '-'}</td>
+                                `;
+                break;
+            case 'antecedentes':
+                row = `
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.nombreCompleto}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.cuil}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.puesto || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.observacionesAntecedentes || '-'}</td>
+                                `;
+                break;
+            case 'salud':
+                row = `
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.nombreCompleto}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.cuil}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.puesto || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.problemasSalud || '-'}</td>
+                                `;
+                break;
+            case 'familias':
+                row = `
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.nombreCompleto}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.cuil || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.estadoCivil || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.tienePareja || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.cantidadHijos || '0'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.hijosACargo || '0'}</td>
+                                `;
+                break;
+            case 'educacion':
+                row = `
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.nombreCompleto}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.cuil}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.puesto || '-'}</td>
+                                    <td style="border: 1px solid #ddd; padding: 6px;">${emp.nivelEducativo || '-'}</td>
+                                `;
+                break;
+        }
+        return `<tr>${row}</tr>`;
+    }).join('')}
                 </tbody>
             </table>
         </div>
@@ -2220,7 +2307,10 @@ function escapeHtml(text) {
 function formatDate(dateString) {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES');
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 }
 
 function resetForm() {
@@ -3319,7 +3409,7 @@ function importarBackup(event) {
 
             // Recargar datos
             await loadEmpleados();
-            await loadTickets();
+            await loadAllTickets();
 
             // Limpiar input file
             event.target.value = '';
@@ -3383,6 +3473,348 @@ document.addEventListener('DOMContentLoaded', function () {
 // Inicializar
 showLoginScreen();
 // ===== SISTEMA DE TICKETS =====
+
+// ===== SISTEMA DE ALERTAS PERSONALIZADAS =====
+
+let alertasPersonalizadas = JSON.parse(localStorage.getItem('alertasPersonalizadas')) || [];
+
+function mostrarModalNuevaAlerta() {
+    const modal = document.getElementById('modal-alerta');
+    if (!modal) return;
+
+    // Llenar select de empleados
+    const empleadoSelect = document.getElementById('alerta-empleado');
+    empleadoSelect.innerHTML = '<option value="">Alerta general del sistema</option>' +
+        empleados.map(e => `<option value="${e.id}">${e.nombreCompleto || e.nombre}</option>`).join('');
+
+    // Limpiar formulario
+    document.getElementById('alerta-form').reset();
+
+    modal.style.display = 'flex';
+}
+
+function closeAlertaModal() {
+    const modal = document.getElementById('modal-alerta');
+    if (modal) modal.style.display = 'none';
+}
+
+// Manejar submit de formulario de alertas
+document.getElementById('alerta-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const alerta = {
+        id: Date.now(),
+        empleadoId: document.getElementById('alerta-empleado').value,
+        tipo: document.getElementById('alerta-tipo').value,
+        titulo: document.getElementById('alerta-titulo').value,
+        mensaje: document.getElementById('alerta-mensaje').value,
+        fecha: document.getElementById('alerta-fecha').value || new Date().toISOString().split('T')[0],
+        prioridad: document.getElementById('alerta-prioridad').value,
+        creadoPor: currentUser.nombre,
+        fechaCreacion: new Date().toISOString(),
+        estado: 'activa'
+    };
+
+    alertasPersonalizadas.push(alerta);
+    localStorage.setItem('alertasPersonalizadas', JSON.stringify(alertasPersonalizadas));
+
+    showToast('success', 'Alerta Creada', 'La alerta se ha creado correctamente');
+    closeAlertaModal();
+    loadAlertas();
+});
+
+// Recargar alertas incluyendo las personalizadas
+async function loadAlertas() {
+    try {
+        const response = await fetch(`${API_URL}/empleados`);
+        empleados = await response.json();
+
+        // Cargar alertas personalizadas
+        alertasPersonalizadas = JSON.parse(localStorage.getItem('alertasPersonalizadas')) || [];
+
+        mostrarAlertasCompletas(empleados);
+    } catch (error) {
+        console.error('Error al cargar alertas:', error);
+    }
+}
+
+function mostrarAlertasCompletas(empleados) {
+    const alertasContainer = document.getElementById('alertas-list');
+    const alertas = [];
+
+    // Alertas automáticas del sistema
+    empleados.forEach(emp => {
+        // Antecedentes penales
+        if (emp.antecedentesPenales === 'si') {
+            alertas.push({
+                tipo: 'critica',
+                icono: 'fas fa-exclamation-triangle',
+                titulo: 'Antecedentes Penales',
+                descripcion: `${emp.nombreCompleto} tiene antecedentes penales registrados.`,
+                detalles: emp.observacionesAntecedentes || 'Sin detalles adicionales',
+                empleadoId: emp.id,
+                categoria: 'criticas',
+                fecha: new Date()
+            });
+        }
+
+        // Problemas de salud
+        if (emp.problemasSalud && emp.problemasSalud.trim() !== '') {
+            alertas.push({
+                tipo: 'info',
+                icono: 'fas fa-heartbeat',
+                titulo: 'Problema de Salud Registrado',
+                descripcion: `${emp.nombreCompleto}`,
+                detalles: emp.problemasSalud,
+                empleadoId: emp.id,
+                categoria: 'salud',
+                fecha: new Date()
+            });
+        }
+
+        // Residencia temporaria o precaria
+        if (emp.tipoResidencia === 'temporaria' || emp.tipoResidencia === 'precaria') {
+            alertas.push({
+                tipo: 'warning',
+                icono: 'fas fa-id-card',
+                titulo: `Residencia ${emp.tipoResidencia}`,
+                descripcion: `${emp.nombreCompleto}`,
+                detalles: `Tipo de residencia: ${emp.tipoResidencia}. Verificar fecha de vencimiento y renovación.`,
+                empleadoId: emp.id,
+                categoria: 'migratorio',
+                fecha: new Date()
+            });
+        }
+
+        // Turistas (situación irregular)
+        if (emp.tipoResidencia === 'turista') {
+            alertas.push({
+                tipo: 'critica',
+                icono: 'fas fa-passport',
+                titulo: 'Trabajando como Turista',
+                descripcion: `${emp.nombreCompleto}`,
+                detalles: 'Empleado registrado con visa de turista. Situación migratoria irregular que requiere atención inmediata.',
+                empleadoId: emp.id,
+                categoria: 'criticas,migratorio',
+                fecha: new Date()
+            });
+        }
+
+        // Sin antecedentes verificados
+        if (emp.antecedentesPenales === 'pendiente') {
+            alertas.push({
+                tipo: 'warning',
+                icono: 'fas fa-hourglass-half',
+                titulo: 'Antecedentes Pendientes',
+                descripcion: `${emp.nombreCompleto}`,
+                detalles: 'Verificación de antecedentes penales pendiente.',
+                empleadoId: emp.id,
+                categoria: 'todas',
+                fecha: new Date()
+            });
+        }
+    });
+
+    // Agregar alertas personalizadas
+    alertasPersonalizadas.filter(a => a.estado === 'activa').forEach(alerta => {
+        const empleado = alerta.empleadoId ? empleados.find(e => e.id == alerta.empleadoId) : null;
+
+        const iconosMap = {
+            'vacaciones': 'fas fa-umbrella-beach',
+            'permiso': 'fas fa-clipboard-check',
+            'licencia': 'fas fa-hospital',
+            'vencimiento': 'fas fa-calendar-times',
+            'cumpleaños': 'fas fa-birthday-cake',
+            'aniversario': 'fas fa-calendar-star',
+            'recordatorio': 'fas fa-bell',
+            'urgente': 'fas fa-exclamation-circle',
+            'info': 'fas fa-info-circle'
+        };
+
+        const tipoMap = {
+            'urgente': 'critica',
+            'vencimiento': 'warning',
+            'vacaciones': 'info',
+            'permiso': 'info',
+            'licencia': 'warning',
+            'cumpleaños': 'info',
+            'aniversario': 'info',
+            'recordatorio': 'info',
+            'info': 'info'
+        };
+
+        alertas.push({
+            tipo: tipoMap[alerta.tipo] || 'info',
+            icono: iconosMap[alerta.tipo] || 'fas fa-bell',
+            titulo: alerta.titulo,
+            descripcion: empleado ? empleado.nombreCompleto : 'Sistema',
+            detalles: alerta.mensaje,
+            empleadoId: alerta.empleadoId,
+            categoria: 'avisos',
+            fecha: new Date(alerta.fecha),
+            esPersonalizada: true,
+            alertaId: alerta.id
+        });
+    });
+
+    // Ordenar por fecha (más recientes primero)
+    alertas.sort((a, b) => b.fecha - a.fecha);
+
+    // Configurar filtros de alertas
+    document.querySelectorAll('.alerta-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.alerta-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const filtro = btn.dataset.alerta;
+            mostrarAlertasFiltradas(alertas, filtro);
+        });
+    });
+
+    mostrarAlertasFiltradas(alertas, 'todas');
+}
+
+function mostrarAlertasFiltradas(alertas, filtro) {
+    const alertasContainer = document.getElementById('alertas-list');
+
+    let alertasFiltradas = alertas;
+    if (filtro !== 'todas') {
+        alertasFiltradas = alertas.filter(a => a.categoria.includes(filtro));
+    }
+
+    if (alertasFiltradas.length === 0) {
+        alertasContainer.innerHTML = '<p class="empty-state"><i class="fas fa-check-circle"></i><br>No hay alertas en esta categoría.</p>';
+        return;
+    }
+
+    alertasContainer.innerHTML = alertasFiltradas.map(a => `
+        <div class="alerta-item ${a.tipo}">
+            <i class="${a.icono}"></i>
+            <div class="alerta-content" style="flex: 1;">
+                <h4>${a.titulo}</h4>
+                <p><strong>${a.descripcion}</strong></p>
+                <p>${a.detalles}</p>
+                <small>${formatDate(a.fecha)}</small>
+                ${a.empleadoId ? `
+                    <button class="btn btn-small btn-info" onclick="verPerfil(${a.empleadoId})">
+                        <i class="fas fa-eye"></i> Ver Perfil
+                    </button>
+                ` : ''}
+                ${a.esPersonalizada ? `
+                    <button class="btn btn-small btn-danger" onclick="eliminarAlerta(${a.alertaId})">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function eliminarAlerta(alertaId) {
+    if (!confirm('¿Deseas eliminar esta alerta?')) return;
+
+    alertasPersonalizadas = alertasPersonalizadas.filter(a => a.id !== alertaId);
+    localStorage.setItem('alertasPersonalizadas', JSON.stringify(alertasPersonalizadas));
+
+    showToast('success', 'Alerta Eliminada', 'La alerta se ha eliminado correctamente');
+    loadAlertas();
+}
+
+// ===== AUDITORÍA DEL SISTEMA =====
+
+let auditoriaLog = JSON.parse(localStorage.getItem('auditoriaLog')) || [];
+
+function registrarAuditoria(accion, tipo, detalles, registroId) {
+    const entrada = {
+        id: Date.now(),
+        fecha: new Date().toISOString(),
+        usuario: currentUser ? currentUser.nombre : 'Sistema',
+        usuarioId: currentUser ? currentUser.id : null,
+        accion: accion, // 'creado', 'editado', 'eliminado', 'aprobado', 'rechazado'
+        tipo: tipo, // 'empleado', 'ticket', 'alerta'
+        detalles: detalles,
+        registroId: registroId
+    };
+
+    auditoriaLog.push(entrada);
+
+    // Mantener solo los últimos 500 registros
+    if (auditoriaLog.length > 500) {
+        auditoriaLog = auditoriaLog.slice(-500);
+    }
+
+    localStorage.setItem('auditoriaLog', JSON.stringify(auditoriaLog));
+}
+
+async function loadAuditoria() {
+    const auditoriaList = document.getElementById('auditoria-list');
+    if (!auditoriaList) return;
+
+    auditoriaLog = JSON.parse(localStorage.getItem('auditoriaLog')) || [];
+
+    // Filtros
+    const filtroUsuario = document.getElementById('auditoria-usuario')?.value || '';
+    const filtroAccion = document.getElementById('auditoria-accion')?.value || '';
+    const filtroFecha = document.getElementById('auditoria-fecha')?.value || '';
+
+    let registrosFiltrados = auditoriaLog;
+
+    if (filtroUsuario) {
+        registrosFiltrados = registrosFiltrados.filter(r => r.usuario === filtroUsuario);
+    }
+
+    if (filtroAccion) {
+        registrosFiltrados = registrosFiltrados.filter(r => r.accion === filtroAccion);
+    }
+
+    if (filtroFecha) {
+        registrosFiltrados = registrosFiltrados.filter(r => r.fecha.startsWith(filtroFecha));
+    }
+
+    // Ordenar por fecha descendente
+    registrosFiltrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    // Llenar select de usuarios
+    const usuarios = [...new Set(auditoriaLog.map(r => r.usuario))];
+    const usuarioSelect = document.getElementById('auditoria-usuario');
+    if (usuarioSelect && usuarioSelect.options.length <= 1) {
+        usuarioSelect.innerHTML = '<option value="">Todos los usuarios</option>' +
+            usuarios.map(u => `<option value="${u}">${u}</option>`).join('');
+    }
+
+    if (registrosFiltrados.length === 0) {
+        auditoriaList.innerHTML = '<p class="empty-state"><i class="fas fa-history"></i><br>No hay registros de auditoría.</p>';
+        return;
+    }
+
+    // Mostrar registros (últimos 100)
+    auditoriaList.innerHTML = registrosFiltrados.slice(0, 100).map(r => {
+        const iconosAccion = {
+            'creado': '<i class="fas fa-plus-circle" style="color: #4caf50;"></i>',
+            'editado': '<i class="fas fa-edit" style="color: #2196f3;"></i>',
+            'eliminado': '<i class="fas fa-trash" style="color: #f44336;"></i>',
+            'aprobado': '<i class="fas fa-check-circle" style="color: #4caf50;"></i>',
+            'rechazado': '<i class="fas fa-times-circle" style="color: #f44336;"></i>'
+        };
+
+        const iconosTipo = {
+            'empleado': '<i class="fas fa-user"></i>',
+            'ticket': '<i class="fas fa-ticket-alt"></i>',
+            'alerta': '<i class="fas fa-bell"></i>'
+        };
+
+        return `
+            <div class="auditoria-item">
+                ${iconosAccion[r.accion] || '<i class="fas fa-circle"></i>'}
+                <div class="auditoria-content">
+                    <strong>${r.usuario}</strong> ${r.accion} ${r.tipo} <span class="auditoria-id">#${r.registroId || '?'}</span>
+                    <p>${r.detalles}</p>
+                    <small><i class="fas fa-clock"></i> ${formatDate(r.fecha)} ${new Date(r.fecha).toLocaleTimeString('es-ES')}</small>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
 // Cargar todos los tickets
 async function loadAllTickets() {
