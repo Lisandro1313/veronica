@@ -1097,6 +1097,13 @@ fieldset legend {
     display: flex;
     align-items: start;
     gap: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.alerta-item:hover {
+    box-shadow: 0 4px 12px var(--shadow-hover);
+    transform: translateY(-2px);
 }
 
 .alerta-item.critica {
@@ -1104,9 +1111,24 @@ fieldset legend {
     background: #fef2f2;
 }
 
+.alerta-item.danger {
+    border-left-color: #dc2626;
+    background: #fee2e2;
+}
+
+.alerta-item.warning {
+    border-left-color: var(--warning);
+    background: #fffbeb;
+}
+
 .alerta-item.info {
     border-left-color: var(--info);
     background: #f0f7ff;
+}
+
+.alerta-item.vencida {
+    opacity: 0.8;
+    border-left-width: 6px;
 }
 
 .alerta-item i {
@@ -1114,10 +1136,81 @@ fieldset legend {
     margin-top: 2px;
 }
 
+.alerta-content {
+    flex: 1;
+}
+
 .alerta-content h4 {
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.alerta-content p {
+    font-size: 13px;
+    color: var(--gray-700);
+    margin: 0;
+}
+
+.alerta-content small {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--gray-600);
+}
+
+.badge-vencida {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #dc2626;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.alerta-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-icon-small {
+    padding: 6px 10px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon-small:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.btn-icon-small.btn-warning {
+    background: var(--warning);
+    color: var(--dark);
+}
+
+.btn-icon-small.btn-danger {
+    background: var(--danger);
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+}
     color: var(--gray-900);
 }
 

@@ -683,7 +683,7 @@ function mostrarAlertasDashboard(empleados) {
     const alertasContainer = document.getElementById('alertas-dashboard');
     const alertas = [];
 
-    // Generar alertas
+    // Alertas del sistema
     empleados.forEach(emp => {
         // Antecedentes penales
         if (emp.antecedentesPenales === 'si') {
@@ -692,7 +692,8 @@ function mostrarAlertasDashboard(empleados) {
                 icono: 'fas fa-exclamation-triangle',
                 titulo: 'Antecedentes Penales',
                 descripcion: `${emp.nombreCompleto} tiene antecedentes penales registrados.`,
-                empleadoId: emp.id
+                empleadoId: emp.id,
+                esPersonalizada: false
             });
         }
 
@@ -703,7 +704,8 @@ function mostrarAlertasDashboard(empleados) {
                 icono: 'fas fa-heartbeat',
                 titulo: 'Problema de Salud',
                 descripcion: `${emp.nombreCompleto}: ${emp.problemasSalud.substring(0, 60)}...`,
-                empleadoId: emp.id
+                empleadoId: emp.id,
+                esPersonalizada: false
             });
         }
 
@@ -714,9 +716,63 @@ function mostrarAlertasDashboard(empleados) {
                 icono: 'fas fa-id-card',
                 titulo: 'Residencia ' + emp.tipoResidencia,
                 descripcion: `${emp.nombreCompleto} tiene residencia ${emp.tipoResidencia}. Verificar vencimiento.`,
-                empleadoId: emp.id
+                empleadoId: emp.id,
+                esPersonalizada: false
             });
         }
+    });
+
+    // Alertas personalizadas del localStorage
+    const alertasPersonalizadas = JSON.parse(localStorage.getItem('alertasPersonalizadas')) || [];
+    alertasPersonalizadas.filter(a => a.estado === 'activa').forEach(alerta => {
+        const empleado = alerta.empleadoId ? empleados.find(e => e.id == alerta.empleadoId) : null;
+        
+        const iconosMap = {
+            'vacaciones': 'fas fa-umbrella-beach',
+            'permiso': 'fas fa-clipboard-check',
+            'licencia': 'fas fa-hospital',
+            'vencimiento': 'fas fa-calendar-times',
+            'cumpleaños': 'fas fa-birthday-cake',
+            'aniversario': 'fas fa-calendar-star',
+            'recordatorio': 'fas fa-bell',
+            'urgente': 'fas fa-exclamation-circle',
+            'info': 'fas fa-info-circle'
+        };
+
+        const tipoMap = {
+            'urgente': 'critica',
+            'vencimiento': 'warning',
+            'vacaciones': 'info',
+            'permiso': 'info',
+            'licencia': 'warning',
+            'cumpleaños': 'info',
+            'aniversario': 'info',
+            'recordatorio': 'info',
+            'info': 'info'
+        };
+
+        // Verificar si está vencida
+        const hoy = new Date();
+        const fechaAlerta = alerta.fechaVencimiento ? new Date(alerta.fechaVencimiento) : null;
+        const estaVencida = fechaAlerta && fechaAlerta < hoy;
+
+        alertas.push({
+            tipo: estaVencida ? 'danger' : (tipoMap[alerta.tipo] || 'info'),
+            icono: iconosMap[alerta.tipo] || 'fas fa-bell',
+            titulo: alerta.titulo,
+            descripcion: empleado ? `${empleado.nombreCompleto}: ${alerta.mensaje}` : alerta.mensaje,
+            empleadoId: alerta.empleadoId,
+            esPersonalizada: true,
+            alertaId: alerta.id,
+            fechaVencimiento: alerta.fechaVencimiento,
+            estaVencida: estaVencida
+        });
+    });
+
+    // Ordenar por prioridad y fecha
+    alertas.sort((a, b) => {
+        const prioridad = { 'critica': 1, 'danger': 2, 'warning': 3, 'info': 4 };
+        return (prioridad[a.tipo] || 5) - (prioridad[b.tipo] || 5);
     });
 
     if (alertas.length === 0) {
@@ -724,13 +780,27 @@ function mostrarAlertasDashboard(empleados) {
         return;
     }
 
-    alertasContainer.innerHTML = alertas.slice(0, 5).map(a => `
-        <div class="alerta-item ${a.tipo}" onclick="verPerfil(${a.empleadoId})">
+    alertasContainer.innerHTML = alertas.map(a => `
+        <div class="alerta-item ${a.tipo} ${a.estaVencida ? 'vencida' : ''}" style="cursor: ${a.empleadoId ? 'pointer' : 'default'};" ${a.empleadoId ? `onclick="verPerfil(${a.empleadoId})"` : ''}>
             <i class="${a.icono}"></i>
-            <div class="alerta-content">
-                <h4>${a.titulo}</h4>
+            <div class="alerta-content" style="flex: 1;">
+                <h4>${a.titulo} ${a.estaVencida ? '<span class="badge-vencida">VENCIDA</span>' : ''}</h4>
                 <p>${a.descripcion}</p>
+                ${a.fechaVencimiento ? `<small><i class="fas fa-calendar"></i> Vencimiento: ${formatDate(a.fechaVencimiento)}</small>` : ''}
             </div>
+            ${a.esPersonalizada ? `
+                <div class="alerta-actions" onclick="event.stopPropagation();">
+                    <button class="btn-icon-small" onclick="editarAlerta(${a.alertaId})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon-small btn-warning" onclick="anularAlerta(${a.alertaId})" title="Anular">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                    <button class="btn-icon-small btn-danger" onclick="eliminarAlerta(${a.alertaId})" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            ` : ''}
         </div>
     `).join('');
 }
@@ -840,33 +910,19 @@ function limpiarErrorCampo(inputId) {
 function validarFormulario() {
     let errores = [];
 
-    // Validar nombre completo
+    // Validar solo nombre completo (único campo obligatorio)
     const nombre = document.getElementById('nombreCompleto').value.trim();
     if (!nombre || nombre.length < 3) {
-        errores.push({ campo: 'nombreCompleto', mensaje: 'Nombre completo debe tener al menos 3 caracteres' });
+        errores.push({ campo: 'nombreCompleto', mensaje: 'Nombre completo es obligatorio (mínimo 3 caracteres)' });
     } else {
         limpiarErrorCampo('nombreCompleto');
     }
 
-    // Validar CUIL
-    const cuil = document.getElementById('cuil').value.trim();
-    if (cuil) {
-        const validacionCUIL = validarCUIL(cuil);
-        if (!validacionCUIL.valido) {
-            errores.push({ campo: 'cuil', mensaje: validacionCUIL.mensaje });
-        } else {
-            limpiarErrorCampo('cuil');
-        }
-    }
+    // CUIL sin validación - acepta cualquier texto
+    limpiarErrorCampo('cuil');
 
-    // Validar fecha de nacimiento
-    const fechaNac = document.getElementById('fechaNacimiento').value;
-    const validacionFecha = validarFecha(fechaNac, 'Fecha de Nacimiento');
-    if (!validacionFecha.valido) {
-        errores.push({ campo: 'fechaNacimiento', mensaje: validacionFecha.mensaje });
-    } else {
-        limpiarErrorCampo('fechaNacimiento');
-    }
+    // Fecha de nacimiento sin validación obligatoria
+    limpiarErrorCampo('fechaNacimiento');
 
     // Mostrar todos los errores
     errores.forEach(error => {
@@ -3502,25 +3558,44 @@ function closeAlertaModal() {
 document.getElementById('alerta-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const alertaId = document.getElementById('alerta-form').dataset.editId;
+    const esEdicion = alertaId && alertaId !== '';
+
     const alerta = {
-        id: Date.now(),
+        id: esEdicion ? parseInt(alertaId) : Date.now(),
         empleadoId: document.getElementById('alerta-empleado').value,
         tipo: document.getElementById('alerta-tipo').value,
         titulo: document.getElementById('alerta-titulo').value,
         mensaje: document.getElementById('alerta-mensaje').value,
         fecha: document.getElementById('alerta-fecha').value || new Date().toISOString().split('T')[0],
+        fechaVencimiento: document.getElementById('alerta-fecha-vencimiento').value || null,
         prioridad: document.getElementById('alerta-prioridad').value,
         creadoPor: currentUser.nombre,
-        fechaCreacion: new Date().toISOString(),
+        fechaCreacion: esEdicion ? (alertasPersonalizadas.find(a => a.id == alertaId)?.fechaCreacion) : new Date().toISOString(),
+        fechaModificacion: esEdicion ? new Date().toISOString() : null,
         estado: 'activa'
     };
 
-    alertasPersonalizadas.push(alerta);
+    if (esEdicion) {
+        // Actualizar alerta existente
+        const index = alertasPersonalizadas.findIndex(a => a.id == alertaId);
+        if (index !== -1) {
+            alertasPersonalizadas[index] = alerta;
+        }
+    } else {
+        // Agregar nueva alerta
+        alertasPersonalizadas.push(alerta);
+    }
+    
     localStorage.setItem('alertasPersonalizadas', JSON.stringify(alertasPersonalizadas));
 
-    showToast('success', 'Alerta Creada', 'La alerta se ha creado correctamente');
+    showToast('success', esEdicion ? 'Alerta Actualizada' : 'Alerta Creada', 
+        esEdicion ? 'La alerta se ha actualizado correctamente' : 'La alerta se ha creado correctamente');
+    
     closeAlertaModal();
-    loadAlertas();
+    delete document.getElementById('alerta-form').dataset.editId;
+    loadDashboard(); // Recargar dashboard
+    loadAlertas(); // Recargar alertas
 });
 
 // Recargar alertas incluyendo las personalizadas
@@ -3710,6 +3785,43 @@ function mostrarAlertasFiltradas(alertas, filtro) {
     `).join('');
 }
 
+function editarAlerta(alertaId) {
+    const alerta = alertasPersonalizadas.find(a => a.id === alertaId);
+    if (!alerta) return;
+
+    // Llenar el formulario con los datos de la alerta
+    document.getElementById('alerta-empleado').value = alerta.empleadoId || '';
+    document.getElementById('alerta-tipo').value = alerta.tipo;
+    document.getElementById('alerta-titulo').value = alerta.titulo;
+    document.getElementById('alerta-mensaje').value = alerta.mensaje;
+    document.getElementById('alerta-fecha').value = alerta.fecha;
+    document.getElementById('alerta-fecha-vencimiento').value = alerta.fechaVencimiento || '';
+    document.getElementById('alerta-prioridad').value = alerta.prioridad;
+
+    // Marcar como edición
+    document.getElementById('alerta-form').dataset.editId = alertaId;
+
+    // Abrir modal
+    document.getElementById('modal-alerta').style.display = 'flex';
+
+    // Cambiar título del modal
+    document.querySelector('#modal-alerta h3').textContent = '✏️ Editar Alerta';
+}
+
+function anularAlerta(alertaId) {
+    if (!confirm('¿Deseas anular esta alerta? Cambiará su estado a "anulada" pero no se eliminará.')) return;
+
+    const index = alertasPersonalizadas.findIndex(a => a.id === alertaId);
+    if (index !== -1) {
+        alertasPersonalizadas[index].estado = 'anulada';
+        localStorage.setItem('alertasPersonalizadas', JSON.stringify(alertasPersonalizadas));
+
+        showToast('success', 'Alerta Anulada', 'La alerta se ha anulado correctamente');
+        loadDashboard();
+        loadAlertas();
+    }
+}
+
 function eliminarAlerta(alertaId) {
     if (!confirm('¿Deseas eliminar esta alerta?')) return;
 
@@ -3717,6 +3829,7 @@ function eliminarAlerta(alertaId) {
     localStorage.setItem('alertasPersonalizadas', JSON.stringify(alertasPersonalizadas));
 
     showToast('success', 'Alerta Eliminada', 'La alerta se ha eliminado correctamente');
+    loadDashboard();
     loadAlertas();
 }
 
