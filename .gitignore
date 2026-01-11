@@ -43,3 +43,4 @@ rrhh.db*
 
 # Vercel
 .vercel
+.env*.local

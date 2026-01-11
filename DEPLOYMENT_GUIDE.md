@@ -186,7 +186,7 @@ CREATE TABLE empleados (
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     dni VARCHAR(20) UNIQUE NOT NULL,
-    cuit VARCHAR(20),
+    cuil VARCHAR(20),
     fecha_nacimiento DATE,
     nacionalidad VARCHAR(50),
     es_extranjero VARCHAR(2),

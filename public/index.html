@@ -32,8 +32,11 @@
 
     <!-- Pantalla Principal -->
     <div id="main-screen" class="screen">
+        <!-- Overlay para cerrar el menú en móvil -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-users-cog"></i>
                 <h3>Verapp</h3>
@@ -64,6 +67,10 @@
                     <span>Alertas</span>
                     <span id="notif-badge" class="notif-badge" style="display:none;">0</span>
                 </button>
+                <button class="nav-item" data-tab="auditoria">
+                    <i class="fas fa-history"></i>
+                    <span>Auditoría</span>
+                </button>
             </nav>
             <div class="sidebar-footer">
                 <div class="user-info">
@@ -85,6 +92,9 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-bar">
+                <button class="btn-hamburger" id="hamburger-menu" aria-label="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <h1 id="page-title"><i class="fas fa-chart-line"></i> Dashboard</h1>
                 <div class="top-bar-actions">
                     <span id="role-badge" class="role-badge" style="display: none;">
@@ -141,6 +151,15 @@
                         <div class="kpi-info">
                             <h3 id="kpi-menores">0</h3>
                             <p>Menores en Familias</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #4caf50;">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3 id="kpi-sueldo-promedio">$0</h3>
+                            <p>Sueldo Promedio</p>
                         </div>
                     </div>
                     <div class="kpi-card">
@@ -496,8 +515,8 @@
                                     <input type="text" id="nombreCompleto" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="cuil">CUIL *</label>
-                                    <input type="text" id="cuil" required placeholder="20-12345678-9">
+                                    <label for="cuil">CUIL</label>
+                                    <input type="text" id="cuil" placeholder="20123456789">
                                 </div>
                             </div>
                             <div class="form-row">
@@ -643,6 +662,10 @@
                                     <label for="puesto">Puesto Actual</label>
                                     <input type="text" id="puesto">
                                 </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="sueldo">Sueldo Mensual</label>
+                                <input type="number" id="sueldo" step="0.01" min="0" placeholder="Sueldo en pesos">
                             </div>
                         </fieldset>
 
@@ -868,6 +891,36 @@
                     </div>
                     <div id="auditoria-list" class="auditoria-list">
                         <p class="loading">Cargando auditoría...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Auditoría -->
+            <div id="tab-auditoria" class="tab-content">
+                <div class="card">
+                    <h3><i class="fas fa-history"></i> Registro de Actividades</h3>
+                    <div class="auditoria-filters">
+                        <select id="auditoria-usuario-filter">
+                            <option value="">Todos los usuarios</option>
+                        </select>
+                        <select id="auditoria-accion-filter">
+                            <option value="">Todas las acciones</option>
+                            <option value="crear">Crear</option>
+                            <option value="editar">Editar</option>
+                            <option value="eliminar">Eliminar</option>
+                            <option value="aprobar">Aprobar</option>
+                            <option value="rechazar">Rechazar</option>
+                        </select>
+                        <input type="date" id="auditoria-fecha-filter" placeholder="Filtrar por fecha">
+                        <button class="btn btn-secondary" onclick="filtrarAuditoria()">
+                            <i class="fas fa-filter"></i> Filtrar
+                        </button>
+                        <button class="btn btn-secondary" onclick="limpiarFiltrosAuditoria()">
+                            <i class="fas fa-times"></i> Limpiar
+                        </button>
+                    </div>
+                    <div id="auditoria-list" class="auditoria-list">
+                        <p class="loading">Cargando actividades...</p>
                     </div>
                 </div>
             </div>

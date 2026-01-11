@@ -23,31 +23,33 @@ module.exports = async (req, res) => {
                 .order('id', { ascending: false });
 
             if (error) throw error;
+            
+            // Los datos ya vienen en el formato correcto, solo devolver
             return res.json(data || []);
 
         } else if (req.method === 'POST') {
             const d = req.body;
 
-            // Mapear los campos del frontend a los nombres de la BD
+            // Mapear campos usando la estructura REAL de Supabase
             const empleadoData = {
-                nombre_completo: d.nombreCompleto,
-                cuil: d.cuil,
-                fecha_nacimiento: d.fechaNacimiento,
-                documento: d.documento,
-                estado_civil: d.estadoCivil,
-                integracion_familiar: d.integracionFamiliar,
-                escolaridad_familiar: d.escolaridadFamiliar,
-                nivel_educativo: d.nivelEducativo,
-                problemas_salud: d.problemasSalud,
-                es_extranjero: d.esExtranjero === 'si',
+                nombre_completo: d.nombreCompleto || 'Sin Nombre',
+                cuil: d.cuil || null,
+                fecha_nacimiento: d.fechaNacimiento || null,
+                documento: d.documento || null,
+                estado_civil: d.estadoCivil || null,
+                integracion_familiar: d.integracionFamiliar || null,
+                escolaridad_familiar: d.escolaridadFamiliar || null,
+                nivel_educativo: d.nivelEducativo || null,
+                problemas_salud: d.problemasSalud || null,
+                es_extranjero: d.esExtranjero || 'no',
                 pais_origen: d.paisOrigen || null,
                 fecha_entrada_pais: d.fechaEntradaPais || null,
                 tipo_residencia: d.tipoResidencia || null,
                 entradas_salidas_pais: d.entradasSalidasPais || null,
-                experiencia_laboral: d.experienciaLaboral,
-                fecha_ingreso: d.fechaIngreso,
-                puesto: d.puesto,
-                antecedentes_penales: d.antecedentesPenales === 'si',
+                experiencia_laboral: d.experienciaLaboral || null,
+                fecha_ingreso: d.fechaIngreso || null,
+                puesto: d.puesto || null,
+                antecedentes_penales: d.antecedentesPenales || 'no',
                 observaciones_antecedentes: d.observacionesAntecedentes || null,
                 observaciones: d.observaciones || null
             };
@@ -58,7 +60,14 @@ module.exports = async (req, res) => {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('ERROR SUPABASE:', JSON.stringify(error, null, 2));
+                return res.status(500).json({ 
+                    success: false, 
+                    mensaje: error.message,
+                    code: error.code
+                });
+            }
             return res.json({ success: true, empleado: data });
 
         } else {

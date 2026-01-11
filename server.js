@@ -35,9 +35,48 @@ app.post('/api/login', async (req, res) => {
             const match = await bcrypt.compare(password, user.password);
 
             if (match) {
+                // Definir permisos según rol
+                const permisos = {
+                    superadmin: {
+                        empleados: { crear: true, editar: true, eliminar: true, ver: true },
+                        usuarios: { crear: true, editar: true, eliminar: true, ver: true },
+                        tickets: { crear: true, editar: true, eliminar: true, ver: true },
+                        exportar: { pdf: true, excel: true },
+                        reportes: { ver: true, avanzados: true },
+                        alertas: { ver: true, configurar: true }
+                    },
+                    admin: {
+                        empleados: { crear: true, editar: true, eliminar: true, ver: true },
+                        usuarios: { crear: false, editar: false, eliminar: false, ver: true },
+                        tickets: { crear: true, editar: true, eliminar: false, ver: true },
+                        exportar: { pdf: true, excel: true },
+                        reportes: { ver: true, avanzados: true },
+                        alertas: { ver: true, configurar: false }
+                    },
+                    manager: {
+                        empleados: { crear: true, editar: true, eliminar: false, ver: true },
+                        usuarios: { crear: false, editar: false, eliminar: false, ver: false },
+                        tickets: { crear: true, editar: true, eliminar: false, ver: true },
+                        exportar: { pdf: true, excel: true },
+                        reportes: { ver: true, avanzados: false },
+                        alertas: { ver: true, configurar: false }
+                    },
+                    viewer: {
+                        empleados: { crear: false, editar: false, eliminar: false, ver: true },
+                        usuarios: { crear: false, editar: false, eliminar: false, ver: false },
+                        tickets: { crear: false, editar: false, eliminar: false, ver: true },
+                        exportar: { pdf: false, excel: false },
+                        reportes: { ver: true, avanzados: false },
+                        alertas: { ver: true, configurar: false }
+                    }
+                };
+
+                const rol = user.rol || 'viewer';
+                const userPermisos = permisos[rol] || permisos.viewer;
+
                 res.json({
                     success: true,
-                    usuario: { id: user.id, nombre: user.nombre, rol: user.rol }
+                    usuario: { id: user.id, nombre: user.nombre, rol: rol, permisos: userPermisos }
                 });
             } else {
                 res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
@@ -64,7 +103,42 @@ app.get('/api/empleados', async (req, res) => {
     }
 });
 
-// Obtener un empleado específico
+// IMPORTANTE: Rutas específicas ANTES de rutas con parámetros
+// Obtener empleados ausentes (debe estar ANTES de /api/empleados/:id)
+app.get('/api/empleados/ausentes', async (req, res) => {
+    try {
+        // Intentar usar la vista si existe, sino calcular manualmente
+        let result;
+        try {
+            result = await db.query(`SELECT * FROM v_empleados_ausentes`);
+        } catch (viewError) {
+            // Si la vista no existe, calcular ausentes desde tickets
+            console.log('Vista v_empleados_ausentes no existe, calculando manualmente');
+            result = await db.query(`
+                SELECT 
+                    e.nombre_completo as empleado,
+                    e.puesto,
+                    '' as area,
+                    t.tipo as motivo_ausencia,
+                    t.fecha_desde as fecha_inicio,
+                    t.fecha_hasta as fecha_fin
+                FROM tickets t
+                JOIN empleados e ON t.empleado_id = e.id
+                WHERE t.tipo IN ('vacaciones', 'licencia_medica', 'licencia_maternidad', 'permiso', 'suspension')
+                  AND t.estado = 'aprobado'
+                  AND t.fecha_desde <= CURRENT_DATE
+                  AND t.fecha_hasta >= CURRENT_DATE
+                ORDER BY t.fecha_desde DESC
+            `);
+        }
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener empleados ausentes:', error);
+        res.json([]); // Devolver array vacío en lugar de error
+    }
+});
+
+// Obtener un empleado específico (DEBE estar DESPUÉS de rutas específicas)
 app.get('/api/empleados/:id', async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM empleados WHERE id = $1', [req.params.id]);
@@ -88,61 +162,46 @@ app.post('/api/empleados', async (req, res) => {
         // Extraer datos de objetos anidados si existen
         const datosPersonales = data.datosPersonales || {};
         const datosLaborales = data.laboral || {};
-        const educacionData = data.educacion || {};
+
+        // Helper para convertir strings vacíos a null
+        const toNullIfEmpty = (val) => val === '' || val === undefined ? null : val;
 
         const result = await db.query(
             `INSERT INTO empleados (
-                nombre, apellido, dni, cuit, fecha_nacimiento, nacionalidad, 
-                es_extranjero, pais_origen, telefono, email, direccion, ciudad, 
-                provincia, codigo_postal, fecha_ingreso, puesto, area, salario, 
-                tipo_contrato, nivel_educativo, titulo, institucion, 
-                emergencia_nombre, emergencia_telefono, emergencia_relacion,
-                obra_social, numero_afiliado, problemas_salud, 
-                antecedentes_penales, observaciones_antecedentes, 
-                integracion_familiar, observaciones,
-                datos_personales, datos_laborales, educacion, datos_adicionales
+                nombre_completo, cuil, documento, fecha_nacimiento, 
+                estado_civil, es_extranjero, pais_origen, 
+                fecha_ingreso, puesto, nivel_educativo, 
+                problemas_salud, antecedentes_penales, 
+                integracion_familiar, escolaridad_familiar, experiencia_laboral,
+                fecha_entrada_pais, tipo_residencia, entradas_salidas_pais,
+                calle, numero, localidad, observaciones, sueldo
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
-                $27, $28, $29, $30, $31, $32, $33, $34, $35, $36
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
             ) RETURNING *`,
             [
-                data.nombre || datosPersonales.nombre,
-                data.apellido || datosPersonales.apellido,
-                data.dni || datosPersonales.dni,
-                data.cuit || datosPersonales.cuit,
-                data.fechaNacimiento || datosPersonales.fechaNacimiento,
-                data.nacionalidad || datosPersonales.nacionalidad,
-                data.esExtranjero,
-                data.paisOrigen,
-                data.telefono || datosPersonales.telefono,
-                data.email || datosPersonales.email,
-                data.direccion || datosPersonales.direccion,
-                data.ciudad || datosPersonales.ciudad,
-                data.provincia || datosPersonales.provincia,
-                data.codigoPostal || datosPersonales.codigoPostal,
-                data.fechaIngreso || datosLaborales.fechaIngreso,
-                data.puesto || datosLaborales.puesto,
-                data.area || datosLaborales.area,
-                data.salario || datosLaborales.salario,
-                data.tipoContrato || datosLaborales.tipoContrato,
-                data.nivelEducativo || educacionData.nivelMaximo,
-                data.titulo || educacionData.titulo,
-                data.institucion || educacionData.institucion,
-                data.emergenciaNombre,
-                data.emergenciaTelefono,
-                data.emergenciaRelacion,
-                data.obraSocial,
-                data.numeroAfiliado,
-                data.problemasSalud,
-                data.antecedentesPenales,
-                data.observacionesAntecedentes,
-                data.integracionFamiliar,
-                data.observaciones,
-                JSON.stringify(data.datosPersonales || null),
-                JSON.stringify(data.laboral || null),
-                JSON.stringify(data.educacion || null),
-                JSON.stringify(data.datosAdicionales || null)
+                data.nombreCompleto || datosPersonales.nombreCompleto,
+                toNullIfEmpty(data.cuil || datosPersonales.cuil),
+                toNullIfEmpty(data.documento || datosPersonales.documento),
+                toNullIfEmpty(data.fechaNacimiento || datosPersonales.fechaNacimiento),
+                toNullIfEmpty(data.estadoCivil || datosPersonales.estadoCivil),
+                data.esExtranjero || 'no',
+                toNullIfEmpty(data.paisOrigen),
+                toNullIfEmpty(data.fechaIngreso || datosLaborales.fechaIngreso),
+                toNullIfEmpty(data.puesto || datosLaborales.puesto),
+                toNullIfEmpty(data.nivelEducativo),
+                toNullIfEmpty(data.problemasSalud),
+                data.antecedentesPenales || 'no',
+                toNullIfEmpty(data.integracionFamiliar),
+                toNullIfEmpty(data.escolaridadFamiliar),
+                toNullIfEmpty(data.experienciaLaboral),
+                toNullIfEmpty(data.fechaEntradaPais),
+                toNullIfEmpty(data.tipoResidencia),
+                toNullIfEmpty(data.entradasSalidasPais),
+                toNullIfEmpty(data.calle),
+                toNullIfEmpty(data.numero),
+                toNullIfEmpty(data.localidad),
+                toNullIfEmpty(data.observaciones),
+                toNullIfEmpty(data.sueldo || datosLaborales.sueldo)
             ]
         );
 
@@ -174,8 +233,8 @@ app.put('/api/empleados/:id', async (req, res) => {
                 problemas_salud = $28, antecedentes_penales = $29, 
                 observaciones_antecedentes = $30, integracion_familiar = $31, 
                 observaciones = $32, datos_personales = $33, datos_laborales = $34, 
-                educacion = $35, datos_adicionales = $36
-            WHERE id = $37 RETURNING *`,
+                educacion = $35, datos_adicionales = $36, sueldo = $37
+            WHERE id = $38 RETURNING *`,
             [
                 data.nombre || datosPersonales.nombre,
                 data.apellido || datosPersonales.apellido,
@@ -213,6 +272,7 @@ app.put('/api/empleados/:id', async (req, res) => {
                 JSON.stringify(data.laboral || null),
                 JSON.stringify(data.educacion || null),
                 JSON.stringify(data.datosAdicionales || null),
+                data.sueldo || datosLaborales.sueldo,
                 req.params.id
             ]
         );
@@ -249,31 +309,75 @@ app.delete('/api/empleados/:id', async (req, res) => {
 // Obtener tickets de un empleado
 app.get('/api/tickets/:empleadoId', async (req, res) => {
     try {
+        console.log('📋 Obteniendo tickets para empleado:', req.params.empleadoId);
+        
+        // Primero intentar sin JOIN para ver si el problema está ahí
         const result = await db.query(
-            `SELECT t.*, u1.nombre as creado_por_nombre, u2.nombre as aprobado_por_nombre
+            `SELECT t.* 
              FROM tickets t
-             LEFT JOIN usuarios u1 ON t.creado_por = u1.id
-             LEFT JOIN usuarios u2 ON t.aprobado_por = u2.id
              WHERE t.empleado_id = $1 
              ORDER BY t.created_at DESC`,
             [req.params.empleadoId]
         );
+        
+        // Agregar nombres de usuarios después si hay tickets
+        if (result.rows && result.rows.length > 0) {
+            // Intentar obtener nombres de usuarios si existen
+            for (let ticket of result.rows) {
+                try {
+                    if (ticket.creado_por) {
+                        const userResult = await db.query(
+                            'SELECT COALESCE(nombre, username) as nombre FROM usuarios WHERE id = $1',
+                            [ticket.creado_por]
+                        );
+                        ticket.creado_por_nombre = userResult.rows[0]?.nombre || 'Sistema';
+                    }
+                    if (ticket.aprobado_por) {
+                        const userResult = await db.query(
+                            'SELECT COALESCE(nombre, username) as nombre FROM usuarios WHERE id = $1',
+                            [ticket.aprobado_por]
+                        );
+                        ticket.aprobado_por_nombre = userResult.rows[0]?.nombre || '';
+                    }
+                } catch (userError) {
+                    console.log('⚠️ No se pudo obtener nombre de usuario:', userError.message);
+                    ticket.creado_por_nombre = 'Sistema';
+                    ticket.aprobado_por_nombre = '';
+                }
+            }
+        }
+        
+        console.log('✅ Tickets encontrados:', result.rows.length);
         res.json(result.rows);
     } catch (error) {
-        console.error('Error al obtener tickets:', error);
-        res.status(500).json({ success: false, mensaje: 'Error al obtener tickets' });
+        console.error('❌ Error al obtener tickets:', error);
+        console.error('❌ Stack:', error.stack);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener tickets', error: error.message });
     }
 });
 
 // Crear nuevo ticket
 app.post('/api/tickets', async (req, res) => {
     try {
+        console.log('📝 POST /api/tickets - Datos recibidos:', req.body);
+        
         const {
             empleadoId, tipo, titulo, descripcion,
             fechaEvento, fechaDesde, fechaHasta,
             valorAnterior, valorNuevo, observaciones,
             datosAdicionales, creadoPor, actualizaEmpleado, estado
         } = req.body;
+
+        // Validar campos requeridos
+        if (!empleadoId || !tipo) {
+            return res.status(400).json({ 
+                success: false, 
+                mensaje: 'Faltan campos requeridos: empleadoId y tipo son obligatorios' 
+            });
+        }
+
+        // Helper para convertir undefined/empty a null
+        const toNull = (val) => (val === undefined || val === '' || val === null) ? null : val;
 
         const result = await db.query(
             `INSERT INTO tickets (
@@ -285,17 +389,28 @@ app.post('/api/tickets', async (req, res) => {
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
              RETURNING *`,
             [
-                empleadoId, tipo, titulo, descripcion,
-                fechaEvento, fechaDesde, fechaHasta,
-                valorAnterior, valorNuevo, observaciones,
+                parseInt(empleadoId),
+                tipo,
+                toNull(titulo),
+                toNull(descripcion),
+                toNull(fechaEvento),
+                toNull(fechaDesde),
+                toNull(fechaHasta),
+                toNull(valorAnterior),
+                toNull(valorNuevo),
+                toNull(observaciones),
                 datosAdicionales ? JSON.stringify(datosAdicionales) : null,
-                creadoPor, actualizaEmpleado || false, estado || 'pendiente'
+                creadoPor || 1,  // Default a 1 si no se proporciona
+                actualizaEmpleado || false,
+                estado || 'pendiente'
             ]
         );
 
+        console.log('✅ Ticket creado exitosamente:', result.rows[0].id);
         res.json({ success: true, data: result.rows[0] });
     } catch (error) {
-        console.error('Error al crear ticket:', error);
+        console.error('❌ Error al crear ticket:', error.message);
+        console.error('Stack:', error.stack);
         res.status(500).json({ success: false, mensaje: 'Error al crear ticket', error: error.message });
     }
 });
@@ -303,16 +418,18 @@ app.post('/api/tickets', async (req, res) => {
 // Obtener todos los tickets
 app.get('/api/tickets', async (req, res) => {
     try {
+        console.log('📋 GET /api/tickets - Obteniendo todos los tickets');
         const result = await db.query(`
-            SELECT t.*, e.nombre, e.apellido 
+            SELECT t.*, e.nombre_completo as nombre_completo
             FROM tickets t 
             LEFT JOIN empleados e ON t.empleado_id = e.id 
             ORDER BY t.created_at DESC
         `);
+        console.log(`✅ ${result.rows.length} tickets encontrados`);
         res.json(result.rows);
     } catch (error) {
-        console.error('Error al obtener tickets:', error);
-        res.status(500).json({ success: false, mensaje: 'Error al obtener tickets' });
+        console.error('❌ Error al obtener tickets:', error.message);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener tickets', error: error.message });
     }
 });
 
@@ -365,13 +482,29 @@ app.delete('/api/tickets/:id', async (req, res) => {
 });
 
 // Obtener empleados ausentes actualmente
-app.get('/api/empleados/ausentes', async (req, res) => {
+// Obtener un ticket por ID (query param)
+app.get('/api/ticket', async (req, res) => {
     try {
-        const result = await db.query(`SELECT * FROM v_empleados_ausentes`);
-        res.json(result.rows);
+        const ticketId = req.query.id;
+        if (!ticketId) {
+            return res.status(400).json({ success: false, mensaje: 'ID de ticket requerido' });
+        }
+        
+        const result = await db.query(`
+            SELECT t.*, e.nombre_completo as empleado_nombre, e.puesto
+            FROM tickets t
+            LEFT JOIN empleados e ON t.empleado_id = e.id
+            WHERE t.id = $1
+        `, [ticketId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, mensaje: 'Ticket no encontrado' });
+        }
+        
+        res.json(result.rows[0]);
     } catch (error) {
-        console.error('Error al obtener empleados ausentes:', error);
-        res.status(500).json({ success: false, mensaje: 'Error al obtener empleados ausentes' });
+        console.error('Error al obtener ticket:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener ticket' });
     }
 });
 
@@ -429,7 +562,287 @@ app.get('/health', async (req, res) => {
         await db.query('SELECT 1');
         res.json({ status: 'ok', database: 'connected' });
     } catch (error) {
-        res.status(500).json({ status: 'error', database: 'disconnected' });
+        console.error('Health check failed:', error.message);
+        res.status(500).json({ 
+            status: 'error', 
+            database: 'disconnected',
+            error: error.message,
+            hasEnv: {
+                DATABASE_URL: !!process.env.DATABASE_URL,
+                SUPABASE_URL: !!process.env.SUPABASE_URL,
+                SUPABASE_KEY: !!process.env.SUPABASE_KEY
+            }
+        });
+    }
+});
+
+// ===== RUTAS ALTERNATIVAS (COMPATIBILIDAD CON FRONTEND) =====
+
+// Obtener empleado por query param (alternativa)
+app.get('/api/empleado', async (req, res) => {
+    try {
+        const id = req.query.id;
+        const result = await db.query('SELECT * FROM empleados WHERE id = $1', [id]);
+        if (result.rows.length > 0) {
+            res.json(result.rows[0]);
+        } else {
+            res.status(404).json({ success: false, mensaje: 'Empleado no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener empleado' });
+    }
+});
+
+// Actualizar empleado (alternativa)
+app.put('/api/actualizar-empleado', async (req, res) => {
+    try {
+        const id = req.query.id;
+        const data = req.body;
+        const datosPersonales = data.datosPersonales || {};
+        const datosLaborales = data.laboral || {};
+
+        // Helper para convertir strings vacíos a null
+        const toNullIfEmpty = (val) => val === '' || val === undefined ? null : val;
+
+        const result = await db.query(
+            `UPDATE empleados SET
+                nombre_completo = $1, cuil = $2, documento = $3,
+                fecha_nacimiento = $4, estado_civil = $5, es_extranjero = $6, 
+                pais_origen = $7, fecha_ingreso = $8, puesto = $9,
+                nivel_educativo = $10, problemas_salud = $11,
+                antecedentes_penales = $12, integracion_familiar = $13,
+                escolaridad_familiar = $14, experiencia_laboral = $15,
+                fecha_entrada_pais = $16, tipo_residencia = $17,
+                entradas_salidas_pais = $18, calle = $19, numero = $20,
+                localidad = $21, observaciones = $22
+            WHERE id = $23 RETURNING *`,
+            [
+                data.nombreCompleto || datosPersonales.nombreCompleto,
+                toNullIfEmpty(data.cuil || datosPersonales.cuil),
+                toNullIfEmpty(data.documento || datosPersonales.documento),
+                toNullIfEmpty(data.fechaNacimiento || datosPersonales.fechaNacimiento),
+                toNullIfEmpty(data.estadoCivil || datosPersonales.estadoCivil),
+                data.esExtranjero || 'no',
+                toNullIfEmpty(data.paisOrigen),
+                toNullIfEmpty(data.fechaIngreso || datosLaborales.fechaIngreso),
+                toNullIfEmpty(data.puesto || datosLaborales.puesto),
+                toNullIfEmpty(data.nivelEducativo),
+                toNullIfEmpty(data.problemasSalud),
+                data.antecedentesPenales || 'no',
+                toNullIfEmpty(data.integracionFamiliar),
+                toNullIfEmpty(data.escolaridadFamiliar),
+                toNullIfEmpty(data.experienciaLaboral),
+                toNullIfEmpty(data.fechaEntradaPais),
+                toNullIfEmpty(data.tipoResidencia),
+                toNullIfEmpty(data.entradasSalidasPais),
+                toNullIfEmpty(data.calle),
+                toNullIfEmpty(data.numero),
+                toNullIfEmpty(data.localidad),
+                toNullIfEmpty(data.observaciones),
+                id
+            ]
+        );
+
+        if (result.rows.length > 0) {
+            res.json({ success: true, data: result.rows[0] });
+        } else {
+            res.status(404).json({ success: false, mensaje: 'Empleado no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar empleado' });
+    }
+});
+
+// Eliminar empleado (alternativa)
+app.delete('/api/eliminar-empleado', async (req, res) => {
+    try {
+        const id = req.query.id;
+        const result = await db.query('DELETE FROM empleados WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length > 0) {
+            res.json({ success: true, mensaje: 'Empleado eliminado' });
+        } else {
+            res.status(404).json({ success: false, mensaje: 'Empleado no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al eliminar empleado' });
+    }
+});
+
+// Tickets de empleado
+app.get('/api/tickets-empleado', async (req, res) => {
+    try {
+        const empleadoId = req.query.empleadoId;
+        const result = await db.query(
+            `SELECT t.*, u1.nombre as creado_por_nombre, u2.nombre as aprobado_por_nombre
+             FROM tickets t
+             LEFT JOIN usuarios u1 ON t.creado_por = u1.id
+             LEFT JOIN usuarios u2 ON t.aprobado_por = u2.id
+             WHERE t.empleado_id = $1 
+             ORDER BY t.created_at DESC`,
+            [empleadoId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener tickets' });
+    }
+});
+
+// Actualizar ticket
+app.put('/api/actualizar-ticket', async (req, res) => {
+    try {
+        const id = req.query.id;
+        const { estado, observaciones, aprobadoPor } = req.body;
+
+        const result = await db.query(
+            `UPDATE tickets SET
+                estado = COALESCE($1, estado),
+                observaciones = COALESCE($2, observaciones),
+                aprobado_por = COALESCE($3, aprobado_por),
+                fecha_aprobacion = CASE WHEN $1 IN ('aprobado', 'rechazado') AND fecha_aprobacion IS NULL 
+                                        THEN CURRENT_TIMESTAMP ELSE fecha_aprobacion END,
+                updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4
+             RETURNING *`,
+            [estado, observaciones, aprobadoPor, id]
+        );
+
+        if (result.rows.length > 0) {
+            res.json({ success: true, data: result.rows[0] });
+        } else {
+            res.status(404).json({ success: false, mensaje: 'Ticket no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar ticket' });
+    }
+});
+
+// Eliminar ticket
+app.delete('/api/eliminar-ticket', async (req, res) => {
+    try {
+        const id = req.query.id;
+        const result = await db.query('DELETE FROM tickets WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length > 0) {
+            res.json({ success: true, mensaje: 'Ticket eliminado' });
+        } else {
+            res.status(404).json({ success: false, mensaje: 'Ticket no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al eliminar ticket' });
+    }
+});
+
+// Crear ticket
+app.post('/api/ticket', async (req, res) => {
+    try {
+        const {
+            empleadoId, tipo, titulo, descripcion,
+            fechaEvento, fechaDesde, fechaHasta,
+            valorAnterior, valorNuevo, observaciones,
+            datosAdicionales, creadoPor, actualizaEmpleado, estado
+        } = req.body;
+
+        const result = await db.query(
+            `INSERT INTO tickets (
+                empleado_id, tipo, titulo, descripcion, 
+                fecha_evento, fecha_desde, fecha_hasta,
+                valor_anterior, valor_nuevo, observaciones,
+                datos_adicionales, creado_por, actualiza_empleado, estado
+             ) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+             RETURNING *`,
+            [
+                empleadoId, tipo, titulo, descripcion,
+                fechaEvento, fechaDesde, fechaHasta,
+                valorAnterior, valorNuevo, observaciones,
+                datosAdicionales ? JSON.stringify(datosAdicionales) : null,
+                creadoPor, actualizaEmpleado || false, estado || 'pendiente'
+            ]
+        );
+
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al crear ticket' });
+    }
+});
+
+// ===== RUTAS DE AUDITORÍA =====
+
+// Obtener log de auditoría
+app.get('/api/auditoria', async (req, res) => {
+    try {
+        const { usuario, accion, fecha, limite } = req.query;
+        
+        let query = 'SELECT * FROM auditoria WHERE 1=1';
+        const params = [];
+        let paramCount = 1;
+        
+        if (usuario) {
+            query += ` AND usuario_id = $${paramCount}`;
+            params.push(usuario);
+            paramCount++;
+        }
+        
+        if (accion) {
+            query += ` AND accion = $${paramCount}`;
+            params.push(accion);
+            paramCount++;
+        }
+        
+        if (fecha) {
+            query += ` AND DATE(created_at) = $${paramCount}`;
+            params.push(fecha);
+            paramCount++;
+        }
+        
+        query += ' ORDER BY created_at DESC';
+        
+        if (limite) {
+            query += ` LIMIT $${paramCount}`;
+            params.push(parseInt(limite));
+        } else {
+            query += ' LIMIT 100';
+        }
+        
+        const result = await db.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener auditoría:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener auditoría' });
+    }
+});
+
+// Crear registro de auditoría
+app.post('/api/auditoria', async (req, res) => {
+    try {
+        const {
+            usuarioId, usuarioNombre, accion, tipo, descripcion,
+            entidad, entidadId, datosAntes, datosDespues
+        } = req.body;
+        
+        const result = await db.query(
+            `INSERT INTO auditoria (
+                usuario_id, usuario_nombre, accion, tipo, descripcion,
+                entidad, entidad_id, datos_antes, datos_despues
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            [
+                usuarioId, usuarioNombre, accion, tipo, descripcion,
+                entidad, entidadId,
+                datosAntes ? JSON.stringify(datosAntes) : null,
+                datosDespues ? JSON.stringify(datosDespues) : null
+            ]
+        );
+        
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al crear registro de auditoría:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al crear registro de auditoría' });
     }
 });
 

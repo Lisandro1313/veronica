@@ -1,11 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
+const db = require('../db');
 const bcrypt = require('bcrypt');
-
-// Crear cliente de Supabase
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_KEY
-);
 
 module.exports = async (req, res) => {
     // Configurar CORS
@@ -26,17 +20,16 @@ module.exports = async (req, res) => {
 
         console.log('Intentando login para:', usuario);
 
-        // Buscar usuario con Supabase
-        const { data, error } = await supabase
-            .from('usuarios')
-            .select('id, nombre, username, password, rol')
-            .eq('username', usuario)
-            .single();
+        // Buscar usuario
+        const result = await db.query(
+            'SELECT id, nombre, username, password, rol FROM usuarios WHERE username = $1',
+            [usuario]
+        );
 
-        console.log('Resultado Supabase:', { data: data ? 'encontrado' : 'no encontrado', error: error?.message });
+        console.log('Resultado DB:', result.rows.length > 0 ? 'encontrado' : 'no encontrado');
 
-        if (error || !data) {
-            console.log('Usuario no encontrado o error:', error?.message);
+        if (result.rows.length === 0) {
+            console.log('Usuario no encontrado');
             return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
         }
 
@@ -44,6 +37,10 @@ module.exports = async (req, res) => {
         const match = await bcrypt.compare(password, data.password);
 
         console.log('Contraseña match:', match);
+        }
+
+        const user = result.rows[0];
+        const match = await bcrypt.compare(password, user.password);
 
         if (match) {
             // Definir permisos según rol
@@ -82,14 +79,14 @@ module.exports = async (req, res) => {
                 }
             };
 
-            const rol = data.rol || 'viewer';
+            const rol = user.rol || 'viewer';
             const userPermisos = permisos[rol] || permisos.viewer;
 
             return res.json({
                 success: true,
                 usuario: { 
-                    id: data.id, 
-                    nombre: data.nombre, 
+                    id: user.id, 
+                    nombre: user.nombre, 
                     rol: rol,
                     permisos: userPermisos
                 }

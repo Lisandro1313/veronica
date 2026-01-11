@@ -269,6 +269,49 @@ body {
     color: var(--primary);
 }
 
+/* Botón Hamburguesa */
+.btn-hamburger {
+    display: none;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-hamburger:hover {
+    background: var(--gray-200);
+}
+
+.btn-hamburger:active {
+    transform: scale(0.95);
+}
+
+/* Overlay del sidebar */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
 .top-bar-actions {
     display: flex;
     gap: 12px;
@@ -1089,6 +1132,119 @@ fieldset legend {
     color: var(--gray-700);
 }
 
+/* ===== AUDITORÍA ===== */
+.auditoria-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.auditoria-filters select,
+.auditoria-filters input {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    flex: 1;
+    min-width: 150px;
+}
+
+.auditoria-list {
+    max-height: 650px;
+    overflow-y: auto;
+}
+
+.auditoria-item {
+    display: flex;
+    gap: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    transition: box-shadow 0.2s;
+}
+
+.auditoria-item:hover {
+    box-shadow: 0 4px 8px var(--shadow);
+}
+
+.auditoria-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.auditoria-icon.icon-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.auditoria-icon.icon-info {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.auditoria-icon.icon-danger {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.auditoria-icon.icon-secondary {
+    background: var(--gray-200);
+    color: var(--gray-700);
+}
+
+.auditoria-content {
+    flex: 1;
+}
+
+.auditoria-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.auditoria-header strong {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.auditoria-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.auditoria-descripcion {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.auditoria-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.auditoria-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 /* ===== TICKETS ===== */
 .ticket-item {
     background: white;
@@ -1383,8 +1539,16 @@ fieldset legend {
         transition: transform 0.3s;
     }
     
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
     .main-content {
         margin-left: 0;
+    }
+    
+    .btn-hamburger {
+        display: flex;
     }
     
     .charts-grid {
@@ -1411,6 +1575,10 @@ fieldset legend {
     
     .top-bar h1 {
         font-size: 18px;
+    }
+    
+    .top-bar h1 i {
+        display: none;
     }
     
     .role-badge {
@@ -1451,6 +1619,99 @@ fieldset legend {
     
     .pagination-pages {
         gap: 4px;
+    }
+    
+    /* Tabla responsive */
+    .empleados-table {
+        font-size: 12px;
+    }
+    
+    .empleados-table th,
+    .empleados-table td {
+        padding: 10px 8px;
+    }
+    
+    .empleados-table .btn-group {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .empleados-table .btn-sm {
+        width: 100%;
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+    
+    /* Ocultar algunas columnas en móvil */
+    .empleados-table th:nth-child(3),
+    .empleados-table td:nth-child(3),
+    .empleados-table th:nth-child(5),
+    .empleados-table td:nth-child(5) {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .top-bar h1 {
+        font-size: 16px;
+    }
+    
+    .top-bar-actions {
+        gap: 6px;
+    }
+    
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .role-badge {
+        display: none;
+    }
+    
+    /* Tabla muy pequeña en móvil */
+    .empleados-table {
+        font-size: 11px;
+    }
+    
+    .empleados-table th,
+    .empleados-table td {
+        padding: 8px 4px;
+    }
+    
+    /* Ocultar más columnas */
+    .empleados-table th:nth-child(4),
+    .empleados-table td:nth-child(4),
+    .empleados-table th:nth-child(6),
+    .empleados-table td:nth-child(6) {
+        display: none;
+    }
+    
+    /* Formularios más compactos */
+    .form-group label {
+        font-size: 13px;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 14px;
+        padding: 10px;
+    }
+    
+    /* Botones más grandes para touch */
+    .btn {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+    
+    .btn-sm {
+        padding: 6px 10px;
+        font-size: 12px;
     }
 }
 
@@ -2407,74 +2668,108 @@ fieldset legend {
 }
 
 @media print {
-    /* Ocultar elementos innecesarios */
-    .sidebar,
-    .top-bar,
-    .modal-close,
-    .modal-header-perfil button,
-    #toast-container,
-    .btn,
-    .pagination,
-    .filters,
-    .sort-controls,
-    .search-bar {
+    /* Ocultar TODOS los elementos excepto el modal de perfil */
+    body * {
+        visibility: hidden;
+    }
+    
+    /* Mostrar SOLO el contenido del modal de perfil */
+    #modal-perfil,
+    #modal-perfil * {
+        visibility: visible;
+    }
+    
+    /* Ocultar botones y elementos de UI dentro del modal */
+    #modal-perfil .modal-close,
+    #modal-perfil .modal-header-perfil button,
+    #modal-perfil .btn,
+    #modal-perfil button {
         display: none !important;
     }
     
-    /* Ajustar modal para impresión */
-    .modal {
-        display: block !important;
-        position: static !important;
+    /* Posicionar el modal para impresión */
+    #modal-perfil {
+        position: absolute;
+        left: 0;
+        top: 0;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: auto;
         background: white !important;
     }
     
-    .modal-content {
+    #modal-perfil .modal-content {
+        position: static;
         max-width: 100% !important;
+        width: 100% !important;
         margin: 0 !important;
-        padding: 20mm !important;
+        padding: 10mm !important;
         box-shadow: none !important;
         background: white !important;
         color: black !important;
-    }
-    
-    /* Ajustar contenido principal */
-    .main-content {
-        margin-left: 0 !important;
+        border: none !important;
     }
     
     /* Estilos de página */
     @page {
         size: A4;
-        margin: 15mm;
+        margin: 10mm;
     }
     
     body {
         background: white !important;
         color: black !important;
+        margin: 0;
+        padding: 0;
     }
     
     /* Asegurar que las secciones no se corten */
     .perfil-section {
         page-break-inside: avoid;
+        margin-bottom: 15px;
     }
     
     /* Tablas y listas */
     table {
         border-collapse: collapse;
         width: 100%;
+        font-size: 10pt;
     }
     
     th, td {
-        border: 1px solid #ddd;
-        padding: 8px;
+        border: 1px solid #333;
+        padding: 6px;
         text-align: left;
     }
     
-    /* Colores para impresión */
-    .kpi-card,
-    .card {
-        border: 1px solid #ddd !important;
-        box-shadow: none !important;
+    th {
+        background-color: #f0f0f0 !important;
+        font-weight: bold;
+    }
+    
+    /* Títulos más compactos */
+    h2, h3 {
+        margin-top: 10px;
+        margin-bottom: 8px;
+        font-size: 14pt;
+    }
+    
+    /* Filas de información más compactas */
+    .perfil-row {
+        margin-bottom: 8px;
+    }
+    
+    /* Ocultar elementos innecesarios que no estén en modal */
+    .sidebar,
+    .top-bar,
+    #toast-container,
+    .pagination,
+    .filters,
+    .sort-controls,
+    .search-bar,
+    .main-content {
+        display: none !important;
     }
 }
 /* ===== SISTEMA DE TICKETS ===== */
