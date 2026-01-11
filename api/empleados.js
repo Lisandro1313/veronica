@@ -13,7 +13,14 @@ function toCamelCase(obj) {
     const camelObj = {};
     for (const key in obj) {
         const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-        camelObj[camelKey] = obj[key];
+        let value = obj[key];
+        
+        // Convertir booleanos a 'si'/'no' para campos específicos
+        if (key === 'tiene_pareja' || key === 'es_extranjero' || key === 'antecedentes_penales') {
+            value = value ? 'si' : 'no';
+        }
+        
+        camelObj[camelKey] = value;
     }
     return camelObj;
 }
@@ -29,16 +36,34 @@ module.exports = async (req, res) => {
 
     try {
         if (req.method === 'GET') {
-            const { data, error } = await supabase
-                .from('empleados')
-                .select('*')
-                .order('id', { ascending: false });
+            // Verificar si hay un ID en la URL para GET individual
+            const urlParts = req.url.split('/');
+            const lastPart = urlParts[urlParts.length - 1];
+            const id = lastPart && !isNaN(lastPart) ? parseInt(lastPart) : null;
 
-            if (error) throw error;
-            
-            // Convertir todos los empleados a camelCase
-            const empleadosCamelCase = (data || []).map(emp => toCamelCase(emp));
-            return res.json(empleadosCamelCase);
+            if (id) {
+                // GET individual: /api/empleados/123
+                const { data, error } = await supabase
+                    .from('empleados')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+                return res.json(toCamelCase(data));
+            } else {
+                // GET todos los empleados
+                const { data, error } = await supabase
+                    .from('empleados')
+                    .select('*')
+                    .order('id', { ascending: false });
+
+                if (error) throw error;
+                
+                // Convertir todos los empleados a camelCase
+                const empleadosCamelCase = (data || []).map(emp => toCamelCase(emp));
+                return res.json(empleadosCamelCase);
+            }
 
         } else if (req.method === 'POST') {
             const d = req.body;
