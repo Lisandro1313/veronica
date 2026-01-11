@@ -4457,3 +4457,24 @@ document.getElementById('modal-ticket-detalle')?.addEventListener('click', funct
 });
 
 document.querySelector('.modal-close-ticket')?.addEventListener('click', closeTicketModal);
+
+// ===== MENÚ HAMBURGUESA (MÓVIL) =====
+const hamburgerMenu = document.getElementById('hamburger-menu');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+if (hamburgerMenu) {
+    hamburgerMenu.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+        document.body.classList.toggle('sidebar-open');
+    });
+}
+
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+    });
+}
