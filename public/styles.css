@@ -642,6 +642,7 @@ body {
 /* ===== FORMS ===== */
 .form-group {
     margin-bottom: 20px;
+    min-width: 0;
 }
 
 .form-group label {
@@ -1398,6 +1399,10 @@ fieldset legend {
     overflow: auto;
     background-color: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
+}
+
+.modal.active {
+    display: block;
 }
 
 .modal-content {
