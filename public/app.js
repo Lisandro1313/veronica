@@ -93,7 +93,6 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         } else if (tabName === 'auditoria') {
             loadAuditoria();
         }
-        }
     });
 });
 
