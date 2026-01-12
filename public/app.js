@@ -3959,6 +3959,8 @@ function getTimelineMarkerClass(estado) {
 
 // Mostrar modal para nuevo ticket
 async function mostrarModalNuevoTicket(empleadoId = null) {
+    console.log('🎫 Abriendo modal de ticket. EmpleadoId:', empleadoId);
+    
     // Cargar empleados en el select
     await cargarEmpleadosEnSelect();
 
@@ -3976,7 +3978,10 @@ async function mostrarModalNuevoTicket(empleadoId = null) {
     }
 
     // Mostrar modal
-    document.getElementById('modal-ticket').classList.add('active');
+    const modal = document.getElementById('modal-ticket');
+    console.log('Modal encontrado?', !!modal);
+    modal.classList.add('active');
+    console.log('Modal classes:', modal.className);
 }
 
 // Cargar empleados en select
@@ -3993,19 +3998,34 @@ async function cargarEmpleadosEnSelect() {
             return;
         }
         
-        select.innerHTML = '<option value="">Seleccionar empleado...</option>';
+        // Limpiar select
+        select.innerHTML = '';
+        
+        // Agregar opción por defecto
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Seleccionar empleado...';
+        select.appendChild(defaultOption);
+        
+        // Agregar empleados
         empleados.forEach(emp => {
             const option = document.createElement('option');
             option.value = emp.id;
             option.textContent = `${emp.nombreCompleto} - ${emp.puesto || 'Sin puesto'}`;
             select.appendChild(option);
         });
-        console.log('Select poblado con opciones:', select.options.length);
         
-        // Forzar repaint del select
-        select.style.display = 'none';
-        select.offsetHeight; // Trigger reflow
-        select.style.display = '';
+        console.log('Select poblado con opciones:', select.options.length);
+        console.log('Select visible?', select.offsetWidth > 0, select.offsetHeight > 0);
+        console.log('Select display:', window.getComputedStyle(select).display);
+        console.log('Select visibility:', window.getComputedStyle(select).visibility);
+        
+        // Asegurar que el select sea visible
+        select.style.display = 'block';
+        select.style.width = '100%';
+        select.style.visibility = 'visible';
+        select.style.opacity = '1';
+        
     } catch (error) {
         console.error('Error al cargar empleados:', error);
     }
