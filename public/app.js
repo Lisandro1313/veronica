@@ -1052,6 +1052,7 @@ function mapearEmpleado(emp) {
         hijosACargo: emp.hijos_a_cargo || emp.hijosACargo,
         hijosConviven: emp.hijos_conviven || emp.hijosConviven,
         familiaresACargo: emp.familiares_a_cargo || emp.familiaresACargo,
+        integracionFamiliar: emp.integracion_familiar || emp.integracionFamiliar,
         escolaridadFamiliar: emp.escolaridad_familiar || emp.escolaridadFamiliar,
         nivelEducativo: emp.nivel_educativo || emp.nivelEducativo,
         problemasSalud: emp.problemas_salud || emp.problemasSalud,
@@ -1063,7 +1064,11 @@ function mapearEmpleado(emp) {
         antecedentesPenales: emp.antecedentes_penales || emp.antecedentesPenales,
         observacionesAntecedentes: emp.observaciones_antecedentes || emp.observacionesAntecedentes,
         fechaIngreso: emp.fecha_ingreso || emp.fechaIngreso,
-        experienciaLaboral: emp.experiencia_laboral || emp.experienciaLaboral
+        experienciaLaboral: emp.experiencia_laboral || emp.experienciaLaboral,
+        // Campos de contacto
+        calle: emp.calle,
+        numero: emp.numero,
+        localidad: emp.localidad
     };
 }
 
@@ -1473,13 +1478,56 @@ async function verPerfil(id) {
             </div>
             
             <div class="perfil-tab-content" id="perfil-tab-contacto">
-                <p class="text-muted">Información de contacto no disponible</p>
+                <div class="perfil-grid">
+                    <div class="perfil-section">
+                        <h3><i class="fas fa-map-marker-alt"></i> Dirección</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Calle:</label>
+                                <span>${escapeHtml(emp.calle || '-')}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Número:</label>
+                                <span>${escapeHtml(emp.numero || '-')}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Localidad:</label>
+                                <span>${escapeHtml(emp.localidad || '-')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="perfil-tab-content" id="perfil-tab-familiares">
-                <div class="perfil-section">
-                    <h3><i class="fas fa-users"></i> Grupo Familiar</h3>
-                    <p class="text-muted">Detalles familiares registrados en composición familiar</p>
+                <div class="perfil-grid">
+                    <div class="perfil-section">
+                        <h3><i class="fas fa-users"></i> Composición Familiar</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>¿Tiene Pareja?:</label>
+                                <span>${emp.tienePareja ? 'Sí' : 'No'}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Cantidad de Hijos:</label>
+                                <span>${emp.cantidadHijos || 0}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Hijos a Cargo:</label>
+                                <span>${emp.hijosACargo || 0}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Hijos que Conviven:</label>
+                                <span>${emp.hijosConviven || 0}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Familiares a Cargo:</label>
+                                <span>${emp.familiaresACargo || 0}</span>
+                            </div>
+                        </div>
+                        ${emp.integracionFamiliar ? `<div class="alert alert-info"><strong>Integración Familiar:</strong> ${escapeHtml(emp.integracionFamiliar)}</div>` : ''}
+                        ${emp.escolaridadFamiliar ? `<div class="alert alert-info"><strong>Escolaridad Familiar:</strong> ${escapeHtml(emp.escolaridadFamiliar)}</div>` : ''}
+                    </div>
                 </div>
             </div>
             
@@ -1546,23 +1594,7 @@ async function verPerfil(id) {
             <div class="perfil-tab-content" id="perfil-tab-historial">
                 <div class="perfil-section">
                     <h3><i class="fas fa-timeline"></i> Historial Laboral y Eventos</h3>
-                    ${emp.historialLaboral && emp.historialLaboral.length > 0 ? `
-                        <div class="timeline">
-                            ${emp.historialLaboral.map(evento => `
-                                <div class="timeline-item">
-                                    <div class="timeline-marker ${getEventoClass(evento.tipo)}"></div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-header">
-                                            <strong>${getEventoIcon(evento.tipo)} ${escapeHtml(evento.descripcion || '')}</strong>
-                                            <span class="timeline-date">${evento.fecha ? formatDate(evento.fecha) : ''}</span>
-                                        </div>
-                                        <p class="timeline-details">${escapeHtml(evento.detalles || '')}</p>
-                                        <small class="text-muted">Registrado por: ${escapeHtml(evento.usuario || '')}</small>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '<p class="text-muted">No hay historial registrado</p>'}
+                    <p class="text-muted">No hay historial registrado</p>
                 </div>
                 
                 <div class="perfil-section">
@@ -3961,10 +3993,13 @@ async function cargarEmpleadosEnSelect() {
             return;
         }
         
-        select.innerHTML = '<option value="">Seleccionar empleado...</option>' +
-            empleados.map(emp =>
-                `<option value="${emp.id}">${emp.nombreCompleto} - ${emp.puesto || 'Sin puesto'}</option>`
-            ).join('');
+        select.innerHTML = '<option value="">Seleccionar empleado...</option>';
+        empleados.forEach(emp => {
+            const option = document.createElement('option');
+            option.value = emp.id;
+            option.textContent = `${emp.nombreCompleto} - ${emp.puesto || 'Sin puesto'}`;
+            select.appendChild(option);
+        });
         console.log('Select poblado con opciones:', select.options.length);
         
         // Forzar repaint del select
