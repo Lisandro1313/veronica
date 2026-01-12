@@ -3921,11 +3921,18 @@ async function cargarEmpleadosEnSelect() {
             await loadEmpleados();
         }
 
+        console.log('Empleados cargados para select:', empleados.length);
         const select = document.getElementById('ticket-empleado-select');
+        if (!select) {
+            console.error('No se encontró el select ticket-empleado-select');
+            return;
+        }
+        
         select.innerHTML = '<option value="">Seleccionar empleado...</option>' +
             empleados.map(emp =>
                 `<option value="${emp.id}">${emp.nombreCompleto} - ${emp.puesto || 'Sin puesto'}</option>`
             ).join('');
+        console.log('Select poblado con opciones:', select.options.length);
     } catch (error) {
         console.error('Error al cargar empleados:', error);
     }
@@ -3956,9 +3963,16 @@ function adaptarFormularioTicket() {
 }
 
 // Cerrar modal de ticket
-function closeTicketModal() {
-    document.getElementById('modal-ticket').classList.remove('active');
-    document.getElementById('ticket-form').reset();
+window.closeTicketModal = function() {
+    console.log('Cerrando modal de ticket');
+    const modal = document.getElementById('modal-ticket');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    const form = document.getElementById('ticket-form');
+    if (form) {
+        form.reset();
+    }
 }
 
 // Guardar ticket (crear o editar)
