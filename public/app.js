@@ -1750,7 +1750,7 @@ function displayTickets(lista) {
                 <span class="ticket-tipo">${getTipoTicketIcon(t.tipo)} ${escapeHtml(t.tipo)}</span>
                 <span class="ticket-fecha">${formatDate(t.fechaCreacion)}</span>
             </div>
-            <p><strong>Empleado:</strong> ${escapeHtml(t.empleadoNombre)}</p>
+            <p><strong>Empleado:</strong> ${escapeHtml(t.nombre_completo || t.empleado_nombre || 'Sin nombre')}</p>
             <p><strong>Descripción:</strong> ${escapeHtml(t.descripcion)}</p>
             ${t.fecha ? `<p><strong>Fecha del evento:</strong> ${formatDate(t.fecha)}</p>` : ''}
             <p class="ticket-creador">Creado por: ${escapeHtml(t.creadoPor)}</p>
@@ -3933,6 +3933,11 @@ async function cargarEmpleadosEnSelect() {
                 `<option value="${emp.id}">${emp.nombreCompleto} - ${emp.puesto || 'Sin puesto'}</option>`
             ).join('');
         console.log('Select poblado con opciones:', select.options.length);
+        
+        // Forzar repaint del select
+        select.style.display = 'none';
+        select.offsetHeight; // Trigger reflow
+        select.style.display = '';
     } catch (error) {
         console.error('Error al cargar empleados:', error);
     }
@@ -4135,7 +4140,7 @@ async function verDetalleTicket(ticketId) {
                 
                 <div class="detalle-section">
                     <h4><i class="fas fa-user"></i> Empleado</h4>
-                    <p>${ticket.empleado_nombre} - ${ticket.puesto || 'Sin puesto'}</p>
+                    <p>${ticket.nombre_completo || ticket.empleado_nombre || 'Sin nombre'} - ${ticket.puesto || 'Sin puesto'}</p>
                 </div>
                 
                 ${ticket.descripcion ? `
@@ -4267,6 +4272,7 @@ function filtrarTickets() {
     if (searchText) {
         filtrados = filtrados.filter(t =>
             t.titulo.toLowerCase().includes(searchText) ||
+            (t.nombre_completo && t.nombre_completo.toLowerCase().includes(searchText)) ||
             (t.empleado_nombre && t.empleado_nombre.toLowerCase().includes(searchText)) ||
             t.tipo.toLowerCase().includes(searchText)
         );
