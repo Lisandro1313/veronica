@@ -1758,13 +1758,41 @@ modalCloseTicket.addEventListener('click', closeTicketModal);
 ticketForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const tipo = document.getElementById('ticket-tipo').value;
+    const empleadoSelect = document.getElementById('ticket-empleado-select');
+    
+    if (!empleadoSelect || !empleadoSelect.value) {
+        alert('❌ Debe seleccionar un empleado');
+        return;
+    }
+
     const ticketData = {
-        empleadoId: parseInt(document.getElementById('ticket-empleado-select').value),
-        tipo: document.getElementById('ticket-tipo').value,
-        descripcion: document.getElementById('ticket-descripcion').value,
-        fecha: document.getElementById('ticket-fecha').value,
+        empleadoId: parseInt(empleadoSelect.value),
+        tipo: tipo,
+        titulo: document.getElementById('ticket-titulo').value,
+        descripcion: document.getElementById('ticket-descripcion').value || '',
         creadoPor: currentUser.nombre
     };
+    
+    // Agregar fechas según el tipo de ticket
+    const camposPeriodo = document.getElementById('ticket-campos-periodo');
+    const camposEvento = document.getElementById('ticket-campos-evento');
+    const camposCambio = document.getElementById('ticket-campos-cambio');
+    
+    if (camposPeriodo && camposPeriodo.style.display !== 'none') {
+        ticketData.fechaDesde = document.getElementById('ticket-fecha-desde').value;
+        ticketData.fechaHasta = document.getElementById('ticket-fecha-hasta').value;
+    }
+    
+    if (camposEvento && camposEvento.style.display !== 'none') {
+        ticketData.fechaEvento = document.getElementById('ticket-fecha-evento').value;
+    }
+    
+    if (camposCambio && camposCambio.style.display !== 'none') {
+        ticketData.valorAnterior = document.getElementById('ticket-valor-anterior').value;
+        ticketData.valorNuevo = document.getElementById('ticket-valor-nuevo').value;
+        ticketData.actualizaEmpleado = document.getElementById('ticket-actualiza-empleado').checked;
+    }
 
     // Obtener nombre del empleado
     const empleado = empleados.find(e => e.id === ticketData.empleadoId);
@@ -1782,6 +1810,9 @@ ticketForm.addEventListener('submit', async (e) => {
         if (data.success) {
             alert('✅ Ticket creado correctamente');
             closeTicketModal();
+            loadAllTickets();
+        } else {
+            alert('❌ Error al crear ticket: ' + (data.mensaje || 'Error desconocido'));
         }
     } catch (error) {
         alert('❌ Error al crear ticket');
@@ -4023,8 +4054,11 @@ async function cargarEmpleadosEnSelect() {
         // Asegurar que el select sea visible
         select.style.display = 'block';
         select.style.width = '100%';
+        select.style.minWidth = '200px';
         select.style.visibility = 'visible';
         select.style.opacity = '1';
+        select.style.height = 'auto';
+        select.style.minHeight = '40px';
         
     } catch (error) {
         console.error('Error al cargar empleados:', error);
