@@ -1694,7 +1694,7 @@ ticketForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const ticketData = {
-        empleadoId: parseInt(document.getElementById('ticket-empleadoId').value),
+        empleadoId: parseInt(document.getElementById('ticket-empleado-select').value),
         tipo: document.getElementById('ticket-tipo').value,
         descripcion: document.getElementById('ticket-descripcion').value,
         fecha: document.getElementById('ticket-fecha').value,
