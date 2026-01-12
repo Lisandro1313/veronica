@@ -61,9 +61,11 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             'dashboard': '<i class="fas fa-chart-line"></i> Dashboard',
             'lista': '<i class="fas fa-users"></i> Personal',
             'nuevo': '<i class="fas fa-user-plus"></i> Nuevo Empleado',
+            'editar': '<i class="fas fa-user-edit"></i> Editar Empleado',
             'tickets': '<i class="fas fa-clipboard-list"></i> Tickets',
             'reportes': '<i class="fas fa-file-pdf"></i> Reportes',
-            'alertas': '<i class="fas fa-bell"></i> Alertas'
+            'alertas': '<i class="fas fa-bell"></i> Alertas',
+            'auditoria': '<i class="fas fa-history"></i> Auditoría'
         };
         pageTitle.innerHTML = titles[tabName];
 
@@ -88,6 +90,9 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             loadAllTickets();
         } else if (tabName === 'alertas') {
             loadAlertas();
+        } else if (tabName === 'auditoria') {
+            loadAuditoria();
+        }
         }
     });
 });
@@ -4414,10 +4419,6 @@ function editarEmpleado(id) {
 
     // Cambiar a la pestaña de edición
     editTab.click();
-
-    showToast('info', 'Modo Edición', 'Modifica los datos y guarda los cambios');
-        submitBtn.innerHTML = '<i class="fas fa-save"></i> Actualizar Empleado';
-    }
 
     showToast('info', 'Modo Edición', 'Modifica los datos y guarda los cambios');
 }
