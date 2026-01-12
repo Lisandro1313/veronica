@@ -54,6 +54,10 @@
                     <i class="fas fa-user-plus"></i>
                     <span>Nuevo Empleado</span>
                 </button>
+                <button class="nav-item" data-tab="editar" style="display:none;">
+                    <i class="fas fa-user-edit"></i>
+                    <span>Editar Empleado</span>
+                </button>
                 <button class="nav-item" data-tab="tickets">
                     <i class="fas fa-clipboard-list"></i>
                     <span>Tickets</span>
@@ -703,6 +707,209 @@
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">💾 Guardar Empleado</button>
                             <button type="button" class="btn btn-secondary" onclick="resetForm()">🔄 Limpiar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tab: Editar Empleado -->
+            <div id="tab-editar" class="tab-content">
+                <div class="card">
+                    <h3><i class="fas fa-user-edit"></i> Editar Empleado <span id="edit-empleado-nombre" style="color: var(--primary);"></span></h3>
+                    <form id="empleado-edit-form">
+                        <!-- Mismo contenido que empleado-form pero con IDs diferentes -->
+                        <!-- DATOS PERSONALES -->
+                        <fieldset>
+                            <legend>📋 Datos Personales</legend>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-nombreCompleto">Nombre Completo *</label>
+                                    <input type="text" id="edit-nombreCompleto" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-cuil">CUIL</label>
+                                    <input type="text" id="edit-cuil" placeholder="20123456789">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-fechaNacimiento">Fecha de Nacimiento</label>
+                                    <input type="date" id="edit-fechaNacimiento">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-documento">Documento</label>
+                                    <input type="text" id="edit-documento">
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- COMPOSICIÓN FAMILIAR -->
+                        <fieldset>
+                            <legend>👨‍👩‍👧‍👦 Composición Familiar</legend>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-estadoCivil">Estado Civil</label>
+                                    <select id="edit-estadoCivil">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="soltero">Soltero/a</option>
+                                        <option value="casado">Casado/a</option>
+                                        <option value="divorciado">Divorciado/a</option>
+                                        <option value="viudo">Viudo/a</option>
+                                        <option value="union">Unión de hecho</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-tienePareja">¿Tiene pareja?</label>
+                                    <select id="edit-tienePareja">
+                                        <option value="no">No</option>
+                                        <option value="si">Sí</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-cantidadHijos">Cantidad de Hijos</label>
+                                    <input type="number" id="edit-cantidadHijos" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-hijosACargo">Hijos a Cargo</label>
+                                    <input type="number" id="edit-hijosACargo" min="0" value="0">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-hijosConviven">Hijos que Conviven</label>
+                                    <input type="number" id="edit-hijosConviven" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-familiaresACargo">Otros Familiares a Cargo</label>
+                                    <input type="number" id="edit-familiaresACargo" min="0" value="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-escolaridadFamiliar">Observaciones de Escolaridad Familiar</label>
+                                <textarea id="edit-escolaridadFamiliar" rows="2" placeholder="Nivel educativo de los hijos o familiares..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- EDUCACIÓN -->
+                        <fieldset>
+                            <legend>🎓 Educación</legend>
+                            <div class="form-group">
+                                <label for="edit-nivelEducativo">Nivel Educativo</label>
+                                <select id="edit-nivelEducativo">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="sin_estudios">Sin estudios</option>
+                                    <option value="primario_incompleto">Primario incompleto</option>
+                                    <option value="primario_completo">Primario completo</option>
+                                    <option value="secundario_incompleto">Secundario incompleto</option>
+                                    <option value="secundario_completo">Secundario completo</option>
+                                    <option value="terciario">Terciario</option>
+                                    <option value="universitario">Universitario</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- SALUD -->
+                        <fieldset>
+                            <legend>🏭 Salud</legend>
+                            <div class="form-group">
+                                <label for="edit-problemasSalud">Problemas de Salud / Observaciones</label>
+                                <textarea id="edit-problemasSalud" rows="3" placeholder="Alergias, enfermedades crónicas, discapacidades..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- DATOS MIGRATORIOS -->
+                        <fieldset>
+                            <legend>🌍 Datos Migratorios</legend>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-esExtranjero">¿Es extranjero?</label>
+                                    <select id="edit-esExtranjero">
+                                        <option value="no">No</option>
+                                        <option value="si">Sí</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-paisOrigen">País de Origen</label>
+                                    <input type="text" id="edit-paisOrigen">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-fechaEntradaPais">Fecha de Entrada al País</label>
+                                    <input type="date" id="edit-fechaEntradaPais">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-tipoResidencia">Tipo de Residencia</label>
+                                    <select id="edit-tipoResidencia">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="argentino">Argentino</option>
+                                        <option value="permanente">Residencia Permanente</option>
+                                        <option value="temporaria">Residencia Temporaria</option>
+                                        <option value="precaria">Precaria</option>
+                                        <option value="turista">Turista</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-entradasSalidasPais">Registro de Entradas/Salidas del País</label>
+                                <textarea id="edit-entradasSalidasPais" rows="3" placeholder="Fechas de viajes, vacaciones fuera del país..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- EXPERIENCIA LABORAL -->
+                        <fieldset>
+                            <legend>💼 Experiencia Laboral</legend>
+                            <div class="form-group">
+                                <label for="edit-experienciaLaboral">Experiencia Laboral Previa</label>
+                                <textarea id="edit-experienciaLaboral" rows="4" placeholder="Empresas donde trabajó, puestos, períodos..."></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-fechaIngreso">Fecha de Ingreso a la Empresa</label>
+                                    <input type="date" id="edit-fechaIngreso">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-puesto">Puesto Actual</label>
+                                    <input type="text" id="edit-puesto">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-sueldo">Sueldo Mensual</label>
+                                <input type="number" id="edit-sueldo" step="0.01" min="0" placeholder="Sueldo en pesos">
+                            </div>
+                        </fieldset>
+
+                        <!-- ANTECEDENTES -->
+                        <fieldset>
+                            <legend>📜 Antecedentes</legend>
+                            <div class="form-group">
+                                <label for="edit-antecedentesPenales">Antecedentes Penales</label>
+                                <select id="edit-antecedentesPenales">
+                                    <option value="no">No tiene</option>
+                                    <option value="si">Sí tiene</option>
+                                    <option value="pendiente">Pendiente de verificación</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-observacionesAntecedentes">Observaciones sobre Antecedentes</label>
+                                <textarea id="edit-observacionesAntecedentes" rows="2"></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- OBSERVACIONES GENERALES -->
+                        <fieldset>
+                            <legend>📝 Observaciones Generales</legend>
+                            <div class="form-group">
+                                <label for="edit-observaciones">Notas adicionales</label>
+                                <textarea id="edit-observaciones" rows="3" placeholder="Cualquier información adicional relevante..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Actualizar Empleado</button>
+                            <button type="button" class="btn btn-secondary" onclick="cancelarEdicion()">❌ Cancelar</button>
                         </div>
                     </form>
                 </div>

@@ -4359,55 +4359,63 @@ function editarEmpleado(id) {
         return;
     }
 
-    // Llenar el formulario con los datos actuales
-    if (document.getElementById('nombreCompleto')) document.getElementById('nombreCompleto').value = empleado.nombreCompleto || '';
-    if (document.getElementById('cuil')) document.getElementById('cuil').value = empleado.cuil || '';
-    if (document.getElementById('fechaNacimiento')) document.getElementById('fechaNacimiento').value = empleado.fechaNacimiento || '';
-    if (document.getElementById('documento')) document.getElementById('documento').value = empleado.documento || '';
+    // Llenar el formulario de EDICIÓN con los datos actuales (usando prefijo edit-)
+    if (document.getElementById('edit-nombreCompleto')) document.getElementById('edit-nombreCompleto').value = empleado.nombreCompleto || '';
+    if (document.getElementById('edit-cuil')) document.getElementById('edit-cuil').value = empleado.cuil || '';
+    if (document.getElementById('edit-fechaNacimiento')) document.getElementById('edit-fechaNacimiento').value = empleado.fechaNacimiento || '';
+    if (document.getElementById('edit-documento')) document.getElementById('edit-documento').value = empleado.documento || '';
 
     // Composición Familiar
-    if (document.getElementById('estadoCivil')) document.getElementById('estadoCivil').value = empleado.estadoCivil || '';
-    if (document.getElementById('tienePareja')) document.getElementById('tienePareja').value = empleado.tienePareja || 'no';
-    if (document.getElementById('cantidadHijos')) document.getElementById('cantidadHijos').value = empleado.cantidadHijos || 0;
-    if (document.getElementById('hijosACargo')) document.getElementById('hijosACargo').value = empleado.hijosACargo || 0;
-    if (document.getElementById('hijosConviven')) document.getElementById('hijosConviven').value = empleado.hijosConviven || 0;
-    if (document.getElementById('familiaresACargo')) document.getElementById('familiaresACargo').value = empleado.familiaresACargo || 0;
-    if (document.getElementById('escolaridadFamiliar')) document.getElementById('escolaridadFamiliar').value = empleado.escolaridadFamiliar || '';
+    if (document.getElementById('edit-estadoCivil')) document.getElementById('edit-estadoCivil').value = empleado.estadoCivil || '';
+    if (document.getElementById('edit-tienePareja')) document.getElementById('edit-tienePareja').value = empleado.tienePareja || 'no';
+    if (document.getElementById('edit-cantidadHijos')) document.getElementById('edit-cantidadHijos').value = empleado.cantidadHijos || 0;
+    if (document.getElementById('edit-hijosACargo')) document.getElementById('edit-hijosACargo').value = empleado.hijosACargo || 0;
+    if (document.getElementById('edit-hijosConviven')) document.getElementById('edit-hijosConviven').value = empleado.hijosConviven || 0;
+    if (document.getElementById('edit-familiaresACargo')) document.getElementById('edit-familiaresACargo').value = empleado.familiaresACargo || 0;
+    if (document.getElementById('edit-escolaridadFamiliar')) document.getElementById('edit-escolaridadFamiliar').value = empleado.escolaridadFamiliar || '';
 
     // Educación
-    if (document.getElementById('nivelEducativo')) document.getElementById('nivelEducativo').value = empleado.nivelEducativo || '';
+    if (document.getElementById('edit-nivelEducativo')) document.getElementById('edit-nivelEducativo').value = empleado.nivelEducativo || '';
 
     // Salud
-    if (document.getElementById('problemasSalud')) document.getElementById('problemasSalud').value = empleado.problemasSalud || '';
+    if (document.getElementById('edit-problemasSalud')) document.getElementById('edit-problemasSalud').value = empleado.problemasSalud || '';
 
     // Datos Migratorios
-    if (document.getElementById('esExtranjero')) document.getElementById('esExtranjero').value = empleado.esExtranjero || 'no';
-    if (document.getElementById('paisOrigen')) document.getElementById('paisOrigen').value = empleado.paisOrigen || '';
-    if (document.getElementById('fechaEntradaPais')) document.getElementById('fechaEntradaPais').value = empleado.fechaEntradaPais || '';
-    if (document.getElementById('tipoResidencia')) document.getElementById('tipoResidencia').value = empleado.tipoResidencia || '';
-    if (document.getElementById('entradasSalidasPais')) document.getElementById('entradasSalidasPais').value = empleado.entradasSalidasPais || '';
+    if (document.getElementById('edit-esExtranjero')) document.getElementById('edit-esExtranjero').value = empleado.esExtranjero || 'no';
+    if (document.getElementById('edit-paisOrigen')) document.getElementById('edit-paisOrigen').value = empleado.paisOrigen || '';
+    if (document.getElementById('edit-fechaEntradaPais')) document.getElementById('edit-fechaEntradaPais').value = empleado.fechaEntradaPais || '';
+    if (document.getElementById('edit-tipoResidencia')) document.getElementById('edit-tipoResidencia').value = empleado.tipoResidencia || '';
+    if (document.getElementById('edit-entradasSalidasPais')) document.getElementById('edit-entradasSalidasPais').value = empleado.entradasSalidasPais || '';
 
     // Datos Laborales
-    if (document.getElementById('experienciaLaboral')) document.getElementById('experienciaLaboral').value = empleado.experienciaLaboral || '';
-    if (document.getElementById('fechaIngreso')) document.getElementById('fechaIngreso').value = empleado.fechaIngreso || '';
-    if (document.getElementById('puesto')) document.getElementById('puesto').value = empleado.puesto || '';
+    if (document.getElementById('edit-experienciaLaboral')) document.getElementById('edit-experienciaLaboral').value = empleado.experienciaLaboral || '';
+    if (document.getElementById('edit-fechaIngreso')) document.getElementById('edit-fechaIngreso').value = empleado.fechaIngreso || '';
+    if (document.getElementById('edit-puesto')) document.getElementById('edit-puesto').value = empleado.puesto || '';
+    if (document.getElementById('edit-sueldo')) document.getElementById('edit-sueldo').value = empleado.sueldo || '';
 
     // Antecedentes
-    if (document.getElementById('antecedentesPenales')) document.getElementById('antecedentesPenales').value = empleado.antecedentesPenales || 'no';
-    if (document.getElementById('observacionesAntecedentes')) document.getElementById('observacionesAntecedentes').value = empleado.observacionesAntecedentes || '';
+    if (document.getElementById('edit-antecedentesPenales')) document.getElementById('edit-antecedentesPenales').value = empleado.antecedentesPenales || 'no';
+    if (document.getElementById('edit-observacionesAntecedentes')) document.getElementById('edit-observacionesAntecedentes').value = empleado.observacionesAntecedentes || '';
 
     // Observaciones
-    if (document.getElementById('observaciones')) document.getElementById('observaciones').value = empleado.observaciones || '';
+    if (document.getElementById('edit-observaciones')) document.getElementById('edit-observaciones').value = empleado.observaciones || '';
+
+    // Mostrar nombre del empleado en el título
+    const nombreSpan = document.getElementById('edit-empleado-nombre');
+    if (nombreSpan) nombreSpan.textContent = ` - ${empleado.nombreCompleto}`;
 
     // Guardar el ID del empleado que estamos editando
-    empleadoForm.dataset.editId = id;
+    const editForm = document.getElementById('empleado-edit-form');
+    if (editForm) editForm.dataset.editId = id;
+
+    // Mostrar el botón de editar en el sidebar
+    const editTab = document.querySelector('[data-tab="editar"]');
+    if (editTab) editTab.style.display = 'flex';
 
     // Cambiar a la pestaña de edición
-    document.querySelector('[data-tab="nuevo"]').click();
+    editTab.click();
 
-    // Cambiar el título y el botón
-    const submitBtn = empleadoForm.querySelector('button[type="submit"]');
-    if (submitBtn) {
+    showToast('info', 'Modo Edición', 'Modifica los datos y guarda los cambios');
         submitBtn.innerHTML = '<i class="fas fa-save"></i> Actualizar Empleado';
     }
 
@@ -4470,6 +4478,123 @@ if (hamburgerMenu) {
         sidebarOverlay.classList.toggle('active');
         document.body.classList.toggle('sidebar-open');
     });
+}
+
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+    });
+}
+
+// ===== FORMULARIO DE EDICIÓN DE EMPLEADO =====
+const empleadoEditForm = document.getElementById('empleado-edit-form');
+
+if (empleadoEditForm) {
+    empleadoEditForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const empleadoData = {
+            nombreCompleto: document.getElementById('edit-nombreCompleto').value,
+            cuil: document.getElementById('edit-cuil').value,
+            fechaNacimiento: document.getElementById('edit-fechaNacimiento').value,
+            documento: document.getElementById('edit-documento').value,
+
+            estadoCivil: document.getElementById('edit-estadoCivil').value,
+            tienePareja: document.getElementById('edit-tienePareja')?.value || 'no',
+            cantidadHijos: parseInt(document.getElementById('edit-cantidadHijos')?.value || '0'),
+            hijosACargo: parseInt(document.getElementById('edit-hijosACargo')?.value || '0'),
+            hijosConviven: parseInt(document.getElementById('edit-hijosConviven')?.value || '0'),
+            familiaresACargo: parseInt(document.getElementById('edit-familiaresACargo')?.value || '0'),
+            escolaridadFamiliar: document.getElementById('edit-escolaridadFamiliar')?.value || '',
+
+            nivelEducativo: document.getElementById('edit-nivelEducativo').value,
+
+            problemasSalud: document.getElementById('edit-problemasSalud').value,
+
+            esExtranjero: document.getElementById('edit-esExtranjero').value,
+            paisOrigen: document.getElementById('edit-paisOrigen').value,
+            fechaEntradaPais: document.getElementById('edit-fechaEntradaPais').value,
+            tipoResidencia: document.getElementById('edit-tipoResidencia').value,
+            entradasSalidasPais: document.getElementById('edit-entradasSalidasPais').value,
+
+            experienciaLaboral: document.getElementById('edit-experienciaLaboral').value,
+            fechaIngreso: document.getElementById('edit-fechaIngreso').value,
+            puesto: document.getElementById('edit-puesto').value,
+            sueldo: document.getElementById('edit-sueldo')?.value || null,
+
+            antecedentesPenales: document.getElementById('edit-antecedentesPenales').value,
+            observacionesAntecedentes: document.getElementById('edit-observacionesAntecedentes').value,
+
+            observaciones: document.getElementById('edit-observaciones').value
+        };
+
+        const submitBtn = empleadoEditForm.querySelector('button[type="submit"]');
+        submitBtn.classList.add('btn-loading');
+        submitBtn.disabled = true;
+
+        try {
+            const editId = empleadoEditForm.dataset.editId;
+
+            if (!editId) {
+                throw new Error('No se encontró el ID del empleado a editar');
+            }
+
+            const response = await fetch(`${API_URL}/empleados/${editId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(empleadoData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                registrarAuditoria(
+                    'editado',
+                    'empleado',
+                    `${empleadoData.nombreCompleto} - CUIL: ${empleadoData.cuil}`,
+                    editId
+                );
+
+                showToast('success', 'Empleado Actualizado', 'Los cambios se guardaron correctamente');
+
+                empleadoEditForm.reset();
+                delete empleadoEditForm.dataset.editId;
+
+                // Ocultar el botón de editar
+                const editTab = document.querySelector('[data-tab="editar"]');
+                if (editTab) editTab.style.display = 'none';
+
+                // Cambiar a la tab de lista
+                document.querySelector('[data-tab="lista"]').click();
+
+                // Recargar empleados
+                await loadEmpleados();
+            }
+        } catch (error) {
+            showToast('error', 'Error', 'No se pudo actualizar el empleado');
+            console.error(error);
+        } finally {
+            submitBtn.classList.remove('btn-loading');
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+function cancelarEdicion() {
+    const editForm = document.getElementById('empleado-edit-form');
+    if (editForm) {
+        editForm.reset();
+        delete editForm.dataset.editId;
+    }
+
+    // Ocultar el botón de editar
+    const editTab = document.querySelector('[data-tab="editar"]');
+    if (editTab) editTab.style.display = 'none';
+
+    // Cambiar a la tab de lista
+    document.querySelector('[data-tab="lista"]').click();
 }
 
 if (sidebarOverlay) {
