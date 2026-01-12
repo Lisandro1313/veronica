@@ -1038,10 +1038,42 @@ empleadoForm.addEventListener('submit', async (e) => {
     }
 });
 
+// ===== MAPEO DE CAMPOS =====
+
+// Función auxiliar para mapear campos snake_case a camelCase
+function mapearEmpleado(emp) {
+    return {
+        ...emp,
+        nombreCompleto: emp.nombre_completo || emp.nombreCompleto,
+        fechaNacimiento: emp.fecha_nacimiento || emp.fechaNacimiento,
+        estadoCivil: emp.estado_civil || emp.estadoCivil,
+        tienePareja: emp.tiene_pareja || emp.tienePareja,
+        cantidadHijos: emp.cantidad_hijos || emp.cantidadHijos,
+        hijosACargo: emp.hijos_a_cargo || emp.hijosACargo,
+        hijosConviven: emp.hijos_conviven || emp.hijosConviven,
+        familiaresACargo: emp.familiares_a_cargo || emp.familiaresACargo,
+        escolaridadFamiliar: emp.escolaridad_familiar || emp.escolaridadFamiliar,
+        nivelEducativo: emp.nivel_educativo || emp.nivelEducativo,
+        problemasSalud: emp.problemas_salud || emp.problemasSalud,
+        esExtranjero: emp.es_extranjero || emp.esExtranjero,
+        paisOrigen: emp.pais_origen || emp.paisOrigen,
+        fechaEntradaPais: emp.fecha_entrada_pais || emp.fechaEntradaPais,
+        tipoResidencia: emp.tipo_residencia || emp.tipoResidencia,
+        entradasSalidasPais: emp.entradas_salidas_pais || emp.entradasSalidasPais,
+        antecedentesPenales: emp.antecedentes_penales || emp.antecedentesPenales,
+        observacionesAntecedentes: emp.observaciones_antecedentes || emp.observacionesAntecedentes,
+        fechaIngreso: emp.fecha_ingreso || emp.fechaIngreso,
+        experienciaLaboral: emp.experiencia_laboral || emp.experienciaLaboral
+    };
+}
+
+// ===== CARGAR Y MOSTRAR EMPLEADOS =====
+
 async function loadEmpleados() {
     try {
         const response = await fetch(`${API_URL}/empleados`);
-        empleados = await response.json();
+        const data = await response.json();
+        empleados = data.map(mapearEmpleado);
         displayEmpleados(empleados);
 
         // Generar notificaciones inteligentes
@@ -1316,7 +1348,8 @@ function imprimirPerfil() {
 async function verPerfil(id) {
     try {
         const response = await fetch(`${API_URL}/empleados/${id}`);
-        const emp = await response.json();
+        const empData = await response.json();
+        const emp = mapearEmpleado(empData);
 
         const perfilHTML = `
             <div class="perfil-header">
