@@ -3924,7 +3924,7 @@ async function cargarEmpleadosEnSelect() {
         const select = document.getElementById('ticket-empleado-select');
         select.innerHTML = '<option value="">Seleccionar empleado...</option>' +
             empleados.map(emp =>
-                `<option value="${emp.id}">${emp.nombre} ${emp.apellido} - ${emp.puesto || 'Sin puesto'}</option>`
+                `<option value="${emp.id}">${emp.nombreCompleto} - ${emp.puesto || 'Sin puesto'}</option>`
             ).join('');
     } catch (error) {
         console.error('Error al cargar empleados:', error);
