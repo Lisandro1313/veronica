@@ -84,6 +84,11 @@ module.exports = async (req, res) => {
                 familiares_a_cargo: d.familiaresACargo || 0,
                 escolaridad_familiar: d.escolaridadFamiliar || null,
 
+                // Datos de Vivienda
+                vivienda: d.vivienda || null,
+                direccion: d.direccion || null,
+                numero_lote_invernaculo: d.numeroLoteInvernaculo || null,
+
                 nivel_educativo: d.nivelEducativo || null,
                 problemas_salud: d.problemasSalud || null,
                 es_extranjero: d.esExtranjero || 'no',
@@ -135,6 +140,11 @@ module.exports = async (req, res) => {
                 hijos_conviven: d.hijosConviven || 0,
                 familiares_a_cargo: d.familiaresACargo || 0,
                 escolaridad_familiar: d.escolaridadFamiliar || null,
+
+                // Datos de Vivienda
+                vivienda: d.vivienda || null,
+                direccion: d.direccion || null,
+                numero_lote_invernaculo: d.numeroLoteInvernaculo || null,
 
                 nivel_educativo: d.nivelEducativo || null,
                 problemas_salud: d.problemasSalud || null,

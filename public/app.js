@@ -961,6 +961,11 @@ empleadoForm.addEventListener('submit', async (e) => {
         familiaresACargo: parseInt(document.getElementById('familiaresACargo')?.value || '0'),
         escolaridadFamiliar: document.getElementById('escolaridadFamiliar')?.value || '',
 
+        // Datos de Vivienda
+        vivienda: document.getElementById('vivienda')?.value || '',
+        direccion: document.getElementById('direccion')?.value || '',
+        numeroLoteInvernaculo: document.getElementById('numeroLoteInvernaculo')?.value || '',
+
         nivelEducativo: document.getElementById('nivelEducativo').value,
 
         problemasSalud: document.getElementById('problemasSalud').value,
@@ -1480,8 +1485,20 @@ async function verPerfil(id) {
             <div class="perfil-tab-content" id="perfil-tab-contacto">
                 <div class="perfil-grid">
                     <div class="perfil-section">
-                        <h3><i class="fas fa-map-marker-alt"></i> Dirección</h3>
+                        <h3><i class="fas fa-map-marker-alt"></i> Dirección y Vivienda</h3>
                         <div class="info-grid">
+                            <div class="info-item">
+                                <label>Vivienda:</label>
+                                <span>${escapeHtml(emp.vivienda || '-')}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Dirección:</label>
+                                <span>${escapeHtml(emp.direccion || '-')}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Número de Lote/Invernadero:</label>
+                                <span>${escapeHtml(emp.numeroLoteInvernaculo || '-')}</span>
+                            </div>
                             <div class="info-item">
                                 <label>Calle:</label>
                                 <span>${escapeHtml(emp.calle || '-')}</span>
@@ -4520,6 +4537,11 @@ function editarEmpleado(id) {
     if (document.getElementById('edit-familiaresACargo')) document.getElementById('edit-familiaresACargo').value = empleado.familiaresACargo || 0;
     if (document.getElementById('edit-escolaridadFamiliar')) document.getElementById('edit-escolaridadFamiliar').value = empleado.escolaridadFamiliar || '';
 
+    // Datos de Vivienda
+    if (document.getElementById('edit-vivienda')) document.getElementById('edit-vivienda').value = empleado.vivienda || '';
+    if (document.getElementById('edit-direccion')) document.getElementById('edit-direccion').value = empleado.direccion || '';
+    if (document.getElementById('edit-numeroLoteInvernaculo')) document.getElementById('edit-numeroLoteInvernaculo').value = empleado.numeroLoteInvernaculo || '';
+
     // Educación
     if (document.getElementById('edit-nivelEducativo')) document.getElementById('edit-nivelEducativo').value = empleado.nivelEducativo || '';
 
@@ -4650,6 +4672,11 @@ if (empleadoEditForm) {
             hijosConviven: parseInt(document.getElementById('edit-hijosConviven')?.value || '0'),
             familiaresACargo: parseInt(document.getElementById('edit-familiaresACargo')?.value || '0'),
             escolaridadFamiliar: document.getElementById('edit-escolaridadFamiliar')?.value || '',
+
+            // Datos de Vivienda
+            vivienda: document.getElementById('edit-vivienda')?.value || '',
+            direccion: document.getElementById('edit-direccion')?.value || '',
+            numeroLoteInvernaculo: document.getElementById('edit-numeroLoteInvernaculo')?.value || '',
 
             nivelEducativo: document.getElementById('edit-nivelEducativo').value,
 
