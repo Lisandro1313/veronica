@@ -964,6 +964,8 @@ empleadoForm.addEventListener('submit', async (e) => {
         // Datos de Vivienda
         vivienda: document.getElementById('vivienda')?.value || '',
         direccion: document.getElementById('direccion')?.value || '',
+        provincia: document.getElementById('provincia')?.value || '',
+        telefono: document.getElementById('telefono')?.value || '',
         numeroLoteInvernaculo: document.getElementById('numeroLoteInvernaculo')?.value || '',
 
         nivelEducativo: document.getElementById('nivelEducativo').value,
@@ -1485,8 +1487,16 @@ async function verPerfil(id) {
             <div class="perfil-tab-content" id="perfil-tab-contacto">
                 <div class="perfil-grid">
                     <div class="perfil-section">
-                        <h3><i class="fas fa-map-marker-alt"></i> Dirección y Vivienda</h3>
+                        <h3><i class="fas fa-map-marker-alt"></i> Dirección y Contacto</h3>
                         <div class="info-grid">
+                            <div class="info-item">
+                                <label>Teléfono:</label>
+                                <span>${escapeHtml(emp.telefono || '-')}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Provincia:</label>
+                                <span>${escapeHtml(emp.provincia || '-')}</span>
+                            </div>
                             <div class="info-item">
                                 <label>Vivienda:</label>
                                 <span>${escapeHtml(emp.vivienda || '-')}</span>
@@ -4540,6 +4550,8 @@ function editarEmpleado(id) {
     // Datos de Vivienda
     if (document.getElementById('edit-vivienda')) document.getElementById('edit-vivienda').value = empleado.vivienda || '';
     if (document.getElementById('edit-direccion')) document.getElementById('edit-direccion').value = empleado.direccion || '';
+    if (document.getElementById('edit-provincia')) document.getElementById('edit-provincia').value = empleado.provincia || '';
+    if (document.getElementById('edit-telefono')) document.getElementById('edit-telefono').value = empleado.telefono || '';
     if (document.getElementById('edit-numeroLoteInvernaculo')) document.getElementById('edit-numeroLoteInvernaculo').value = empleado.numeroLoteInvernaculo || '';
 
     // Educación
@@ -4676,6 +4688,8 @@ if (empleadoEditForm) {
             // Datos de Vivienda
             vivienda: document.getElementById('edit-vivienda')?.value || '',
             direccion: document.getElementById('edit-direccion')?.value || '',
+            provincia: document.getElementById('edit-provincia')?.value || '',
+            telefono: document.getElementById('edit-telefono')?.value || '',
             numeroLoteInvernaculo: document.getElementById('edit-numeroLoteInvernaculo')?.value || '',
 
             nivelEducativo: document.getElementById('edit-nivelEducativo').value,

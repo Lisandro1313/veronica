@@ -87,6 +87,8 @@ module.exports = async (req, res) => {
                 // Datos de Vivienda
                 vivienda: d.vivienda || null,
                 direccion: d.direccion || null,
+                provincia: d.provincia || null,
+                telefono: d.telefono || null,
                 numero_lote_invernaculo: d.numeroLoteInvernaculo || null,
 
                 nivel_educativo: d.nivelEducativo || null,
@@ -144,6 +146,8 @@ module.exports = async (req, res) => {
                 // Datos de Vivienda
                 vivienda: d.vivienda || null,
                 direccion: d.direccion || null,
+                provincia: d.provincia || null,
+                telefono: d.telefono || null,
                 numero_lote_invernaculo: d.numeroLoteInvernaculo || null,
 
                 nivel_educativo: d.nivelEducativo || null,

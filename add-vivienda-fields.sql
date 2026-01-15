@@ -14,7 +14,17 @@ ADD COLUMN IF NOT EXISTS direccion TEXT;
 ALTER TABLE empleados 
 ADD COLUMN IF NOT EXISTS numero_lote_invernaculo TEXT;
 
+-- Agregar columna de teléfono de contacto
+ALTER TABLE empleados 
+ADD COLUMN IF NOT EXISTS telefono TEXT;
+
+-- Agregar columna de provincia
+ALTER TABLE empleados 
+ADD COLUMN IF NOT EXISTS provincia TEXT;
+
 -- Crear comentarios para documentación
 COMMENT ON COLUMN empleados.vivienda IS 'Tipo de vivienda del empleado';
 COMMENT ON COLUMN empleados.direccion IS 'Dirección completa del empleado (calle, número, localidad)';
 COMMENT ON COLUMN empleados.numero_lote_invernaculo IS 'Número de lote o invernadero asignado';
+COMMENT ON COLUMN empleados.telefono IS 'Teléfono de contacto del empleado';
+COMMENT ON COLUMN empleados.provincia IS 'Provincia de origen o residencia del empleado';
