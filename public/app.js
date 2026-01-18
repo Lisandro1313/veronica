@@ -4055,24 +4055,11 @@ async function cargarEmpleadosEnSelect() {
             console.error('No se encontró el select ticket-empleado-select');
             return;
         }
-        
-        // Limpiar select
-        select.innerHTML = '';
-        
-        // Agregar opción por defecto
-        const defaultOption = document.createElement('option');
-        defaultOption.value = '';
-        defaultOption.textContent = 'Seleccionar empleado...';
-        select.appendChild(defaultOption);
-        
-        // Agregar empleados
-        empleados.forEach(emp => {
-            const option = document.createElement('option');
-            option.value = emp.id;
-            option.textContent = `${emp.nombreCompleto} - ${emp.puesto || 'Sin puesto'}`;
-            select.appendChild(option);
-        });
-        
+
+        select.innerHTML = '<option value="">Seleccionar empleado...</option>' +
+            empleados.map(emp =>
+                `<option value="${emp.id}">${emp.nombreCompleto} - ${emp.puesto || 'Sin puesto'}</option>`
+            ).join('');
         console.log('Select poblado con opciones:', select.options.length);
         console.log('Select visible?', select.offsetWidth > 0, select.offsetHeight > 0);
         console.log('Select display:', window.getComputedStyle(select).display);
@@ -4117,7 +4104,7 @@ function adaptarFormularioTicket() {
 }
 
 // Cerrar modal de ticket
-window.closeTicketModal = function() {
+window.closeTicketModal = function () {
     console.log('Cerrando modal de ticket');
     const modal = document.getElementById('modal-ticket');
     if (modal) {
