@@ -117,8 +117,12 @@ loginForm.addEventListener('submit', async (e) => {
 
         if (data.success) {
             currentUser = data.usuario;
-            // Mostrar pantalla de empresas en lugar del dashboard
-            showEmpresaScreen();
+            // TODO: Descomentar cuando se ejecute el SQL de empresas
+            // showEmpresaScreen();
+            // Por ahora ir directo al dashboard
+            showMainScreen();
+            aplicarPermisos();
+            loadDashboard();
         } else {
             showToast('error', 'Error de Login', data.mensaje);
         }
