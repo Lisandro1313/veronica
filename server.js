@@ -217,16 +217,23 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/empleados', async (req, res) => {
     try {
         const empresaId = req.query.empresa_id || req.headers['x-empresa-id'];
+        console.log('📋 GET /api/empleados - empresa_id:', empresaId, 'tipo:', typeof empresaId);
+
         let query = 'SELECT * FROM empleados';
         let params = [];
 
         if (empresaId) {
             query += ' WHERE empresa_id = $1';
-            params.push(empresaId);
+            params.push(parseInt(empresaId));
+            console.log('📋 Query:', query);
+            console.log('📋 Params:', params);
+        } else {
+            console.log('⚠️ No se recibió empresa_id, devolviendo TODOS los empleados');
         }
 
         query += ' ORDER BY id DESC';
         const result = await db.query(query, params);
+        console.log('📋 Empleados encontrados:', result.rows.length);
         const empleadosCamelCase = result.rows.map(emp => toCamelCase(emp));
         res.json(empleadosCamelCase);
     } catch (error) {
