@@ -318,7 +318,7 @@ async function loadDashboard() {
             console.error('No hay empresa seleccionada para dashboard');
             return;
         }
-        
+
         console.log('📊 Cargando dashboard de empresa:', currentEmpresa.nombre);
         const response = await fetch(`${API_URL}/empleados?empresa_id=${currentEmpresa.id}&t=${Date.now()}`);
         empleados = await response.json();
@@ -4032,7 +4032,7 @@ async function loadAllTickets() {
             console.error('No hay empresa seleccionada para tickets');
             return;
         }
-        
+
         const response = await fetch(`${API_URL}/tickets?empresa_id=${currentEmpresa.id}&t=${Date.now()}`);
         const data = await response.json();
         tickets = data;
@@ -5003,7 +5003,7 @@ async function loadEmpresas() {
         const data = await response.json();
         empresas = data;
         renderEmpresas();
-        
+
         // Si solo hay una empresa, seleccionarla automáticamente
         if (empresas.length === 1) {
             console.log('Solo hay una empresa, seleccionando automáticamente:', empresas[0].nombre);
@@ -5090,7 +5090,7 @@ function selectEmpresa(empresaId) {
         // Mostrar el dashboard
         showMainScreen();
         aplicarPermisos();
-        
+
         // IMPORTANTE: Cargar empleados de la empresa seleccionada
         loadEmpleados();
         loadDashboard();
