@@ -1113,7 +1113,7 @@ async function loadEmpleados() {
             empleadosList.innerHTML = '<p class="loading">⚠️ Selecciona una empresa primero</p>';
             return;
         }
-        
+
         const url = `${API_URL}/empleados?empresa_id=${currentEmpresa.id}`;
         const response = await fetch(url);
         const data = await response.json();
