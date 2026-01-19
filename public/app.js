@@ -728,8 +728,13 @@ function mostrarAlertasDashboard(empleados) {
 
     // Alertas personalizadas del localStorage
     const alertasPersonalizadas = JSON.parse(localStorage.getItem('alertasPersonalizadas')) || [];
-    alertasPersonalizadas.filter(a => a.estado === 'activa').forEach(alerta => {
+    alertasPersonalizadas.filter(a => a.estado === 'activa' && a.fecha && a.titulo && a.mensaje).forEach(alerta => {
         const empleado = alerta.empleadoId ? empleados.find(e => e.id == alerta.empleadoId) : null;
+
+        // Si es alerta de empleado específico, verificar que el empleado exista
+        if (alerta.empleadoId && !empleado) {
+            return; // Skip esta alerta si el empleado no existe
+        }
 
         const iconosMap = {
             'vacaciones': 'fas fa-umbrella-beach',
@@ -1352,7 +1357,55 @@ async function eliminarEmpleado(id) {
 // ===== IMPRIMIR PERFIL =====
 
 function imprimirPerfil() {
-    window.print();
+    // Obtener el contenido del perfil desde el modal
+    const perfilContent = document.getElementById('perfil-content');
+    if (!perfilContent || !perfilContent.innerHTML) {
+        console.error('No hay contenido de perfil para imprimir');
+        return;
+    }
+
+    const ventana = window.open('', '_blank');
+    const estilos = `
+        <style>
+            body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+            .perfil-header { border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 20px; }
+            .perfil-header h2 { margin: 0; color: #1a73e8; }
+            .perfil-tabs { display: none; }
+            .perfil-section { margin-bottom: 30px; page-break-inside: avoid; }
+            .perfil-section h3 { color: #1a73e8; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 20px; }
+            .perfil-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 15px 0; }
+            .perfil-item { padding: 8px 0; }
+            .perfil-item strong { color: #333; display: inline-block; min-width: 150px; }
+            .timeline-item { border-left: 3px solid #1a73e8; padding-left: 15px; margin-bottom: 15px; }
+            .perfil-actions { display: none !important; }
+            .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+            .badge-success { background: #4caf50; color: white; }
+            @media print { 
+                body { margin: 0; }
+                .perfil-actions { display: none !important; }
+            }
+        </style>
+    `;
+
+    ventana.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Perfil de Empleado</title>
+            <meta charset="UTF-8">
+            ${estilos}
+        </head>
+        <body>
+            ${perfilContent.innerHTML}
+        </body>
+        </html>
+    `);
+    ventana.document.close();
+
+    // Imprimir automáticamente después de cargar
+    setTimeout(() => {
+        ventana.print();
+    }, 500);
 }
 
 // ===== VER PERFIL COMPLETO =====
@@ -1640,6 +1693,9 @@ async function verPerfil(id) {
             ` : ''}
             
             <div class="perfil-actions" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--border-color); display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="imprimirPerfil()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
                 ${canEditEmployees() ? `
                     <button class="btn btn-primary" onclick="editarEmpleado(${id})">
                         <i class="fas fa-edit"></i> Editar Empleado
@@ -1672,6 +1728,10 @@ async function loadTicketsEmpleado(empleadoId) {
         const ticketsEmp = await response.json();
 
         const container = document.getElementById(`tickets-empleado-${empleadoId}`);
+        if (!container) {
+            console.error('Container no encontrado para tickets de empleado:', empleadoId);
+            return;
+        }
 
         if (ticketsEmp.length === 0) {
             container.innerHTML = '<p class="empty-state">📋 No hay tickets registrados para este empleado.</p>';
@@ -1787,7 +1847,7 @@ ticketForm.addEventListener('submit', async (e) => {
 
     const tipo = document.getElementById('ticket-tipo').value;
     const empleadoSelect = document.getElementById('ticket-empleado-select');
-    
+
     if (!empleadoSelect || !empleadoSelect.value) {
         alert('❌ Debe seleccionar un empleado');
         return;
@@ -1800,21 +1860,21 @@ ticketForm.addEventListener('submit', async (e) => {
         descripcion: document.getElementById('ticket-descripcion').value || '',
         creadoPor: currentUser.nombre
     };
-    
+
     // Agregar fechas según el tipo de ticket
     const camposPeriodo = document.getElementById('ticket-campos-periodo');
     const camposEvento = document.getElementById('ticket-campos-evento');
     const camposCambio = document.getElementById('ticket-campos-cambio');
-    
+
     if (camposPeriodo && camposPeriodo.style.display !== 'none') {
         ticketData.fechaDesde = document.getElementById('ticket-fecha-desde').value;
         ticketData.fechaHasta = document.getElementById('ticket-fecha-hasta').value;
     }
-    
+
     if (camposEvento && camposEvento.style.display !== 'none') {
         ticketData.fechaEvento = document.getElementById('ticket-fecha-evento').value;
     }
-    
+
     if (camposCambio && camposCambio.style.display !== 'none') {
         ticketData.valorAnterior = document.getElementById('ticket-valor-anterior').value;
         ticketData.valorNuevo = document.getElementById('ticket-valor-nuevo').value;
@@ -2167,7 +2227,10 @@ function generarReporte(tipo) {
     ventana.document.write(html);
     ventana.document.close();
 
-    alert('✅ Reporte generado. Use Ctrl+P para imprimir o guardar como PDF.');
+    // Esperar que cargue y luego mostrar mensaje
+    setTimeout(() => {
+        showToast('success', 'Reporte Generado', 'Use Ctrl+P para imprimir o guardar como PDF');
+    }, 500);
 }
 
 function exportarExcel() {
@@ -2176,21 +2239,55 @@ function exportarExcel() {
         return;
     }
 
-    // Crear CSV
-    let csv = 'Nombre,CUIL,Fecha Nacimiento,Puesto,Es Extranjero,País Origen,Tipo Residencia,Nivel Educativo,Antecedentes,Fecha Ingreso\n';
+    // Debug: Ver qué campos tiene el primer empleado
+    console.log('📊 Exportando empleados. Ejemplo del primero:', empleados[0]);
+    console.log('📊 Campos disponibles:', Object.keys(empleados[0]));
+    console.log('📊 Total empleados en array:', empleados.length);
 
-    empleados.forEach(emp => {
-        csv += `"${emp.nombreCompleto}","${emp.cuil}","${emp.fechaNacimiento || ''}","${emp.puesto || ''}","${emp.esExtranjero}","${emp.paisOrigen || ''}","${emp.tipoResidencia || ''}","${emp.nivelEducativo || ''}","${emp.antecedentesPenales}","${emp.fechaIngreso || ''}"\n`;
+    // Crear CSV con campos que sabemos que existen
+    const headers = ['ID', 'Nombre Completo', 'DNI', 'CUIL', 'Fecha Nacimiento', 'Estado Civil', 'Teléfono', 'Dirección', 'Provincia', 'Puesto', 'Fecha Ingreso'];
+    let csv = headers.join(',') + '\n';
+
+    empleados.forEach((emp, index) => {
+        // Debug del primer empleado en el forEach
+        if (index === 0) {
+            console.log('📊 Dentro del forEach - primer empleado:', emp);
+            console.log('📊 emp.nombreCompleto:', emp.nombreCompleto);
+            console.log('📊 emp.nombre:', emp.nombre);
+            console.log('📊 emp.apellido:', emp.apellido);
+            console.log('📊 emp.nombre_completo:', emp.nombre_completo);
+        }
+
+        const row = [
+            emp.id || '',
+            emp.nombreCompleto || `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || emp.nombre_completo || 'Sin nombre',
+            emp.dni || emp.documento || '',
+            emp.cuil || '',
+            emp.fechaNacimiento || '',
+            emp.estadoCivil || '',
+            emp.telefono || '',
+            emp.direccion || '',
+            emp.provincia || '',
+            emp.puesto || '',
+            emp.fechaIngreso || ''
+        ].map(field => {
+            // Escapar comillas y encerrar en comillas
+            const str = String(field || '');
+            return `"${str.replace(/"/g, '""')}"`;
+        });
+
+        csv += row.join(',') + '\n';
     });
 
-    // Descargar
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    // Descargar con BOM para UTF-8
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `empleados_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
 
-    alert('✅ Archivo exportado correctamente.');
+    showToast('success', 'Excel Exportado', `${empleados.length} empleados exportados correctamente`);
 }
 
 // ===== FUNCIONES AUXILIARES PARA PERFIL ENTERPRISE =====
@@ -2986,13 +3083,15 @@ function exportarAExcelMejorado() {
             const datos = emp.datosPersonales || emp;
             const edad = calcularEdad(datos.fechaNacimiento);
             const antiguedad = emp.laboral ? calcularAntiguedad(emp.laboral.fechaIngreso) : 0;
+            const fechaNacFormatted = datos.fechaNacimiento ? new Date(datos.fechaNacimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-';
+            const fechaIngresoFormatted = emp.laboral?.fechaIngreso ? new Date(emp.laboral.fechaIngreso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-';
 
             return {
                 'ID': emp.id,
-                'Nombre Completo': `${datos.nombre} ${datos.apellido}`,
+                'Nombre Completo': datos.nombreCompleto || '-',
                 'DNI': datos.dni || '-',
                 'CUIL': datos.cuil || '-',
-                'Fecha Nacimiento': datos.fechaNacimiento || '-',
+                'Fecha Nacimiento': fechaNacFormatted,
                 'Edad': edad,
                 'Nacionalidad': datos.nacionalidad || '-',
                 'País Nacimiento': datos.paisNacimiento || '-',
@@ -3005,7 +3104,7 @@ function exportarAExcelMejorado() {
                 'CP': emp.direccion?.codigoPostal || '-',
                 'Puesto': emp.laboral?.puesto || '-',
                 'Área': emp.laboral?.area || '-',
-                'Fecha Ingreso': emp.laboral?.fechaIngreso || '-',
+                'Fecha Ingreso': fechaIngresoFormatted,
                 'Antigüedad (años)': antiguedad,
                 'Tipo Contrato': emp.laboral?.tipoContrato || '-',
                 'Salario': emp.laboral?.salario || '-'
@@ -3032,14 +3131,15 @@ function exportarAExcelMejorado() {
             if (emp.familiares && emp.familiares.length > 0) {
                 emp.familiares.forEach(fam => {
                     const edadFam = calcularEdad(fam.fechaNacimiento);
+                    const fechaNacFamFormatted = fam.fechaNacimiento ? new Date(fam.fechaNacimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-';
                     familiaresData.push({
-                        'Empleado': `${datos.nombre} ${datos.apellido}`,
+                        'Empleado': datos.nombreCompleto || '-',
                         'DNI Empleado': datos.dni || '-',
-                        'Familiar': `${fam.nombre} ${fam.apellido}`,
+                        'Familiar': fam.nombreCompleto || `${fam.nombre || ''} ${fam.apellido || ''}`.trim() || '-',
                         'Relación': fam.relacion,
                         'DNI Familiar': fam.dni || '-',
                         'CUIL Familiar': fam.cuil || '-',
-                        'Fecha Nacimiento': fam.fechaNacimiento || '-',
+                        'Fecha Nacimiento': fechaNacFamFormatted,
                         'Edad': edadFam,
                         'A Cargo': fam.aCargo ? 'SÍ' : 'NO',
                         'Menor': edadFam < 18 ? 'SÍ' : 'NO'
@@ -3073,13 +3173,14 @@ function exportarAExcelMejorado() {
                         else if (diasVenc <= 30) estado = '🟢 VENCE EN 30 DÍAS';
                         else estado = '✅ VIGENTE';
                     }
+                    const fechaVencFormatted = doc.fechaVencimiento ? new Date(doc.fechaVencimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'Sin vencimiento';
 
                     documentosData.push({
-                        'Empleado': `${datos.nombre} ${datos.apellido}`,
+                        'Empleado': datos.nombreCompleto || '-',
                         'DNI Empleado': datos.dni || '-',
                         'Tipo Documento': doc.tipo,
                         'Número': doc.numero || '-',
-                        'Fecha Vencimiento': doc.fechaVencimiento || 'Sin vencimiento',
+                        'Fecha Vencimiento': fechaVencFormatted,
                         'Días Hasta Venc.': diasVenc !== null ? diasVenc : '-',
                         'Estado': estado
                     });
@@ -3100,9 +3201,10 @@ function exportarAExcelMejorado() {
         const saludData = empleados.map(emp => {
             const datos = emp.datosPersonales || emp;
             const salud = emp.salud || {};
+            const ultimoExamenFormatted = salud.ultimoExamen ? new Date(salud.ultimoExamen).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-';
 
             return {
-                'Empleado': `${datos.nombre} ${datos.apellido}`,
+                'Empleado': datos.nombreCompleto || '-',
                 'DNI': datos.dni || '-',
                 'Grupo Sanguíneo': salud.grupoSanguineo || '-',
                 'Problemas de Salud': salud.problemasSalud === 'si' ? 'SÍ' : 'NO',
@@ -3110,7 +3212,7 @@ function exportarAExcelMejorado() {
                 'Discapacidad': salud.discapacidad === 'si' ? 'SÍ' : 'NO',
                 'Tipo Discapacidad': salud.tipoDiscapacidad || '-',
                 'Requiere Adaptación': salud.requiereAdaptacion === 'si' ? 'SÍ' : 'NO',
-                'Último Examen': salud.ultimoExamen || '-',
+                'Último Examen': ultimoExamenFormatted,
                 'Aptitud Física': salud.aptitudFisica || '-'
             };
         });
@@ -3129,7 +3231,7 @@ function exportarAExcelMejorado() {
             const edu = emp.educacion || {};
 
             return {
-                'Empleado': `${datos.nombre} ${datos.apellido}`,
+                'Empleado': datos.nombreCompleto || '-',
                 'DNI': datos.dni || '-',
                 'Nivel Máximo': edu.nivelMaximo || '-',
                 'Institución': edu.institucion || '-',
@@ -3159,17 +3261,19 @@ function exportarAExcelMejorado() {
                     else if (diasVenc <= 30) estadoRes = '🟡 POR VENCER';
                     else estadoRes = '✅ VIGENTE';
                 }
+                const vencimientoFormatted = inm.residenciaVencimiento ? new Date(inm.residenciaVencimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-';
+                const fechaIngresoFormatted = inm.fechaIngreso ? new Date(inm.fechaIngreso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-';
 
                 inmigracionData.push({
-                    'Empleado': `${datos.nombre} ${datos.apellido}`,
+                    'Empleado': datos.nombreCompleto || '-',
                     'Nacionalidad': datos.nacionalidad,
                     'País Origen': inm.paisOrigen || '-',
                     'Tipo Residencia': inm.tipoResidencia || '-',
                     'N° Residencia': inm.numeroResidencia || '-',
-                    'Vencimiento': inm.residenciaVencimiento || '-',
+                    'Vencimiento': vencimientoFormatted,
                     'Días Hasta Venc.': diasVenc !== null ? diasVenc : '-',
                     'Estado': estadoRes,
-                    'Fecha Ingreso': inm.fechaIngreso || '-'
+                    'Fecha Ingreso': fechaIngresoFormatted
                 });
             }
         });
@@ -3733,96 +3837,155 @@ function eliminarAlerta(alertaId) {
 
 let auditoriaLog = JSON.parse(localStorage.getItem('auditoriaLog')) || [];
 
-function registrarAuditoria(accion, tipo, detalles, registroId) {
+async function registrarAuditoria(accion, tipo, detalles, registroId) {
     const entrada = {
-        id: Date.now(),
-        fecha: new Date().toISOString(),
-        usuario: currentUser ? currentUser.nombre : 'Sistema',
         usuarioId: currentUser ? currentUser.id : null,
+        usuarioNombre: currentUser ? (currentUser.username || currentUser.nombre) : 'Sistema',
         accion: accion, // 'creado', 'editado', 'eliminado', 'aprobado', 'rechazado'
         tipo: tipo, // 'empleado', 'ticket', 'alerta'
-        detalles: detalles,
-        registroId: registroId
+        descripcion: detalles,
+        entidad: tipo,
+        entidadId: registroId
     };
 
-    auditoriaLog.push(entrada);
+    try {
+        // Enviar al servidor
+        await fetch(`${API_URL}/auditoria`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entrada)
+        });
 
-    // Mantener solo los últimos 500 registros
-    if (auditoriaLog.length > 500) {
-        auditoriaLog = auditoriaLog.slice(-500);
+        // También guardar en localStorage como backup
+        auditoriaLog.push({
+            id: Date.now(),
+            fecha: new Date().toISOString(),
+            usuario: entrada.usuarioNombre,
+            accion: entrada.accion,
+            tipo: entrada.tipo,
+            descripcion: entrada.descripcion,
+            registroId: registroId
+        });
+
+        if (auditoriaLog.length > 500) {
+            auditoriaLog = auditoriaLog.slice(-500);
+        }
+
+        localStorage.setItem('auditoriaLog', JSON.stringify(auditoriaLog));
+    } catch (error) {
+        console.error('Error al registrar auditoría:', error);
     }
-
-    localStorage.setItem('auditoriaLog', JSON.stringify(auditoriaLog));
 }
 
 async function loadAuditoria() {
     const auditoriaList = document.getElementById('auditoria-list');
     if (!auditoriaList) return;
 
-    auditoriaLog = JSON.parse(localStorage.getItem('auditoriaLog')) || [];
+    auditoriaList.innerHTML = '<p class="loading">⏳ Cargando actividades...</p>';
 
-    // Filtros
-    const filtroUsuario = document.getElementById('auditoria-usuario')?.value || '';
-    const filtroAccion = document.getElementById('auditoria-accion')?.value || '';
-    const filtroFecha = document.getElementById('auditoria-fecha')?.value || '';
+    try {
+        // Obtener auditoría del servidor
+        console.log('Consultando auditoría...');
+        const response = await fetch(`${API_URL}/auditoria`);
+        console.log('Response status:', response.status);
+        const data = await response.json();
+        console.log('Datos de auditoría recibidos:', data.length, 'registros');
 
-    let registrosFiltrados = auditoriaLog;
+        auditoriaLog = data.map(r => ({
+            usuario: r.usuario_nombre || r.usuarioNombre || 'Sistema',
+            accion: r.accion,
+            tipo: r.tipo,
+            descripcion: r.descripcion,
+            fecha: r.created_at || r.createdAt || new Date().toISOString(),
+            registroId: r.entidad_id || r.entidadId
+        }));
 
-    if (filtroUsuario) {
-        registrosFiltrados = registrosFiltrados.filter(r => r.usuario === filtroUsuario);
-    }
+        console.log('auditoriaLog mapeado:', auditoriaLog);
 
-    if (filtroAccion) {
-        registrosFiltrados = registrosFiltrados.filter(r => r.accion === filtroAccion);
-    }
+        // Guardar en localStorage también
+        localStorage.setItem('auditoriaLog', JSON.stringify(auditoriaLog));
 
-    if (filtroFecha) {
-        registrosFiltrados = registrosFiltrados.filter(r => r.fecha.startsWith(filtroFecha));
-    }
+        // Filtros
+        const filtroUsuario = document.getElementById('auditoria-usuario')?.value || '';
+        const filtroAccion = document.getElementById('auditoria-accion')?.value || '';
+        const filtroFecha = document.getElementById('auditoria-fecha')?.value || '';
 
-    // Ordenar por fecha descendente
-    registrosFiltrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        let registrosFiltrados = auditoriaLog;
 
-    // Llenar select de usuarios
-    const usuarios = [...new Set(auditoriaLog.map(r => r.usuario))];
-    const usuarioSelect = document.getElementById('auditoria-usuario');
-    if (usuarioSelect && usuarioSelect.options.length <= 1) {
-        usuarioSelect.innerHTML = '<option value="">Todos los usuarios</option>' +
-            usuarios.map(u => `<option value="${u}">${u}</option>`).join('');
-    }
+        if (filtroUsuario) {
+            registrosFiltrados = registrosFiltrados.filter(r => r.usuario === filtroUsuario);
+        }
 
-    if (registrosFiltrados.length === 0) {
-        auditoriaList.innerHTML = '<p class="empty-state"><i class="fas fa-history"></i><br>No hay registros de auditoría.</p>';
-        return;
-    }
+        if (filtroAccion) {
+            registrosFiltrados = registrosFiltrados.filter(r => r.accion === filtroAccion);
+        }
 
-    // Mostrar registros (últimos 100)
-    auditoriaList.innerHTML = registrosFiltrados.slice(0, 100).map(r => {
-        const iconosAccion = {
-            'creado': '<i class="fas fa-plus-circle" style="color: #4caf50;"></i>',
-            'editado': '<i class="fas fa-edit" style="color: #2196f3;"></i>',
-            'eliminado': '<i class="fas fa-trash" style="color: #f44336;"></i>',
-            'aprobado': '<i class="fas fa-check-circle" style="color: #4caf50;"></i>',
-            'rechazado': '<i class="fas fa-times-circle" style="color: #f44336;"></i>'
-        };
+        if (filtroFecha) {
+            registrosFiltrados = registrosFiltrados.filter(r => r.fecha.startsWith(filtroFecha));
+        }
 
-        const iconosTipo = {
-            'empleado': '<i class="fas fa-user"></i>',
-            'ticket': '<i class="fas fa-ticket-alt"></i>',
-            'alerta': '<i class="fas fa-bell"></i>'
-        };
+        console.log('registrosFiltrados:', registrosFiltrados.length);
 
-        return `
-            <div class="auditoria-item">
-                ${iconosAccion[r.accion] || '<i class="fas fa-circle"></i>'}
-                <div class="auditoria-content">
-                    <strong>${r.usuario}</strong> ${r.accion} ${r.tipo} <span class="auditoria-id">#${r.registroId || '?'}</span>
-                    <p>${r.detalles}</p>
-                    <small><i class="fas fa-clock"></i> ${formatDate(r.fecha)} ${new Date(r.fecha).toLocaleTimeString('es-ES')}</small>
+        // Ordenar por fecha descendente
+        registrosFiltrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+        // Llenar select de usuarios
+        const usuarios = [...new Set(auditoriaLog.map(r => r.usuario))];
+        const usuarioSelect = document.getElementById('auditoria-usuario');
+        if (usuarioSelect && usuarioSelect.options.length <= 1) {
+            usuarioSelect.innerHTML = '<option value="">Todos los usuarios</option>' +
+                usuarios.map(u => `<option value="${u}">${u}</option>`).join('');
+        }
+
+        if (registrosFiltrados.length === 0) {
+            console.log('No hay registros filtrados');
+            auditoriaList.innerHTML = '<p class="empty-state"><i class="fas fa-history"></i><br>No hay registros de auditoría.</p>';
+            return;
+        }
+
+        console.log('Renderizando', registrosFiltrados.length, 'registros');
+
+        // Mostrar registros (últimos 100)
+        const htmlContent = registrosFiltrados.slice(0, 100).map(r => {
+            const iconosAccion = {
+                'creado': '<i class="fas fa-plus-circle" style="color: #4caf50;"></i>',
+                'editado': '<i class="fas fa-edit" style="color: #2196f3;"></i>',
+                'eliminado': '<i class="fas fa-trash" style="color: #f44336;"></i>',
+                'aprobado': '<i class="fas fa-check-circle" style="color: #4caf50;"></i>',
+                'rechazado': '<i class="fas fa-times-circle" style="color: #f44336;"></i>'
+            };
+
+            const iconosTipo = {
+                'empleado': '<i class="fas fa-user"></i>',
+                'ticket': '<i class="fas fa-ticket-alt"></i>',
+                'alerta': '<i class="fas fa-bell"></i>'
+            };
+
+            const fechaLocal = new Date(r.fecha);
+            const fechaFormateada = fechaLocal.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const horaFormateada = fechaLocal.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+            return `
+                <div class="auditoria-item">
+                    ${iconosAccion[r.accion] || '<i class="fas fa-circle"></i>'}
+                    <div class="auditoria-content">
+                        <strong>${r.usuario}</strong> ${r.accion} ${r.tipo} <span class="auditoria-id">#${r.registroId || '?'}</span>
+                        <p>${r.descripcion || r.detalles || 'Sin descripción'}</p>
+                        <small><i class="fas fa-clock"></i> ${fechaFormateada} ${horaFormateada}</small>
+                    </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+
+        console.log('HTML generado (primeros 200 chars):', htmlContent.substring(0, 200));
+        console.log('auditoriaList element:', auditoriaList);
+
+        auditoriaList.innerHTML = htmlContent;
+        console.log('✅ Auditoría renderizada correctamente');
+    } catch (error) {
+        console.error('Error al cargar auditoría:', error);
+        auditoriaList.innerHTML = '<p class="empty-state"><i class="fas fa-exclamation-triangle"></i><br>Error al cargar auditoría. Intente nuevamente.</p>';
+    }
 }
 
 // Cargar todos los tickets
@@ -4018,7 +4181,7 @@ function getTimelineMarkerClass(estado) {
 // Mostrar modal para nuevo ticket
 async function mostrarModalNuevoTicket(empleadoId = null) {
     console.log('🎫 Abriendo modal de ticket. EmpleadoId:', empleadoId);
-    
+
     // Cargar empleados en el select
     await cargarEmpleadosEnSelect();
 
@@ -4064,7 +4227,7 @@ async function cargarEmpleadosEnSelect() {
         console.log('Select visible?', select.offsetWidth > 0, select.offsetHeight > 0);
         console.log('Select display:', window.getComputedStyle(select).display);
         console.log('Select visibility:', window.getComputedStyle(select).visibility);
-        
+
         // Asegurar que el select sea visible
         select.style.display = 'block';
         select.style.width = '100%';
@@ -4073,7 +4236,7 @@ async function cargarEmpleadosEnSelect() {
         select.style.opacity = '1';
         select.style.height = 'auto';
         select.style.minHeight = '40px';
-        
+
     } catch (error) {
         console.error('Error al cargar empleados:', error);
     }
@@ -4573,7 +4736,10 @@ function editarEmpleado(id) {
 
     // Guardar el ID del empleado que estamos editando
     const editForm = document.getElementById('empleado-edit-form');
-    if (editForm) editForm.dataset.editId = id;
+    if (editForm) {
+        editForm.dataset.editId = id;
+        console.log('ID guardado para edición:', id, 'Tipo:', typeof id);
+    }
 
     // Mostrar el botón de editar en el sidebar
     const editTab = document.querySelector('[data-tab="editar"]');
@@ -4707,11 +4873,19 @@ if (empleadoEditForm) {
         try {
             const editId = empleadoEditForm.dataset.editId;
 
-            if (!editId) {
+            console.log('Intentando actualizar empleado con ID:', editId, 'Tipo:', typeof editId);
+
+            if (!editId || editId === 'undefined' || editId === 'null') {
                 throw new Error('No se encontró el ID del empleado a editar');
             }
 
-            const response = await fetch(`${API_URL}/empleados/${editId}`, {
+            // Asegurar que el ID sea numérico
+            const numericId = parseInt(editId);
+            if (isNaN(numericId)) {
+                throw new Error(`ID inválido: ${editId}`);
+            }
+
+            const response = await fetch(`${API_URL}/empleados/${numericId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(empleadoData)

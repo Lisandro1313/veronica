@@ -90,6 +90,7 @@ module.exports = async (req, res) => {
                 usuario: {
                     id: data.id,
                     nombre: data.nombre,
+                    username: data.username,
                     rol: rol,
                     permisos: userPermisos
                 }
