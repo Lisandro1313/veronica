@@ -52,11 +52,25 @@ module.exports = async (req, res) => {
                 if (error) throw error;
                 return res.json(toCamelCase(data));
             } else {
-                // GET todos los empleados
-                const { data, error } = await supabase
+                // GET todos los empleados (con filtro de empresa_id si se proporciona)
+                const empresaId = req.query.empresa_id || req.headers['x-empresa-id'];
+                console.log('📋 GET /api/empleados - empresa_id:', empresaId, 'tipo:', typeof empresaId);
+
+                let query = supabase
                     .from('empleados')
-                    .select('*')
-                    .order('id', { ascending: false });
+                    .select('*');
+
+                if (empresaId) {
+                    query = query.eq('empresa_id', parseInt(empresaId));
+                    console.log('📋 Filtrando por empresa_id:', parseInt(empresaId));
+                } else {
+                    console.log('⚠️ No se recibió empresa_id, devolviendo TODOS los empleados');
+                }
+
+                query = query.order('id', { ascending: false });
+
+                const { data, error } = await query;
+                console.log('📋 Empleados encontrados:', (data || []).length);
 
                 if (error) throw error;
 
