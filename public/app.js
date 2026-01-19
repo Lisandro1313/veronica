@@ -1,5 +1,7 @@
 // Estado de la aplicación
 let currentUser = null;
+let currentEmpresa = null;
+let empresas = [];
 let empleados = [];
 let tickets = [];
 let currentEmpleadoId = null;
@@ -115,9 +117,8 @@ loginForm.addEventListener('submit', async (e) => {
 
         if (data.success) {
             currentUser = data.usuario;
-            showMainScreen();
-            aplicarPermisos(); // Aplicar permisos según rol
-            loadDashboard();
+            // Mostrar pantalla de empresas en lugar del dashboard
+            showEmpresaScreen();
         } else {
             showToast('error', 'Error de Login', data.mensaje);
         }
@@ -129,8 +130,10 @@ loginForm.addEventListener('submit', async (e) => {
 
 logoutBtn.addEventListener('click', () => {
     currentUser = null;
+    currentEmpresa = null;
     empleados = [];
     tickets = [];
+    localStorage.removeItem('empresaId');
     showLoginScreen();
     loginForm.reset();
     showToast('info', 'Sesión Cerrada', 'Has cerrado sesión correctamente');
@@ -4948,3 +4951,212 @@ if (sidebarOverlay) {
         document.body.classList.remove('sidebar-open');
     });
 }
+// ===== GESTIÓN DE EMPRESAS =====
+
+// Cargar empresas
+async function loadEmpresas() {
+    try {
+        const response = await fetch(`${API_URL}/empresas`);
+        const data = await response.json();
+        empresas = data;
+        renderEmpresas();
+    } catch (error) {
+        console.error('Error al cargar empresas:', error);
+        showToast('error', 'Error', 'No se pudieron cargar las empresas');
+    }
+}
+
+// Renderizar empresas en el grid
+function renderEmpresas() {
+    const grid = document.getElementById('empresas-grid');
+    const btnAdd = document.getElementById('btn-add-empresa');
+
+    if (!grid) return;
+
+    if (empresas.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-building"></i>
+                <p>No hay empresas registradas</p>
+                <p>Haz clic en "Nueva Empresa" para comenzar</p>
+            </div>
+        `;
+    } else {
+        grid.innerHTML = empresas.map(emp => {
+            const isEmoji = emp.logo && emp.logo.length <= 4;
+            const logoHtml = isEmoji
+                ? `<div class="empresa-logo">${emp.logo}</div>`
+                : `<div class="empresa-logo"><img src="${emp.logo}" alt="${emp.nombre}"></div>`;
+
+            return `
+                <div class="empresa-card" onclick="selectEmpresa(${emp.id})">
+                    ${currentUser && currentUser.rol === 'admin' ? `
+                        <div class="empresa-actions">
+                            <button class="btn-edit" onclick="event.stopPropagation(); editEmpresa(${emp.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-delete" onclick="event.stopPropagation(); deleteEmpresa(${emp.id})" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    ` : ''}
+                    ${logoHtml}
+                    <div class="empresa-nombre">${emp.nombre}</div>
+                    ${emp.descripcion ? `<div class="empresa-descripcion">${emp.descripcion}</div>` : ''}
+                    <div class="empresa-badge">
+                        <i class="fas fa-building"></i> Empresa
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Mostrar botón "Nueva Empresa" solo para admin
+    if (btnAdd && currentUser && currentUser.rol === 'admin') {
+        btnAdd.style.display = 'flex';
+    }
+}
+
+// Seleccionar empresa
+function selectEmpresa(empresaId) {
+    currentEmpresa = empresas.find(e => e.id === empresaId);
+    if (currentEmpresa) {
+        // Guardar en localStorage
+        localStorage.setItem('empresaId', empresaId);
+
+        // Mostrar el dashboard
+        showMainScreen();
+        aplicarPermisos();
+        loadDashboard();
+    }
+}
+
+// Mostrar pantalla de empresas
+function showEmpresaScreen() {
+    document.getElementById('login-screen').classList.remove('active');
+    document.getElementById('empresa-screen').classList.add('active');
+    document.getElementById('main-screen').classList.remove('active');
+    loadEmpresas();
+}
+
+// Abrir modal para crear empresa
+function openEmpresaModal() {
+    const modal = document.getElementById('modal-empresa');
+    const form = document.getElementById('empresa-form');
+    const title = document.getElementById('empresa-modal-title');
+
+    form.reset();
+    delete form.dataset.editId;
+    title.innerHTML = '<i class="fas fa-building"></i> Nueva Empresa';
+    modal.style.display = 'block';
+}
+
+// Abrir modal para editar empresa
+function editEmpresa(empresaId) {
+    const empresa = empresas.find(e => e.id === empresaId);
+    if (!empresa) return;
+
+    const modal = document.getElementById('modal-empresa');
+    const form = document.getElementById('empresa-form');
+    const title = document.getElementById('empresa-modal-title');
+
+    document.getElementById('empresa-nombre').value = empresa.nombre;
+    document.getElementById('empresa-descripcion').value = empresa.descripcion || '';
+    document.getElementById('empresa-logo').value = empresa.logo || '';
+
+    form.dataset.editId = empresaId;
+    title.innerHTML = '<i class="fas fa-edit"></i> Editar Empresa';
+    modal.style.display = 'block';
+}
+
+// Cerrar modal de empresa
+function closeEmpresaModal() {
+    const modal = document.getElementById('modal-empresa');
+    modal.style.display = 'none';
+}
+
+// Eliminar empresa
+async function deleteEmpresa(empresaId) {
+    if (!confirm('¿Estás seguro de eliminar esta empresa? Esta acción no se puede deshacer.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/empresas`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: empresaId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('success', 'Empresa Eliminada', 'La empresa se eliminó correctamente');
+            loadEmpresas();
+        } else {
+            showToast('error', 'Error', data.mensaje || 'No se pudo eliminar la empresa');
+        }
+    } catch (error) {
+        console.error('Error al eliminar empresa:', error);
+        showToast('error', 'Error', 'No se pudo eliminar la empresa');
+    }
+}
+
+// Event listeners para empresas
+document.getElementById('btn-add-empresa')?.addEventListener('click', openEmpresaModal);
+
+document.getElementById('btn-back-to-login')?.addEventListener('click', () => {
+    document.getElementById('empresa-screen').classList.remove('active');
+    document.getElementById('login-screen').classList.add('active');
+});
+
+document.getElementById('empresa-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const nombre = document.getElementById('empresa-nombre').value.trim();
+    const descripcion = document.getElementById('empresa-descripcion').value.trim();
+    const logo = document.getElementById('empresa-logo').value.trim() || '🏢';
+    const editId = form.dataset.editId;
+
+    const empresaData = {
+        nombre,
+        descripcion,
+        logo
+    };
+
+    try {
+        let response;
+
+        if (editId) {
+            // Actualizar empresa
+            response = await fetch(`${API_URL}/empresas`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...empresaData, id: parseInt(editId) })
+            });
+        } else {
+            // Crear empresa
+            response = await fetch(`${API_URL}/empresas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(empresaData)
+            });
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('success', editId ? 'Empresa Actualizada' : 'Empresa Creada',
+                data.mensaje || 'Operación exitosa');
+            closeEmpresaModal();
+            loadEmpresas();
+        } else {
+            showToast('error', 'Error', data.mensaje || 'No se pudo guardar la empresa');
+        }
+    } catch (error) {
+        console.error('Error al guardar empresa:', error);
+        showToast('error', 'Error', 'No se pudo guardar la empresa');
+    }
+});
+

@@ -30,6 +30,29 @@
         </div>
     </div>
 
+    <!-- Pantalla de Selección de Empresa -->
+    <div id="empresa-screen" class="screen">
+        <div class="container">
+            <div class="empresas-header">
+                <h1><i class="fas fa-building"></i> Selecciona una Empresa</h1>
+                <p class="subtitle">Elige la empresa que deseas gestionar</p>
+            </div>
+            
+            <div id="empresas-grid" class="empresas-grid">
+                <!-- Las empresas se cargarán dinámicamente aquí -->
+            </div>
+
+            <button id="btn-add-empresa" class="btn-add-empresa" title="Agregar nueva empresa" style="display: none;">
+                <i class="fas fa-plus"></i>
+                <span>Nueva Empresa</span>
+            </button>
+
+            <button id="btn-back-to-login" class="btn btn-secondary" style="margin-top: 20px;">
+                <i class="fas fa-arrow-left"></i> Volver al Login
+            </button>
+        </div>
+    </div>
+
     <!-- Pantalla Principal -->
     <div id="main-screen" class="screen">
         <!-- Overlay para cerrar el menú en móvil -->
@@ -119,17 +142,6 @@
 
             <!-- Tab: Dashboard -->
             <div id="tab-dashboard" class="tab-content active">
-                <!-- Alertas Prioritarias - PRIMERO -->
-                <div class="card">
-                    <div class="alertas-header">
-                        <h3><i class="fas fa-bell"></i> Alertas Prioritarias</h3>
-                        <button class="btn btn-primary btn-sm" onclick="mostrarModalNuevaAlerta()">
-                            <i class="fas fa-plus"></i> Nueva Alerta
-                        </button>
-                    </div>
-                    <div id="alertas-dashboard" class="alertas-list"></div>
-                </div>
-
                 <!-- KPIs -->
                 <div class="kpi-grid">
                     <div class="kpi-card">
@@ -195,6 +207,17 @@
                             <p>De Viaje/Ausentes</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Alertas Prioritarias -->
+                <div class="card">
+                    <div class="alertas-header">
+                        <h3><i class="fas fa-bell"></i> Alertas Prioritarias</h3>
+                        <button class="btn btn-primary btn-sm" onclick="mostrarModalNuevaAlerta()">
+                            <i class="fas fa-plus"></i> Nueva Alerta
+                        </button>
+                    </div>
+                    <div id="alertas-dashboard" class="alertas-list"></div>
                 </div>
 
                 <!-- KPIs Avanzados -->
@@ -556,7 +579,33 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="provincia">Provincia</label>
-                                    <input type="text" id="provincia" placeholder="Ej: Buenos Aires, Mendoza">
+                                    <select id="provincia">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Buenos Aires">Buenos Aires</option>
+                                        <option value="CABA">Ciudad Autónoma de Buenos Aires</option>
+                                        <option value="Catamarca">Catamarca</option>
+                                        <option value="Chaco">Chaco</option>
+                                        <option value="Chubut">Chubut</option>
+                                        <option value="Córdoba">Córdoba</option>
+                                        <option value="Corrientes">Corrientes</option>
+                                        <option value="Entre Ríos">Entre Ríos</option>
+                                        <option value="Formosa">Formosa</option>
+                                        <option value="Jujuy">Jujuy</option>
+                                        <option value="La Pampa">La Pampa</option>
+                                        <option value="La Rioja">La Rioja</option>
+                                        <option value="Mendoza">Mendoza</option>
+                                        <option value="Misiones">Misiones</option>
+                                        <option value="Neuquén">Neuquén</option>
+                                        <option value="Río Negro">Río Negro</option>
+                                        <option value="Salta">Salta</option>
+                                        <option value="San Juan">San Juan</option>
+                                        <option value="San Luis">San Luis</option>
+                                        <option value="Santa Cruz">Santa Cruz</option>
+                                        <option value="Santa Fe">Santa Fe</option>
+                                        <option value="Santiago del Estero">Santiago del Estero</option>
+                                        <option value="Tierra del Fuego">Tierra del Fuego</option>
+                                        <option value="Tucumán">Tucumán</option>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="telefono">Teléfono de Contacto</label>
@@ -658,7 +707,29 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="paisOrigen">País de Origen</label>
-                                    <input type="text" id="paisOrigen">
+                                    <select id="paisOrigen">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Argentina">Argentina</option>
+                                        <option value="Bolivia">Bolivia</option>
+                                        <option value="Brasil">Brasil</option>
+                                        <option value="Chile">Chile</option>
+                                        <option value="Colombia">Colombia</option>
+                                        <option value="Costa Rica">Costa Rica</option>
+                                        <option value="Cuba">Cuba</option>
+                                        <option value="Ecuador">Ecuador</option>
+                                        <option value="El Salvador">El Salvador</option>
+                                        <option value="Guatemala">Guatemala</option>
+                                        <option value="Honduras">Honduras</option>
+                                        <option value="México">México</option>
+                                        <option value="Nicaragua">Nicaragua</option>
+                                        <option value="Panamá">Panamá</option>
+                                        <option value="Paraguay">Paraguay</option>
+                                        <option value="Perú">Perú</option>
+                                        <option value="República Dominicana">República Dominicana</option>
+                                        <option value="Uruguay">Uruguay</option>
+                                        <option value="Venezuela">Venezuela</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -788,7 +859,33 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="edit-provincia">Provincia</label>
-                                    <input type="text" id="edit-provincia" placeholder="Ej: Buenos Aires, Mendoza">
+                                    <select id="edit-provincia">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Buenos Aires">Buenos Aires</option>
+                                        <option value="CABA">Ciudad Autónoma de Buenos Aires</option>
+                                        <option value="Catamarca">Catamarca</option>
+                                        <option value="Chaco">Chaco</option>
+                                        <option value="Chubut">Chubut</option>
+                                        <option value="Córdoba">Córdoba</option>
+                                        <option value="Corrientes">Corrientes</option>
+                                        <option value="Entre Ríos">Entre Ríos</option>
+                                        <option value="Formosa">Formosa</option>
+                                        <option value="Jujuy">Jujuy</option>
+                                        <option value="La Pampa">La Pampa</option>
+                                        <option value="La Rioja">La Rioja</option>
+                                        <option value="Mendoza">Mendoza</option>
+                                        <option value="Misiones">Misiones</option>
+                                        <option value="Neuquén">Neuquén</option>
+                                        <option value="Río Negro">Río Negro</option>
+                                        <option value="Salta">Salta</option>
+                                        <option value="San Juan">San Juan</option>
+                                        <option value="San Luis">San Luis</option>
+                                        <option value="Santa Cruz">Santa Cruz</option>
+                                        <option value="Santa Fe">Santa Fe</option>
+                                        <option value="Santiago del Estero">Santiago del Estero</option>
+                                        <option value="Tierra del Fuego">Tierra del Fuego</option>
+                                        <option value="Tucumán">Tucumán</option>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="edit-telefono">Teléfono de Contacto</label>
@@ -890,7 +987,29 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="edit-paisOrigen">País de Origen</label>
-                                    <input type="text" id="edit-paisOrigen">
+                                    <select id="edit-paisOrigen">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Argentina">Argentina</option>
+                                        <option value="Bolivia">Bolivia</option>
+                                        <option value="Brasil">Brasil</option>
+                                        <option value="Chile">Chile</option>
+                                        <option value="Colombia">Colombia</option>
+                                        <option value="Costa Rica">Costa Rica</option>
+                                        <option value="Cuba">Cuba</option>
+                                        <option value="Ecuador">Ecuador</option>
+                                        <option value="El Salvador">El Salvador</option>
+                                        <option value="Guatemala">Guatemala</option>
+                                        <option value="Honduras">Honduras</option>
+                                        <option value="México">México</option>
+                                        <option value="Nicaragua">Nicaragua</option>
+                                        <option value="Panamá">Panamá</option>
+                                        <option value="Paraguay">Paraguay</option>
+                                        <option value="Perú">Perú</option>
+                                        <option value="República Dominicana">República Dominicana</option>
+                                        <option value="Uruguay">Uruguay</option>
+                                        <option value="Venezuela">Venezuela</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -1141,28 +1260,6 @@
                     </div>
                     <div id="alertas-list" class="alertas-list"></div>
                 </div>
-                
-                <!-- Sección de Auditoría -->
-                <div class="card">
-                    <h3><i class="fas fa-history"></i> Auditoría del Sistema</h3>
-                    <div class="auditoria-filters">
-                        <select id="auditoria-usuario" onchange="loadAuditoria()">
-                            <option value="">Todos los usuarios</option>
-                        </select>
-                        <select id="auditoria-accion" onchange="loadAuditoria()">
-                            <option value="">Todas las acciones</option>
-                            <option value="creado">Creado</option>
-                            <option value="editado">Editado</option>
-                            <option value="eliminado">Eliminado</option>
-                            <option value="aprobado">Aprobado</option>
-                            <option value="rechazado">Rechazado</option>
-                        </select>
-                        <input type="date" id="auditoria-fecha" onchange="loadAuditoria()">
-                    </div>
-                    <div id="auditoria-list" class="auditoria-list">
-                        <p class="loading">Cargando auditoría...</p>
-                    </div>
-                </div>
             </div>
 
             <!-- Tab: Auditoría -->
@@ -1404,6 +1501,37 @@
         </div>
     </div>
 
+    <!-- Modal para Crear/Editar Empresa -->
+    <div id="modal-empresa" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEmpresaModal()">&times;</span>
+            <h2 id="empresa-modal-title"><i class="fas fa-building"></i> Nueva Empresa</h2>
+            <form id="empresa-form">
+                <div class="form-group">
+                    <label for="empresa-nombre">Nombre de la Empresa *</label>
+                    <input type="text" id="empresa-nombre" required placeholder="Ej: Mi Empresa S.A.">
+                </div>
+                <div class="form-group">
+                    <label for="empresa-descripcion">Descripción</label>
+                    <textarea id="empresa-descripcion" rows="3" placeholder="Descripción breve de la empresa (opcional)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="empresa-logo">Logo (Emoji o URL)</label>
+                    <input type="text" id="empresa-logo" placeholder="🏢 o https://...">
+                    <small>Puedes usar un emoji (🏢 🏭 🏪 🏛️) o una URL de imagen</small>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Empresa
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEmpresaModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- jsPDF Libraries for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -1412,3 +1540,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+

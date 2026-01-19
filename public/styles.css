@@ -3662,3 +3662,202 @@ fieldset legend {
     margin-bottom: 1rem;
     opacity: 0.5;
 }
+
+/* ===== PANTALLA DE SELECCIÓN DE EMPRESAS ===== */
+
+#empresa-screen {
+    min-height: 100vh;
+    display: none !important;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    padding: 40px 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9998;
+    overflow-y: auto;
+}
+
+#empresa-screen.active {
+    display: block !important;
+}
+
+#empresa-screen .container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.empresas-header {
+    text-align: center;
+    margin-bottom: 40px;
+    color: white;
+}
+
+.empresas-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.empresas-header .subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.empresas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.empresa-card {
+    background: var(--bg-secondary);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px var(--shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+.empresa-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px var(--shadow-hover);
+}
+
+.empresa-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+}
+
+.empresa-logo {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empresa-logo img {
+    max-width: 80px;
+    max-height: 80px;
+    object-fit: contain;
+}
+
+.empresa-nombre {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.empresa-descripcion {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+}
+
+.empresa-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    background: var(--secondary);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.btn-add-empresa {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    padding: 15px 30px;
+    background: white;
+    color: var(--primary);
+    border: 2px dashed var(--primary);
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-add-empresa:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: scale(1.02);
+}
+
+.btn-add-empresa i {
+    font-size: 1.3rem;
+}
+
+/* Botones de acciones en las empresas (editar/eliminar) */
+.empresa-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.empresa-card:hover .empresa-actions {
+    opacity: 1;
+}
+
+.empresa-actions button {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.empresa-actions button:hover {
+    transform: scale(1.1);
+}
+
+.empresa-actions .btn-edit:hover {
+    background: var(--info);
+    color: white;
+    border-color: var(--info);
+}
+
+.empresa-actions .btn-delete:hover {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .empresas-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .empresas-header h1 {
+        font-size: 2rem;
+    }
+}
