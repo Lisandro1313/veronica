@@ -5070,7 +5070,11 @@ function selectEmpresa(empresaId) {
         // Mostrar el dashboard
         showMainScreen();
         aplicarPermisos();
+        
+        // IMPORTANTE: Cargar empleados de la empresa seleccionada
+        loadEmpleados();
         loadDashboard();
+        loadAllTickets();
     }
 }
 
