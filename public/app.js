@@ -1979,6 +1979,14 @@ function showLoginScreen() {
 function showMainScreen() {
     loginScreen.classList.remove('active');
     loginScreen.style.display = 'none';
+
+    // Ocultar pantalla de empresas
+    const empresaScreen = document.getElementById('empresa-screen');
+    if (empresaScreen) {
+        empresaScreen.classList.remove('active');
+        empresaScreen.style.display = 'none';
+    }
+
     mainScreen.classList.add('active');
     mainScreen.style.display = 'flex';
     userNameSpan.textContent = currentUser.nombre;
@@ -3451,7 +3459,7 @@ function importarBackup(event) {
                 await fetch(`${API_URL}/empleados`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({...empleado, empresa_id: currentEmpresa?.id || 1})
+                    body: JSON.stringify({ ...empleado, empresa_id: currentEmpresa?.id || 1 })
                 });
             }
 
@@ -3461,7 +3469,7 @@ function importarBackup(event) {
                     await fetch(`${API_URL}/tickets`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({...ticket, empresa_id: currentEmpresa?.id || 1})
+                        body: JSON.stringify({ ...ticket, empresa_id: currentEmpresa?.id || 1 })
                     });
                 }
             }
@@ -5120,6 +5128,14 @@ async function deleteEmpresa(empresaId) {
 // Event listeners para empresas
 document.getElementById('btn-add-empresa')?.addEventListener('click', openEmpresaModal);
 
+document.getElementById('btn-config-empresa')?.addEventListener('click', () => {
+    if (currentEmpresa) {
+        editEmpresa(currentEmpresa.id);
+    } else {
+        showToast('error', 'Error', 'No hay empresa seleccionada');
+    }
+});
+
 document.getElementById('btn-back-to-login')?.addEventListener('click', () => {
     document.getElementById('empresa-screen').classList.remove('active');
     document.getElementById('login-screen').classList.add('active');
@@ -5165,6 +5181,17 @@ document.getElementById('empresa-form')?.addEventListener('submit', async (e) =>
             showToast('success', editId ? 'Empresa Actualizada' : 'Empresa Creada',
                 data.mensaje || 'Operación exitosa');
             closeEmpresaModal();
+            
+            // Si editamos la empresa actual, actualizar currentEmpresa
+            if (editId && currentEmpresa && currentEmpresa.id == editId) {
+                currentEmpresa = { id: parseInt(editId), nombre, descripcion, logo };
+                // Actualizar nombre en sidebar si estamos en el dashboard
+                const sidebarUserName = document.getElementById('sidebar-user-name');
+                if (sidebarUserName && currentUser) {
+                    sidebarUserName.textContent = currentUser.nombre;
+                }
+            }
+            
             loadEmpresas();
         } else {
             showToast('error', 'Error', data.mensaje || 'No se pudo guardar la empresa');
