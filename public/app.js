@@ -117,12 +117,8 @@ loginForm.addEventListener('submit', async (e) => {
 
         if (data.success) {
             currentUser = data.usuario;
-            // TODO: Descomentar cuando se ejecute el SQL de empresas
-            // showEmpresaScreen();
-            // Por ahora ir directo al dashboard
-            showMainScreen();
-            aplicarPermisos();
-            loadDashboard();
+            // Mostrar pantalla de empresas
+            showEmpresaScreen();
         } else {
             showToast('error', 'Error de Login', data.mensaje);
         }
@@ -1001,6 +997,9 @@ empleadoForm.addEventListener('submit', async (e) => {
         observaciones: document.getElementById('observaciones').value
     };
 
+    // Agregar empresa_id
+    empleadoData.empresa_id = currentEmpresa?.id || 1;
+
     // Obtener botón de submit y mostrar loading
     const submitBtn = empleadoForm.querySelector('button[type="submit"]');
     const textoOriginal = submitBtn.textContent;
@@ -1095,7 +1094,11 @@ function mapearEmpleado(emp) {
 
 async function loadEmpleados() {
     try {
-        const response = await fetch(`${API_URL}/empleados`);
+        let url = `${API_URL}/empleados`;
+        if (currentEmpresa && currentEmpresa.id) {
+            url += `?empresa_id=${currentEmpresa.id}`;
+        }
+        const response = await fetch(url);
         const data = await response.json();
         empleados = data.map(mapearEmpleado);
         displayEmpleados(empleados);
@@ -1892,6 +1895,9 @@ ticketForm.addEventListener('submit', async (e) => {
     const empleado = empleados.find(e => e.id === ticketData.empleadoId);
     ticketData.empleadoNombre = empleado ? empleado.nombreCompleto : 'Desconocido';
 
+    // Agregar empresa_id
+    ticketData.empresa_id = currentEmpresa?.id || 1;
+
     try {
         const response = await fetch(`${API_URL}/tickets`, {
             method: 'POST',
@@ -1916,7 +1922,7 @@ ticketForm.addEventListener('submit', async (e) => {
 
 async function loadAllTickets() {
     try {
-        const response = await fetch(`${API_URL}/tickets`);
+        const response = await fetch(`${API_URL}/tickets?empresa_id=${currentEmpresa.id}`);
         tickets = await response.json();
         displayTickets(tickets);
     } catch (error) {
@@ -3445,7 +3451,7 @@ function importarBackup(event) {
                 await fetch(`${API_URL}/empleados`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(empleado)
+                    body: JSON.stringify({...empleado, empresa_id: currentEmpresa?.id || 1})
                 });
             }
 
@@ -3455,7 +3461,7 @@ function importarBackup(event) {
                     await fetch(`${API_URL}/tickets`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(ticket)
+                        body: JSON.stringify({...ticket, empresa_id: currentEmpresa?.id || 1})
                     });
                 }
             }
@@ -3852,7 +3858,8 @@ async function registrarAuditoria(accion, tipo, detalles, registroId) {
         tipo: tipo, // 'empleado', 'ticket', 'alerta'
         descripcion: detalles,
         entidad: tipo,
-        entidadId: registroId
+        entidadId: registroId,
+        empresa_id: currentEmpresa?.id || 1
     };
 
     try {
@@ -3893,7 +3900,7 @@ async function loadAuditoria() {
     try {
         // Obtener auditoría del servidor
         console.log('Consultando auditoría...');
-        const response = await fetch(`${API_URL}/auditoria`);
+        const response = await fetch(`${API_URL}/auditoria?empresa_id=${currentEmpresa.id}`);
         console.log('Response status:', response.status);
         const data = await response.json();
         console.log('Datos de auditoría recibidos:', data.length, 'registros');
@@ -3998,7 +4005,7 @@ async function loadAuditoria() {
 // Cargar todos los tickets
 async function loadAllTickets() {
     try {
-        const response = await fetch(`${API_URL}/tickets`);
+        const response = await fetch(`${API_URL}/tickets?empresa_id=${currentEmpresa.id}`);
         const data = await response.json();
         tickets = data;
 
@@ -4306,7 +4313,8 @@ if (document.getElementById('ticket-form')) {
             descripcion,
             observaciones,
             estado,
-            creadoPor: currentUser.id
+            creadoPor: currentUser.id,
+            empresa_id: currentEmpresa?.id || 1
         };
 
         // Agregar campos según tipo
@@ -4891,6 +4899,9 @@ if (empleadoEditForm) {
             if (isNaN(numericId)) {
                 throw new Error(`ID inválido: ${editId}`);
             }
+
+            // Agregar empresa_id al empleadoData
+            empleadoData.empresa_id = currentEmpresa?.id || 1;
 
             const response = await fetch(`${API_URL}/empleados/${numericId}`, {
                 method: 'PUT',
