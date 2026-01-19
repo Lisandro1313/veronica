@@ -314,8 +314,15 @@ function verificarYEjecutar(modulo, accion, callback) {
 
 async function loadDashboard() {
     try {
-        const response = await fetch(`${API_URL}/empleados?empresa_id=${currentEmpresa.id}`);
+        if (!currentEmpresa || !currentEmpresa.id) {
+            console.error('No hay empresa seleccionada para dashboard');
+            return;
+        }
+        
+        console.log('📊 Cargando dashboard de empresa:', currentEmpresa.nombre);
+        const response = await fetch(`${API_URL}/empleados?empresa_id=${currentEmpresa.id}&t=${Date.now()}`);
         empleados = await response.json();
+        console.log('📊 Empleados para dashboard:', empleados.length);
 
         // Calcular KPIs
         const kpis = calcularKPIs(empleados);
@@ -1114,9 +1121,11 @@ async function loadEmpleados() {
             return;
         }
 
-        const url = `${API_URL}/empleados?empresa_id=${currentEmpresa.id}`;
+        console.log('🔍 Cargando empleados de empresa:', currentEmpresa.nombre, 'ID:', currentEmpresa.id);
+        const url = `${API_URL}/empleados?empresa_id=${currentEmpresa.id}&t=${Date.now()}`;
         const response = await fetch(url);
         const data = await response.json();
+        console.log('📊 Empleados recibidos:', data.length);
         empleados = data.map(mapearEmpleado);
         displayEmpleados(empleados);
 
@@ -4019,7 +4028,12 @@ async function loadAuditoria() {
 // Cargar todos los tickets
 async function loadAllTickets() {
     try {
-        const response = await fetch(`${API_URL}/tickets?empresa_id=${currentEmpresa.id}`);
+        if (!currentEmpresa || !currentEmpresa.id) {
+            console.error('No hay empresa seleccionada para tickets');
+            return;
+        }
+        
+        const response = await fetch(`${API_URL}/tickets?empresa_id=${currentEmpresa.id}&t=${Date.now()}`);
         const data = await response.json();
         tickets = data;
 
@@ -4985,10 +4999,16 @@ if (sidebarOverlay) {
 // Cargar empresas
 async function loadEmpresas() {
     try {
-        const response = await fetch(`${API_URL}/empresas`);
+        const response = await fetch(`${API_URL}/empresas?t=${Date.now()}`);
         const data = await response.json();
         empresas = data;
         renderEmpresas();
+        
+        // Si solo hay una empresa, seleccionarla automáticamente
+        if (empresas.length === 1) {
+            console.log('Solo hay una empresa, seleccionando automáticamente:', empresas[0].nombre);
+            selectEmpresa(empresas[0].id);
+        }
     } catch (error) {
         console.error('Error al cargar empresas:', error);
         showToast('error', 'Error', 'No se pudieron cargar las empresas');
