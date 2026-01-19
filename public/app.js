@@ -300,7 +300,7 @@ function verificarYEjecutar(modulo, accion, callback) {
 
 async function loadDashboard() {
     try {
-        const response = await fetch(`${API_URL}/empleados`);
+        const response = await fetch(`${API_URL}/empleados?empresa_id=${currentEmpresa.id}`);
         empleados = await response.json();
 
         // Calcular KPIs
@@ -5013,7 +5013,7 @@ function renderEmpresas() {
 
             return `
                 <div class="empresa-card" onclick="selectEmpresa(${emp.id})">
-                    ${currentUser && currentUser.rol === 'admin' ? `
+                    ${currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'superadmin') ? `
                         <div class="empresa-actions">
                             <button class="btn-edit" onclick="event.stopPropagation(); editEmpresa(${emp.id})" title="Editar">
                                 <i class="fas fa-edit"></i>
@@ -5035,8 +5035,16 @@ function renderEmpresas() {
     }
 
     // Mostrar botón "Nueva Empresa" solo para admin
-    if (btnAdd && currentUser && currentUser.rol === 'admin') {
-        btnAdd.style.display = 'flex';
+    if (btnAdd) {
+        console.log('currentUser:', currentUser);
+        console.log('currentUser.rol:', currentUser?.rol);
+        if (currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'superadmin')) {
+            btnAdd.style.display = 'flex';
+            console.log('Mostrando botón Nueva Empresa');
+        } else {
+            btnAdd.style.display = 'none';
+            console.log('Ocultando botón Nueva Empresa');
+        }
     }
 }
 
@@ -5046,6 +5054,12 @@ function selectEmpresa(empresaId) {
     if (currentEmpresa) {
         // Guardar en localStorage
         localStorage.setItem('empresaId', empresaId);
+
+        // Actualizar nombre de empresa en sidebar
+        const sidebarEmpresaNombre = document.getElementById('sidebar-empresa-nombre');
+        if (sidebarEmpresaNombre) {
+            sidebarEmpresaNombre.textContent = currentEmpresa.nombre;
+        }
 
         // Mostrar el dashboard
         showMainScreen();
@@ -5064,14 +5078,26 @@ function showEmpresaScreen() {
 
 // Abrir modal para crear empresa
 function openEmpresaModal() {
+    console.log('openEmpresaModal llamado');
     const modal = document.getElementById('modal-empresa');
     const form = document.getElementById('empresa-form');
     const title = document.getElementById('empresa-modal-title');
 
+    console.log('modal:', modal);
+    console.log('form:', form);
+    console.log('modal classes antes:', modal.className);
+    console.log('modal display antes:', window.getComputedStyle(modal).display);
+    console.log('modal opacity antes:', window.getComputedStyle(modal).opacity);
+    console.log('modal z-index antes:', window.getComputedStyle(modal).zIndex);
+
     form.reset();
     delete form.dataset.editId;
     title.innerHTML = '<i class="fas fa-building"></i> Nueva Empresa';
-    modal.style.display = 'block';
+    modal.classList.add('active');
+
+    console.log('modal classes después:', modal.className);
+    console.log('modal display después:', window.getComputedStyle(modal).display);
+    console.log('Modal abierto con clase active');
 }
 
 // Abrir modal para editar empresa
@@ -5089,13 +5115,13 @@ function editEmpresa(empresaId) {
 
     form.dataset.editId = empresaId;
     title.innerHTML = '<i class="fas fa-edit"></i> Editar Empresa';
-    modal.style.display = 'block';
+    modal.classList.add('active');
 }
 
 // Cerrar modal de empresa
 function closeEmpresaModal() {
     const modal = document.getElementById('modal-empresa');
-    modal.style.display = 'none';
+    modal.classList.remove('active');
 }
 
 // Eliminar empresa
@@ -5181,17 +5207,17 @@ document.getElementById('empresa-form')?.addEventListener('submit', async (e) =>
             showToast('success', editId ? 'Empresa Actualizada' : 'Empresa Creada',
                 data.mensaje || 'Operación exitosa');
             closeEmpresaModal();
-            
+
             // Si editamos la empresa actual, actualizar currentEmpresa
             if (editId && currentEmpresa && currentEmpresa.id == editId) {
                 currentEmpresa = { id: parseInt(editId), nombre, descripcion, logo };
-                // Actualizar nombre en sidebar si estamos en el dashboard
-                const sidebarUserName = document.getElementById('sidebar-user-name');
-                if (sidebarUserName && currentUser) {
-                    sidebarUserName.textContent = currentUser.nombre;
+                // Actualizar nombre en sidebar
+                const sidebarEmpresaNombre = document.getElementById('sidebar-empresa-nombre');
+                if (sidebarEmpresaNombre) {
+                    sidebarEmpresaNombre.textContent = nombre;
                 }
             }
-            
+
             loadEmpresas();
         } else {
             showToast('error', 'Error', data.mensaje || 'No se pudo guardar la empresa');

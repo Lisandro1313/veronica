@@ -114,7 +114,17 @@ app.post('/api/login', async (req, res) => {
 // Obtener todos los empleados
 app.get('/api/empleados', async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM empleados ORDER BY id DESC');
+        const empresaId = req.query.empresa_id || req.headers['x-empresa-id'];
+        let query = 'SELECT * FROM empleados';
+        let params = [];
+
+        if (empresaId) {
+            query += ' WHERE empresa_id = $1';
+            params.push(empresaId);
+        }
+
+        query += ' ORDER BY id DESC';
+        const result = await db.query(query, params);
         const empleadosCamelCase = result.rows.map(emp => toCamelCase(emp));
         res.json(empleadosCamelCase);
     } catch (error) {
@@ -178,6 +188,7 @@ app.get('/api/empleados/:id', async (req, res) => {
 app.post('/api/empleados', async (req, res) => {
     try {
         const data = req.body;
+        const empresaId = data.empresa_id || req.headers['x-empresa-id'] || 1; // Default a empresa 1
 
         // Extraer datos de objetos anidados si existen
         const datosPersonales = data.datosPersonales || {};
@@ -194,9 +205,9 @@ app.post('/api/empleados', async (req, res) => {
                 problemas_salud, antecedentes_penales, 
                 integracion_familiar, escolaridad_familiar, experiencia_laboral,
                 fecha_entrada_pais, tipo_residencia, entradas_salidas_pais,
-                calle, numero, localidad, observaciones, sueldo
+                calle, numero, localidad, observaciones, sueldo, empresa_id
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
             ) RETURNING *`,
             [
                 data.nombreCompleto || datosPersonales.nombreCompleto,
@@ -221,7 +232,8 @@ app.post('/api/empleados', async (req, res) => {
                 toNullIfEmpty(data.numero),
                 toNullIfEmpty(data.localidad),
                 toNullIfEmpty(data.observaciones),
-                toNullIfEmpty(data.sueldo || datosLaborales.sueldo)
+                toNullIfEmpty(data.sueldo || datosLaborales.sueldo),
+                empresaId
             ]
         );
 
@@ -332,6 +344,72 @@ app.delete('/api/empleados/:id', async (req, res) => {
     }
 });
 
+// ===== RUTAS DE EMPRESAS =====
+
+// Obtener todas las empresas activas
+app.get('/api/empresas', async (req, res) => {
+    try {
+        const result = await db.query(
+            'SELECT * FROM empresas WHERE activa = true ORDER BY id ASC'
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener empresas:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener empresas' });
+    }
+});
+
+// Crear nueva empresa
+app.post('/api/empresas', async (req, res) => {
+    try {
+        const { nombre, descripcion, logo } = req.body;
+
+        const result = await db.query(
+            'INSERT INTO empresas (nombre, descripcion, logo) VALUES ($1, $2, $3) RETURNING *',
+            [nombre, descripcion || '', logo || '🏢']
+        );
+
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al crear empresa:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al crear empresa' });
+    }
+});
+
+// Actualizar empresa
+app.put('/api/empresas', async (req, res) => {
+    try {
+        const { id, nombre, descripcion, logo } = req.body;
+
+        const result = await db.query(
+            'UPDATE empresas SET nombre = $1, descripcion = $2, logo = $3 WHERE id = $4 RETURNING *',
+            [nombre, descripcion, logo, id]
+        );
+
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al actualizar empresa:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar empresa' });
+    }
+});
+
+// Eliminar empresa (soft delete)
+app.delete('/api/empresas', async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        await db.query(
+            'UPDATE empresas SET activa = false WHERE id = $1',
+            [id]
+        );
+
+        res.json({ success: true, mensaje: 'Empresa eliminada correctamente' });
+    } catch (error) {
+        console.error('Error al eliminar empresa:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al eliminar empresa' });
+    }
+});
+
 // ===== RUTAS DE TICKETS =====
 
 // Obtener tickets de un empleado
@@ -396,6 +474,8 @@ app.post('/api/tickets', async (req, res) => {
             datosAdicionales, creadoPor, actualizaEmpleado, estado
         } = req.body;
 
+        const empresaId = req.body.empresa_id || req.headers['x-empresa-id'] || 1;
+
         // Validar campos requeridos
         if (!empleadoId || !tipo) {
             return res.status(400).json({
@@ -412,9 +492,9 @@ app.post('/api/tickets', async (req, res) => {
                 empleado_id, tipo, titulo, descripcion, 
                 fecha_evento, fecha_desde, fecha_hasta,
                 valor_anterior, valor_nuevo, observaciones,
-                datos_adicionales, creado_por, actualiza_empleado, estado
+                datos_adicionales, creado_por, actualiza_empleado, estado, empresa_id
              ) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
              RETURNING *`,
             [
                 parseInt(empleadoId),
@@ -430,7 +510,8 @@ app.post('/api/tickets', async (req, res) => {
                 datosAdicionales ? JSON.stringify(datosAdicionales) : null,
                 creadoPor || 1,  // Default a 1 si no se proporciona
                 actualizaEmpleado || false,
-                estado || 'pendiente'
+                estado || 'pendiente',
+                empresaId
             ]
         );
 
@@ -447,12 +528,22 @@ app.post('/api/tickets', async (req, res) => {
 app.get('/api/tickets', async (req, res) => {
     try {
         console.log('📋 GET /api/tickets - Obteniendo todos los tickets');
-        const result = await db.query(`
+        const empresaId = req.query.empresa_id || req.headers['x-empresa-id'];
+
+        let query = `
             SELECT t.*, e.nombre_completo as nombre_completo
             FROM tickets t 
-            LEFT JOIN empleados e ON t.empleado_id = e.id 
-            ORDER BY t.created_at DESC
-        `);
+            LEFT JOIN empleados e ON t.empleado_id = e.id`;
+        let params = [];
+
+        if (empresaId) {
+            query += ' WHERE t.empresa_id = $1';
+            params.push(empresaId);
+        }
+
+        query += ' ORDER BY t.created_at DESC';
+
+        const result = await db.query(query, params);
         console.log(`✅ ${result.rows.length} tickets encontrados`);
         res.json(result.rows);
     } catch (error) {
@@ -820,15 +911,23 @@ app.get('/api/auditoria', async (req, res) => {
                 datos_despues JSONB,
                 ip_address VARCHAR(50),
                 user_agent TEXT,
+                empresa_id INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
         const { usuario, accion, fecha, limite } = req.query;
+        const empresaId = req.query.empresa_id || req.headers['x-empresa-id'];
 
         let query = 'SELECT * FROM auditoria WHERE 1=1';
         const params = [];
         let paramCount = 1;
+
+        if (empresaId) {
+            query += ` AND empresa_id = $${paramCount}`;
+            params.push(empresaId);
+            paramCount++;
+        }
 
         if (usuario) {
             query += ` AND usuario_id = $${paramCount}`;
@@ -873,16 +972,19 @@ app.post('/api/auditoria', async (req, res) => {
             entidad, entidadId, datosAntes, datosDespues
         } = req.body;
 
+        const empresaId = req.body.empresa_id || req.headers['x-empresa-id'] || 1;
+
         const result = await db.query(
             `INSERT INTO auditoria (
                 usuario_id, usuario_nombre, accion, tipo, descripcion,
-                entidad, entidad_id, datos_antes, datos_despues
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+                entidad, entidad_id, datos_antes, datos_despues, empresa_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
             [
                 usuarioId, usuarioNombre, accion, tipo, descripcion,
                 entidad, entidadId,
                 datosAntes ? JSON.stringify(datosAntes) : null,
-                datosDespues ? JSON.stringify(datosDespues) : null
+                datosDespues ? JSON.stringify(datosDespues) : null,
+                empresaId
             ]
         );
 
