@@ -9,6 +9,25 @@ const db = require('./db'); // Usar db.js con Supabase
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Función para convertir snake_case a camelCase
+function toCamelCase(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+
+    const camelObj = {};
+    for (const key in obj) {
+        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        let value = obj[key];
+
+        // Convertir booleanos a 'si'/'no' para tiene_pareja
+        if (key === 'tiene_pareja') {
+            value = value ? 'si' : 'no';
+        }
+
+        camelObj[camelKey] = value;
+    }
+    return camelObj;
+}
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
@@ -96,7 +115,8 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/empleados', async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM empleados ORDER BY id DESC');
-        res.json(result.rows);
+        const empleadosCamelCase = result.rows.map(emp => toCamelCase(emp));
+        res.json(empleadosCamelCase);
     } catch (error) {
         console.error('Error al obtener empleados:', error);
         res.status(500).json({ success: false, mensaje: 'Error al obtener empleados' });
@@ -144,7 +164,7 @@ app.get('/api/empleados/:id', async (req, res) => {
         const result = await db.query('SELECT * FROM empleados WHERE id = $1', [req.params.id]);
 
         if (result.rows.length > 0) {
-            res.json(result.rows[0]);
+            res.json(toCamelCase(result.rows[0]));
         } else {
             res.status(404).json({ success: false, mensaje: 'Empleado no encontrado' });
         }
@@ -205,7 +225,7 @@ app.post('/api/empleados', async (req, res) => {
             ]
         );
 
-        res.json({ success: true, data: result.rows[0] });
+        res.json({ success: true, data: toCamelCase(result.rows[0]) });
     } catch (error) {
         console.error('Error al crear empleado:', error);
         res.status(500).json({ success: false, mensaje: 'Error al crear empleado', error: error.message });
@@ -215,76 +235,84 @@ app.post('/api/empleados', async (req, res) => {
 // Actualizar empleado
 app.put('/api/empleados/:id', async (req, res) => {
     try {
-        const data = req.body;
-        const datosPersonales = data.datosPersonales || {};
-        const datosLaborales = data.laboral || {};
-        const educacionData = data.educacion || {};
+        const d = req.body;
 
         const result = await db.query(
             `UPDATE empleados SET
-                nombre = $1, apellido = $2, dni = $3, cuit = $4, 
-                fecha_nacimiento = $5, nacionalidad = $6, es_extranjero = $7, 
-                pais_origen = $8, telefono = $9, email = $10, direccion = $11, 
-                ciudad = $12, provincia = $13, codigo_postal = $14, 
-                fecha_ingreso = $15, puesto = $16, area = $17, salario = $18, 
-                tipo_contrato = $19, nivel_educativo = $20, titulo = $21, 
-                institucion = $22, emergencia_nombre = $23, emergencia_telefono = $24, 
-                emergencia_relacion = $25, obra_social = $26, numero_afiliado = $27, 
-                problemas_salud = $28, antecedentes_penales = $29, 
-                observaciones_antecedentes = $30, integracion_familiar = $31, 
-                observaciones = $32, datos_personales = $33, datos_laborales = $34, 
-                educacion = $35, datos_adicionales = $36, sueldo = $37
-            WHERE id = $38 RETURNING *`,
+                nombre_completo = $1,
+                cuil = $2,
+                fecha_nacimiento = $3,
+                documento = $4,
+                estado_civil = $5,
+                tiene_pareja = $6,
+                cantidad_hijos = $7,
+                hijos_a_cargo = $8,
+                hijos_conviven = $9,
+                familiares_a_cargo = $10,
+                escolaridad_familiar = $11,
+                vivienda = $12,
+                direccion = $13,
+                provincia = $14,
+                telefono = $15,
+                numero_lote_invernaculo = $16,
+                nivel_educativo = $17,
+                problemas_salud = $18,
+                es_extranjero = $19,
+                pais_origen = $20,
+                fecha_entrada_pais = $21,
+                tipo_residencia = $22,
+                entradas_salidas_pais = $23,
+                experiencia_laboral = $24,
+                fecha_ingreso = $25,
+                puesto = $26,
+                sueldo = $27,
+                antecedentes_penales = $28,
+                observaciones_antecedentes = $29,
+                observaciones = $30
+            WHERE id = $31 RETURNING *`,
             [
-                data.nombre || datosPersonales.nombre,
-                data.apellido || datosPersonales.apellido,
-                data.dni || datosPersonales.dni,
-                data.cuit || datosPersonales.cuit,
-                data.fechaNacimiento || datosPersonales.fechaNacimiento,
-                data.nacionalidad || datosPersonales.nacionalidad,
-                data.esExtranjero,
-                data.paisOrigen,
-                data.telefono || datosPersonales.telefono,
-                data.email || datosPersonales.email,
-                data.direccion || datosPersonales.direccion,
-                data.ciudad || datosPersonales.ciudad,
-                data.provincia || datosPersonales.provincia,
-                data.codigoPostal || datosPersonales.codigoPostal,
-                data.fechaIngreso || datosLaborales.fechaIngreso,
-                data.puesto || datosLaborales.puesto,
-                data.area || datosLaborales.area,
-                data.salario || datosLaborales.salario,
-                data.tipoContrato || datosLaborales.tipoContrato,
-                data.nivelEducativo || educacionData.nivelMaximo,
-                data.titulo || educacionData.titulo,
-                data.institucion || educacionData.institucion,
-                data.emergenciaNombre,
-                data.emergenciaTelefono,
-                data.emergenciaRelacion,
-                data.obraSocial,
-                data.numeroAfiliado,
-                data.problemasSalud,
-                data.antecedentesPenales,
-                data.observacionesAntecedentes,
-                data.integracionFamiliar,
-                data.observaciones,
-                JSON.stringify(data.datosPersonales || null),
-                JSON.stringify(data.laboral || null),
-                JSON.stringify(data.educacion || null),
-                JSON.stringify(data.datosAdicionales || null),
-                data.sueldo || datosLaborales.sueldo,
+                d.nombreCompleto,
+                d.cuil,
+                d.fechaNacimiento || null,
+                d.documento || null,
+                d.estadoCivil || null,
+                d.tienePareja === 'si',
+                d.cantidadHijos || 0,
+                d.hijosACargo || 0,
+                d.hijosConviven || 0,
+                d.familiaresACargo || 0,
+                d.escolaridadFamiliar || null,
+                d.vivienda || null,
+                d.direccion || null,
+                d.provincia || null,
+                d.telefono || null,
+                d.numeroLoteInvernaculo || null,
+                d.nivelEducativo || null,
+                d.problemasSalud || null,
+                d.esExtranjero || 'no',
+                d.paisOrigen || null,
+                d.fechaEntradaPais || null,
+                d.tipoResidencia || null,
+                d.entradasSalidasPais || null,
+                d.experienciaLaboral || null,
+                d.fechaIngreso || null,
+                d.puesto || null,
+                (d.sueldo || d.salario) ? parseFloat(d.sueldo || d.salario) : null,
+                d.antecedentesPenales || 'no',
+                d.observacionesAntecedentes || null,
+                d.observaciones || null,
                 req.params.id
             ]
         );
 
         if (result.rows.length > 0) {
-            res.json({ success: true, data: result.rows[0] });
+            res.json({ success: true, data: toCamelCase(result.rows[0]) });
         } else {
             res.status(404).json({ success: false, mensaje: 'Empleado no encontrado' });
         }
     } catch (error) {
         console.error('Error al actualizar empleado:', error);
-        res.status(500).json({ success: false, mensaje: 'Error al actualizar empleado' });
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar empleado', error: error.message });
     }
 });
 
@@ -310,7 +338,7 @@ app.delete('/api/empleados/:id', async (req, res) => {
 app.get('/api/tickets/:empleadoId', async (req, res) => {
     try {
         console.log('📋 Obteniendo tickets para empleado:', req.params.empleadoId);
-        
+
         // Primero intentar sin JOIN para ver si el problema está ahí
         const result = await db.query(
             `SELECT t.* 
@@ -319,7 +347,7 @@ app.get('/api/tickets/:empleadoId', async (req, res) => {
              ORDER BY t.created_at DESC`,
             [req.params.empleadoId]
         );
-        
+
         // Agregar nombres de usuarios después si hay tickets
         if (result.rows && result.rows.length > 0) {
             // Intentar obtener nombres de usuarios si existen
@@ -346,7 +374,7 @@ app.get('/api/tickets/:empleadoId', async (req, res) => {
                 }
             }
         }
-        
+
         console.log('✅ Tickets encontrados:', result.rows.length);
         res.json(result.rows);
     } catch (error) {
@@ -360,7 +388,7 @@ app.get('/api/tickets/:empleadoId', async (req, res) => {
 app.post('/api/tickets', async (req, res) => {
     try {
         console.log('📝 POST /api/tickets - Datos recibidos:', req.body);
-        
+
         const {
             empleadoId, tipo, titulo, descripcion,
             fechaEvento, fechaDesde, fechaHasta,
@@ -370,9 +398,9 @@ app.post('/api/tickets', async (req, res) => {
 
         // Validar campos requeridos
         if (!empleadoId || !tipo) {
-            return res.status(400).json({ 
-                success: false, 
-                mensaje: 'Faltan campos requeridos: empleadoId y tipo son obligatorios' 
+            return res.status(400).json({
+                success: false,
+                mensaje: 'Faltan campos requeridos: empleadoId y tipo son obligatorios'
             });
         }
 
@@ -489,18 +517,18 @@ app.get('/api/ticket', async (req, res) => {
         if (!ticketId) {
             return res.status(400).json({ success: false, mensaje: 'ID de ticket requerido' });
         }
-        
+
         const result = await db.query(`
             SELECT t.*, e.nombre_completo as empleado_nombre, e.puesto
             FROM tickets t
             LEFT JOIN empleados e ON t.empleado_id = e.id
             WHERE t.id = $1
         `, [ticketId]);
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, mensaje: 'Ticket no encontrado' });
         }
-        
+
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Error al obtener ticket:', error);
@@ -563,8 +591,8 @@ app.get('/health', async (req, res) => {
         res.json({ status: 'ok', database: 'connected' });
     } catch (error) {
         console.error('Health check failed:', error.message);
-        res.status(500).json({ 
-            status: 'error', 
+        res.status(500).json({
+            status: 'error',
             database: 'disconnected',
             error: error.message,
             hasEnv: {
@@ -777,39 +805,58 @@ app.post('/api/ticket', async (req, res) => {
 // Obtener log de auditoría
 app.get('/api/auditoria', async (req, res) => {
     try {
+        // Crear tabla si no existe
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS auditoria (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER,
+                usuario_nombre VARCHAR(100),
+                accion VARCHAR(50) NOT NULL,
+                tipo VARCHAR(50) NOT NULL,
+                descripcion TEXT NOT NULL,
+                entidad VARCHAR(50),
+                entidad_id INTEGER,
+                datos_antes JSONB,
+                datos_despues JSONB,
+                ip_address VARCHAR(50),
+                user_agent TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         const { usuario, accion, fecha, limite } = req.query;
-        
+
         let query = 'SELECT * FROM auditoria WHERE 1=1';
         const params = [];
         let paramCount = 1;
-        
+
         if (usuario) {
             query += ` AND usuario_id = $${paramCount}`;
             params.push(usuario);
             paramCount++;
         }
-        
+
         if (accion) {
             query += ` AND accion = $${paramCount}`;
             params.push(accion);
             paramCount++;
         }
-        
+
         if (fecha) {
             query += ` AND DATE(created_at) = $${paramCount}`;
             params.push(fecha);
             paramCount++;
         }
-        
+
         query += ' ORDER BY created_at DESC';
-        
+
         if (limite) {
             query += ` LIMIT $${paramCount}`;
             params.push(parseInt(limite));
         } else {
             query += ' LIMIT 100';
         }
-        
+
         const result = await db.query(query, params);
         res.json(result.rows);
     } catch (error) {
@@ -825,7 +872,7 @@ app.post('/api/auditoria', async (req, res) => {
             usuarioId, usuarioNombre, accion, tipo, descripcion,
             entidad, entidadId, datosAntes, datosDespues
         } = req.body;
-        
+
         const result = await db.query(
             `INSERT INTO auditoria (
                 usuario_id, usuario_nombre, accion, tipo, descripcion,
@@ -838,7 +885,7 @@ app.post('/api/auditoria', async (req, res) => {
                 datosDespues ? JSON.stringify(datosDespues) : null
             ]
         );
-        
+
         res.json({ success: true, data: result.rows[0] });
     } catch (error) {
         console.error('Error al crear registro de auditoría:', error);
