@@ -3861,3 +3861,163 @@ fieldset legend {
         font-size: 2rem;
     }
 }
+
+/* ===== ESTILOS PARA DOCUMENTOS DE EMPLEADOS ===== */
+.documento-upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: border-color 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 20px;
+    background-color: var(--bg-secondary);
+}
+
+.documento-upload-area:hover {
+    border-color: var(--primary);
+    background-color: var(--gray-100);
+}
+
+.documento-upload-area.dragover {
+    border-color: var(--primary);
+    background-color: rgba(26, 115, 232, 0.1);
+}
+
+.documento-item {
+    transition: all 0.3s ease;
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.documento-item:hover {
+    background-color: var(--gray-100) !important;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.loading-docs {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 12px;
+    min-width: auto;
+    height: auto;
+}
+
+.text-muted {
+    color: var(--text-secondary) !important;
+}
+
+.text-danger {
+    color: var(--danger) !important;
+}
+
+/* Drag and drop styles */
+.documento-upload-area input[type="file"] {
+    display: none;
+}
+
+.documento-upload-area .upload-icon {
+    font-size: 2rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.documento-upload-area .upload-text {
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.documento-upload-area .upload-hint {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ===== GESTIÓN DE USUARIOS ===== */
+.usuarios-list {
+    overflow-x: auto;
+}
+
+.empresa-asignacion-item {
+    transition: all 0.3s ease;
+}
+
+.empresa-asignacion-item:hover {
+    background-color: var(--gray-100) !important;
+}
+
+.permisos-empresa label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.permisos-empresa label:hover {
+    color: var(--text-primary);
+}
+
+.permisos-empresa input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.badge-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.badge-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.badge-secondary {
+    background-color: var(--gray-200);
+    color: var(--text-secondary);
+}
+
+/* Dark mode adjustments for badges */
+body.dark-mode .badge-success {
+    background-color: #1e4620;
+    color: #a3d9a5;
+}
+
+body.dark-mode .badge-danger {
+    background-color: #4a1c1c;
+    color: #f5a6a6;
+}
+
+body.dark-mode .badge-warning {
+    background-color: #4a3c1c;
+    color: #f5d5a6;
+}
+
+body.dark-mode .badge-info {
+    background-color: #1c3d4a;
+    color: #a6d5f5;
+}

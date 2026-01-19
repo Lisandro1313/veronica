@@ -4,7 +4,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const bcryptjs = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const db = require('./db'); // Usar db.js con Supabase
+
+// Secret para JWT (en producción debe estar en variables de entorno)
+const JWT_SECRET = process.env.JWT_SECRET || 'verapp-secret-key-change-in-production';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,65 +49,162 @@ app.post('/api/login', async (req, res) => {
     try {
         const { usuario, password } = req.body;
 
+        // Buscar usuario
         const result = await db.query(
-            'SELECT id, nombre, username, password, rol FROM usuarios WHERE username = $1',
+            `SELECT id, nombre, username, password_hash, rol_global, activo, 
+                    debe_cambiar_password, intentos_fallidos, bloqueado_hasta 
+             FROM usuarios WHERE username = $1`,
             [usuario]
         );
 
-        if (result.rows.length > 0) {
-            const user = result.rows[0];
-            const match = await bcrypt.compare(password, user.password);
-
-            if (match) {
-                // Definir permisos según rol
-                const permisos = {
-                    superadmin: {
-                        empleados: { crear: true, editar: true, eliminar: true, ver: true },
-                        usuarios: { crear: true, editar: true, eliminar: true, ver: true },
-                        tickets: { crear: true, editar: true, eliminar: true, ver: true },
-                        exportar: { pdf: true, excel: true },
-                        reportes: { ver: true, avanzados: true },
-                        alertas: { ver: true, configurar: true }
-                    },
-                    admin: {
-                        empleados: { crear: true, editar: true, eliminar: true, ver: true },
-                        usuarios: { crear: false, editar: false, eliminar: false, ver: true },
-                        tickets: { crear: true, editar: true, eliminar: false, ver: true },
-                        exportar: { pdf: true, excel: true },
-                        reportes: { ver: true, avanzados: true },
-                        alertas: { ver: true, configurar: false }
-                    },
-                    manager: {
-                        empleados: { crear: true, editar: true, eliminar: false, ver: true },
-                        usuarios: { crear: false, editar: false, eliminar: false, ver: false },
-                        tickets: { crear: true, editar: true, eliminar: false, ver: true },
-                        exportar: { pdf: true, excel: true },
-                        reportes: { ver: true, avanzados: false },
-                        alertas: { ver: true, configurar: false }
-                    },
-                    viewer: {
-                        empleados: { crear: false, editar: false, eliminar: false, ver: true },
-                        usuarios: { crear: false, editar: false, eliminar: false, ver: false },
-                        tickets: { crear: false, editar: false, eliminar: false, ver: true },
-                        exportar: { pdf: false, excel: false },
-                        reportes: { ver: true, avanzados: false },
-                        alertas: { ver: true, configurar: false }
-                    }
-                };
-
-                const rol = user.rol || 'viewer';
-                const userPermisos = permisos[rol] || permisos.viewer;
-
-                res.json({
-                    success: true,
-                    usuario: { id: user.id, nombre: user.nombre, rol: rol, permisos: userPermisos }
-                });
-            } else {
-                res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
-            }
-        } else {
-            res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
+        if (result.rows.length === 0) {
+            // Log de intento fallido
+            await db.query(
+                'INSERT INTO log_accesos (username, accion, ip_address) VALUES ($1, $2, $3)',
+                [usuario, 'login_fallido', req.ip]
+            );
+            return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
         }
+
+        const user = result.rows[0];
+
+        // Verificar si está bloqueado
+        if (user.bloqueado_hasta && new Date(user.bloqueado_hasta) > new Date()) {
+            const minutosRestantes = Math.ceil((new Date(user.bloqueado_hasta) - new Date()) / 60000);
+            return res.status(403).json({
+                success: false,
+                mensaje: `Usuario bloqueado. Intente nuevamente en ${minutosRestantes} minutos`
+            });
+        }
+
+        // Verificar si está activo
+        if (!user.activo) {
+            return res.status(403).json({
+                success: false,
+                mensaje: 'Usuario desactivado. Contacte al administrador'
+            });
+        }
+
+        // Verificar contraseña
+        const match = await bcryptjs.compare(password, user.password_hash);
+
+        if (!match) {
+            // Incrementar intentos fallidos
+            const nuevoIntentos = (user.intentos_fallidos || 0) + 1;
+            let bloqueadoHasta = null;
+
+            // Bloquear después de 5 intentos fallidos
+            if (nuevoIntentos >= 5) {
+                bloqueadoHasta = new Date(Date.now() + 15 * 60000); // 15 minutos
+                await db.query(
+                    'UPDATE usuarios SET intentos_fallidos = $1, bloqueado_hasta = $2 WHERE id = $3',
+                    [nuevoIntentos, bloqueadoHasta, user.id]
+                );
+            } else {
+                await db.query(
+                    'UPDATE usuarios SET intentos_fallidos = $1 WHERE id = $2',
+                    [nuevoIntentos, user.id]
+                );
+            }
+
+            // Log
+            await db.query(
+                'INSERT INTO log_accesos (usuario_id, username, accion, ip_address) VALUES ($1, $2, $3, $4)',
+                [user.id, usuario, 'login_fallido', req.ip]
+            );
+
+            return res.status(401).json({
+                success: false,
+                mensaje: bloqueadoHasta
+                    ? 'Demasiados intentos fallidos. Usuario bloqueado por 15 minutos'
+                    : 'Usuario o contraseña incorrectos'
+            });
+        }
+
+        // Login exitoso - resetear intentos fallidos
+        await db.query(
+            'UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL, ultimo_login = CURRENT_TIMESTAMP WHERE id = $1',
+            [user.id]
+        );
+
+        // Obtener empresas asignadas con permisos
+        const empresasResult = await db.query(`
+            SELECT 
+                e.id, e.nombre, e.descripcion, e.logo,
+                ue.rol_empresa, ue.permisos
+            FROM usuarios_empresas ue
+            JOIN empresas e ON e.id = ue.empresa_id
+            WHERE ue.usuario_id = $1
+            ORDER BY e.nombre
+        `, [user.id]);
+
+        // Definir permisos globales según rol
+        const permisosGlobales = {
+            superadmin: {
+                empleados: { crear: true, editar: true, eliminar: true, ver: true },
+                usuarios: { crear: true, editar: true, eliminar: true, ver: true },
+                tickets: { crear: true, editar: true, eliminar: true, ver: true },
+                empresas: { crear: true, editar: true, eliminar: true, ver: true },
+                exportar: { pdf: true, excel: true },
+                reportes: { ver: true, avanzados: true },
+                alertas: { ver: true, configurar: true }
+            },
+            admin: {
+                empleados: { crear: true, editar: true, eliminar: true, ver: true },
+                usuarios: { crear: true, editar: true, eliminar: false, ver: true },
+                tickets: { crear: true, editar: true, eliminar: false, ver: true },
+                empresas: { crear: false, editar: true, eliminar: false, ver: true },
+                exportar: { pdf: true, excel: true },
+                reportes: { ver: true, avanzados: true },
+                alertas: { ver: true, configurar: false }
+            },
+            usuario: {
+                empleados: { crear: false, editar: false, eliminar: false, ver: true },
+                usuarios: { crear: false, editar: false, eliminar: false, ver: false },
+                tickets: { crear: true, editar: true, eliminar: false, ver: true },
+                empresas: { crear: false, editar: false, eliminar: false, ver: true },
+                exportar: { pdf: true, excel: false },
+                reportes: { ver: true, avanzados: false },
+                alertas: { ver: true, configurar: false }
+            }
+        };
+
+        const rol = user.rol_global || 'usuario';
+        const userPermisos = permisosGlobales[rol] || permisosGlobales.usuario;
+
+        // Generar token JWT (opcional)
+        const token = jwt.sign(
+            { id: user.id, username: user.username, rol: rol },
+            JWT_SECRET,
+            { expiresIn: '8h' }
+        );
+
+        // Guardar sesión
+        await db.query(
+            'INSERT INTO sesiones_usuarios (usuario_id, token, ip_address, user_agent, expira_en) VALUES ($1, $2, $3, $4, $5)',
+            [user.id, token, req.ip, req.headers['user-agent'], new Date(Date.now() + 8 * 3600000)]
+        );
+
+        // Log de acceso exitoso
+        await db.query(
+            'INSERT INTO log_accesos (usuario_id, username, accion, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5)',
+            [user.id, usuario, 'login_exitoso', req.ip, req.headers['user-agent']]
+        );
+
+        res.json({
+            success: true,
+            usuario: {
+                id: user.id,
+                nombre: user.nombre,
+                username: user.username,
+                rol: rol,
+                permisos: userPermisos,
+                debe_cambiar_password: user.debe_cambiar_password,
+                empresas: empresasResult.rows
+            },
+            token: token
+        });
+
     } catch (error) {
         console.error('Error en login:', error);
         res.status(500).json({ success: false, mensaje: 'Error en el servidor' });
@@ -407,6 +509,73 @@ app.delete('/api/empresas', async (req, res) => {
     } catch (error) {
         console.error('Error al eliminar empresa:', error);
         res.status(500).json({ success: false, mensaje: 'Error al eliminar empresa' });
+    }
+});
+
+// ===== RUTAS DE DOCUMENTOS EMPLEADOS =====
+
+// Obtener documentos de un empleado
+app.get('/api/empleados/:empleadoId/documentos', async (req, res) => {
+    try {
+        const { empleadoId } = req.params;
+        const result = await db.query(
+            'SELECT id, nombre_archivo, tipo_archivo, tamano, descripcion, fecha_subida, subido_por FROM documentos_empleado WHERE empleado_id = $1 ORDER BY fecha_subida DESC',
+            [empleadoId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener documentos:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener documentos' });
+    }
+});
+
+// Subir documento
+app.post('/api/empleados/:empleadoId/documentos', async (req, res) => {
+    try {
+        const { empleadoId } = req.params;
+        const { nombre_archivo, tipo_archivo, tamano, contenido_base64, descripcion, subido_por, empresa_id } = req.body;
+
+        const result = await db.query(
+            'INSERT INTO documentos_empleado (empleado_id, empresa_id, nombre_archivo, tipo_archivo, tamano, contenido_base64, descripcion, subido_por) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [empleadoId, empresa_id, nombre_archivo, tipo_archivo, tamano, contenido_base64, descripcion, subido_por]
+        );
+
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al subir documento:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al subir documento' });
+    }
+});
+
+// Descargar documento
+app.get('/api/documentos/:documentoId', async (req, res) => {
+    try {
+        const { documentoId } = req.params;
+        const result = await db.query(
+            'SELECT * FROM documentos_empleado WHERE id = $1',
+            [documentoId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, mensaje: 'Documento no encontrado' });
+        }
+
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al descargar documento:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al descargar documento' });
+    }
+});
+
+// Eliminar documento
+app.delete('/api/documentos/:documentoId', async (req, res) => {
+    try {
+        const { documentoId } = req.params;
+        await db.query('DELETE FROM documentos_empleado WHERE id = $1', [documentoId]);
+        res.json({ success: true, mensaje: 'Documento eliminado' });
+    } catch (error) {
+        console.error('Error al eliminar documento:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al eliminar documento' });
     }
 });
 
@@ -992,6 +1161,271 @@ app.post('/api/auditoria', async (req, res) => {
     } catch (error) {
         console.error('Error al crear registro de auditoría:', error);
         res.status(500).json({ success: false, mensaje: 'Error al crear registro de auditoría' });
+    }
+});
+
+// ===== GESTIÓN DE USUARIOS Y PERMISOS =====
+
+// Listar todos los usuarios (solo superadmin/admin)
+app.get('/api/usuarios', async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT 
+                u.id, u.username, u.email, u.nombre, u.rol_global, 
+                u.activo, u.debe_cambiar_password, u.ultimo_login, 
+                u.created_at,
+                COUNT(DISTINCT ue.empresa_id) as empresas_asignadas
+            FROM usuarios u
+            LEFT JOIN usuarios_empresas ue ON u.id = ue.usuario_id
+            GROUP BY u.id
+            ORDER BY u.id
+        `);
+        res.json({ success: true, data: result.rows });
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener usuarios' });
+    }
+});
+
+// Obtener un usuario específico con sus empresas y permisos
+app.get('/api/usuarios/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Datos del usuario
+        const usuario = await db.query(
+            'SELECT id, username, email, nombre, rol_global, activo, debe_cambiar_password, ultimo_login, created_at FROM usuarios WHERE id = $1',
+            [id]
+        );
+
+        if (usuario.rows.length === 0) {
+            return res.status(404).json({ success: false, mensaje: 'Usuario no encontrado' });
+        }
+
+        // Empresas asignadas con roles y permisos
+        const empresas = await db.query(`
+            SELECT 
+                ue.id as relacion_id,
+                e.id, e.nombre, e.descripcion,
+                ue.rol_empresa, ue.permisos
+            FROM usuarios_empresas ue
+            JOIN empresas e ON e.id = ue.empresa_id
+            WHERE ue.usuario_id = $1
+            ORDER BY e.nombre
+        `, [id]);
+
+        res.json({
+            success: true,
+            data: {
+                ...usuario.rows[0],
+                empresas: empresas.rows
+            }
+        });
+    } catch (error) {
+        console.error('Error al obtener usuario:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener usuario' });
+    }
+});
+
+// Crear nuevo usuario
+app.post('/api/usuarios', async (req, res) => {
+    try {
+        const { username, email, nombre, password, rol_global, empresas } = req.body;
+
+        // Validar campos requeridos
+        if (!username || !email || !nombre || !password) {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'Faltan campos requeridos'
+            });
+        }
+
+        // Verificar si el usuario ya existe
+        const existente = await db.query(
+            'SELECT id FROM usuarios WHERE username = $1 OR email = $2',
+            [username, email]
+        );
+
+        if (existente.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'El usuario o email ya existe'
+            });
+        }
+
+        // Hash de contraseña
+        const password_hash = await bcryptjs.hash(password, 10);
+
+        // Crear usuario
+        const result = await db.query(
+            `INSERT INTO usuarios (username, email, nombre, password, password_hash, rol, rol_global, activo, debe_cambiar_password) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, true, true) 
+             RETURNING id, username, email, nombre, rol_global, activo`,
+            [username, email, nombre, password_hash, password_hash, rol_global || 'usuario', rol_global || 'usuario']
+        );
+
+        const nuevoUsuario = result.rows[0];
+
+        // Asignar empresas si se proporcionaron
+        if (empresas && Array.isArray(empresas) && empresas.length > 0) {
+            for (const emp of empresas) {
+                await db.query(
+                    `INSERT INTO usuarios_empresas (usuario_id, empresa_id, rol_empresa, permisos) 
+                     VALUES ($1, $2, $3, $4)`,
+                    [nuevoUsuario.id, emp.empresa_id, emp.rol_empresa || 'empleado', emp.permisos || {}]
+                );
+            }
+        }
+
+        // Log de auditoría
+        await db.query(
+            'INSERT INTO log_accesos (usuario_id, username, accion, detalles) VALUES ($1, $2, $3, $4)',
+            [nuevoUsuario.id, username, 'usuario_creado', JSON.stringify({ por: 'admin' })]
+        );
+
+        res.json({ success: true, data: nuevoUsuario });
+    } catch (error) {
+        console.error('Error al crear usuario:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al crear usuario' });
+    }
+});
+
+// Actualizar usuario
+app.put('/api/usuarios/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nombre, email, rol_global, activo, debe_cambiar_password } = req.body;
+
+        const result = await db.query(
+            `UPDATE usuarios 
+             SET nombre = $1, email = $2, rol_global = $3, rol = $3, activo = $4, debe_cambiar_password = $5
+             WHERE id = $6 
+             RETURNING id, username, email, nombre, rol_global, activo`,
+            [nombre, email, rol_global, activo, debe_cambiar_password, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, mensaje: 'Usuario no encontrado' });
+        }
+
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al actualizar usuario:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar usuario' });
+    }
+});
+
+// Eliminar usuario
+app.delete('/api/usuarios/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // No permitir eliminar usuario con id 1 (superadmin principal)
+        if (id == 1) {
+            return res.status(403).json({
+                success: false,
+                mensaje: 'No se puede eliminar el superadministrador principal'
+            });
+        }
+
+        await db.query('DELETE FROM usuarios WHERE id = $1', [id]);
+        res.json({ success: true, mensaje: 'Usuario eliminado correctamente' });
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al eliminar usuario' });
+    }
+});
+
+// Asignar/actualizar empresas de un usuario
+app.post('/api/usuarios/:id/empresas', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { empresas } = req.body; // Array de { empresa_id, rol_empresa, permisos }
+
+        // Eliminar asignaciones actuales
+        await db.query('DELETE FROM usuarios_empresas WHERE usuario_id = $1', [id]);
+
+        // Insertar nuevas asignaciones
+        for (const emp of empresas) {
+            await db.query(
+                `INSERT INTO usuarios_empresas (usuario_id, empresa_id, rol_empresa, permisos) 
+                 VALUES ($1, $2, $3, $4)`,
+                [id, emp.empresa_id, emp.rol_empresa || 'empleado', emp.permisos || {}]
+            );
+        }
+
+        res.json({ success: true, mensaje: 'Empresas asignadas correctamente' });
+    } catch (error) {
+        console.error('Error al asignar empresas:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al asignar empresas' });
+    }
+});
+
+// Cambiar contraseña
+app.post('/api/usuarios/:id/cambiar-password', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { password_actual, password_nueva } = req.body;
+
+        if (!password_nueva || password_nueva.length < 6) {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'La contraseña debe tener al menos 6 caracteres'
+            });
+        }
+
+        // Si hay password_actual, verificar que sea correcta
+        if (password_actual) {
+            const usuario = await db.query('SELECT password_hash FROM usuarios WHERE id = $1', [id]);
+            const esCorrecta = await bcryptjs.compare(password_actual, usuario.rows[0].password_hash);
+
+            if (!esCorrecta) {
+                return res.status(400).json({
+                    success: false,
+                    mensaje: 'La contraseña actual es incorrecta'
+                });
+            }
+        }
+
+        const password_hash = await bcryptjs.hash(password_nueva, 10);
+
+        await db.query(
+            'UPDATE usuarios SET password = $1, password_hash = $1, debe_cambiar_password = false WHERE id = $2',
+            [password_hash, id]
+        );
+
+        // Log
+        await db.query(
+            'INSERT INTO log_accesos (usuario_id, accion) VALUES ($1, $2)',
+            [id, 'cambio_password']
+        );
+
+        res.json({ success: true, mensaje: 'Contraseña actualizada correctamente' });
+    } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al cambiar contraseña' });
+    }
+});
+
+// Obtener empresas disponibles para un usuario
+app.get('/api/usuarios/:id/empresas-disponibles', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await db.query(`
+            SELECT 
+                e.id, e.nombre, e.descripcion,
+                CASE WHEN ue.id IS NOT NULL THEN true ELSE false END as asignada,
+                ue.rol_empresa, ue.permisos
+            FROM empresas e
+            LEFT JOIN usuarios_empresas ue ON e.id = ue.empresa_id AND ue.usuario_id = $1
+            ORDER BY e.nombre
+        `, [id]);
+
+        res.json({ success: true, data: result.rows });
+    } catch (error) {
+        console.error('Error al obtener empresas disponibles:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener empresas' });
     }
 });
 

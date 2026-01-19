@@ -67,7 +67,8 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             'tickets': '<i class="fas fa-clipboard-list"></i> Tickets',
             'reportes': '<i class="fas fa-file-pdf"></i> Reportes',
             'alertas': '<i class="fas fa-bell"></i> Alertas',
-            'auditoria': '<i class="fas fa-history"></i> Auditoría'
+            'auditoria': '<i class="fas fa-history"></i> Auditoría',
+            'usuarios': '<i class="fas fa-users-cog"></i> Usuarios y Permisos'
         };
         pageTitle.innerHTML = titles[tabName];
 
@@ -94,6 +95,8 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             loadAlertas();
         } else if (tabName === 'auditoria') {
             loadAuditoria();
+        } else if (tabName === 'usuarios') {
+            loadUsuarios();
         }
     });
 });
@@ -117,6 +120,17 @@ loginForm.addEventListener('submit', async (e) => {
 
         if (data.success) {
             currentUser = data.usuario;
+
+            // Ocultar botón de usuarios si no tiene permisos
+            const navUsuarios = document.getElementById('nav-usuarios');
+            if (navUsuarios) {
+                if (currentUser.permisos.usuarios && currentUser.permisos.usuarios.ver) {
+                    navUsuarios.style.display = 'flex';
+                } else {
+                    navUsuarios.style.display = 'none';
+                }
+            }
+
             // Mostrar pantalla de empresas
             showEmpresaScreen();
         } else {
@@ -1642,42 +1656,28 @@ async function verPerfil(id) {
             
             <div class="perfil-tab-content" id="perfil-tab-documentos">
                 <div class="perfil-section">
-                    <h3><i class="fas fa-file-alt"></i> Documentos</h3>
-                    ${emp.documentos && emp.documentos.length > 0 ? `
-                        <div class="documentos-list">
-                            ${emp.documentos.map(doc => `
-                                <div class="documento-card">
-                                    <div class="documento-header">
-                                        <h4><i class="fas fa-file"></i> ${escapeHtml(doc.tipo || '')}</h4>
-                                        <span class="badge ${doc.estado === 'Vigente' ? 'badge-success' : 'badge-danger'}">
-                                            ${escapeHtml(doc.estado || '')}
-                                        </span>
-                                    </div>
-                                    <div class="info-grid">
-                                        ${doc.numero ? `
-                                        <div class="info-item">
-                                            <label>Número:</label>
-                                            <span>${escapeHtml(doc.numero)}</span>
-                                        </div>
-                                        ` : ''}
-                                        ${doc.fechaEmision ? `
-                                        <div class="info-item">
-                                            <label>Emisión:</label>
-                                            <span>${formatDate(doc.fechaEmision)}</span>
-                                        </div>
-                                        ` : ''}
-                                        ${doc.fechaVencimiento ? `
-                                        <div class="info-item">
-                                            <label>Vencimiento:</label>
-                                            <span>${formatDate(doc.fechaVencimiento)}</span>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                    ${doc.observaciones ? `<p class="text-muted">${escapeHtml(doc.observaciones)}</p>` : ''}
-                                </div>
-                            `).join('')}
+                    <h3><i class="fas fa-file-alt"></i> Documentos Adjuntos</h3>
+                    
+                    <div class="documentos-upload" style="margin-bottom: 20px;">
+                        <div class="upload-area" style="border: 2px dashed #ddd; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 15px;">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2em; color: #666; margin-bottom: 10px;"></i>
+                            <p>Arrastra archivos aquí o haz clic para seleccionar</p>
+                            <input type="file" id="documento-input-${emp.id}" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg" style="display: none;" onchange="subirDocumento(${emp.id}, this)">
+                            <button class="btn btn-primary" onclick="document.getElementById('documento-input-${emp.id}').click()">
+                                <i class="fas fa-plus"></i> Agregar Documento
+                            </button>
                         </div>
-                    ` : '<p class="text-muted">No hay documentos registrados</p>'}
+                        
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <input type="text" id="documento-descripcion-${emp.id}" placeholder="Descripción del documento (opcional)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                    </div>
+                    
+                    <div class="documentos-list" id="documentos-lista-${emp.id}">
+                        <div class="loading-docs">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando documentos...
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -1725,6 +1725,9 @@ async function verPerfil(id) {
 
         // Cargar tickets del empleado
         loadTicketsEmpleado(emp.id);
+
+        // Cargar documentos del empleado
+        loadDocumentosEmpleado(emp.id);
 
     } catch (error) {
         alert('❌ Error al cargar perfil');
@@ -5228,3 +5231,573 @@ document.getElementById('empresa-form')?.addEventListener('submit', async (e) =>
     }
 });
 
+
+// ===== GESTIÓN DE DOCUMENTOS DE EMPLEADOS =====
+
+// Cargar documentos de un empleado
+async function loadDocumentosEmpleado(empleadoId) {
+    const container = document.getElementById(`documentos-lista-${empleadoId}`);
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${API_URL}/empleados/${empleadoId}/documentos`);
+        const documentos = await response.json();
+
+        if (documentos.length === 0) {
+            container.innerHTML = '<p class="text-muted"><i class="fas fa-folder-open"></i> No hay documentos adjuntos</p>';
+            return;
+        }
+
+        container.innerHTML = documentos.map(doc => `
+            <div class="documento-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: between;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <i class="fas ${getIconoArchivo(doc.tipo_archivo)}" style="color: #666;"></i>
+                        <strong>${escapeHtml(doc.nombre_archivo)}</strong>
+                        <small style="color: #666;">(${formatFileSize(doc.tamano)})</small>
+                    </div>
+                    ${doc.descripcion ? `<p style="margin: 5px 0; color: #666;">${escapeHtml(doc.descripcion)}</p>` : ''}
+                    <small style="color: #999;">Subido por ${escapeHtml(doc.subido_por)} el ${formatDateTime(doc.fecha_subida)}</small>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-small btn-secondary" onclick="descargarDocumento(${doc.id})" title="Descargar">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn btn-small btn-danger" onclick="eliminarDocumento(${doc.id}, ${empleadoId})" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error al cargar documentos:', error);
+        container.innerHTML = '<p class="text-muted text-danger">Error al cargar documentos</p>';
+    }
+}
+
+// Subir documento
+async function subirDocumento(empleadoId, input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('El archivo es demasiado grande. Máximo 5MB.');
+        return;
+    }
+
+    const descripcionInput = document.getElementById(`documento-descripcion-${empleadoId}`);
+    const descripcion = descripcionInput ? descripcionInput.value : '';
+
+    try {
+        // Mostrar loading
+        const container = document.getElementById(`documentos-lista-${empleadoId}`);
+        container.innerHTML = '<div class="loading-docs"><i class="fas fa-spinner fa-spin"></i> Subiendo documento...</div>';
+
+        // Convertir archivo a base64
+        const base64 = await fileToBase64(file);
+
+        const documentoData = {
+            nombre_archivo: file.name,
+            tipo_archivo: file.type,
+            tamano: file.size,
+            contenido_base64: base64,
+            descripcion: descripcion,
+            subido_por: currentUser.nombre,
+            empresa_id: currentEmpresa?.id || 1
+        };
+
+        const response = await fetch(`${API_URL}/empleados/${empleadoId}/documentos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(documentoData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('success', 'Documento Subido', 'El documento se subió correctamente');
+
+            // Limpiar campos
+            input.value = '';
+            if (descripcionInput) descripcionInput.value = '';
+
+            // Recargar lista
+            loadDocumentosEmpleado(empleadoId);
+        } else {
+            throw new Error(result.mensaje || 'Error al subir documento');
+        }
+    } catch (error) {
+        console.error('Error al subir documento:', error);
+        showToast('error', 'Error', 'No se pudo subir el documento');
+        loadDocumentosEmpleado(empleadoId);
+    }
+}
+
+// Descargar documento
+async function descargarDocumento(documentoId) {
+    try {
+        const response = await fetch(`${API_URL}/documentos/${documentoId}`);
+        const result = await response.json();
+
+        if (result.success) {
+            const doc = result.data;
+
+            // Crear enlace de descarga
+            const link = document.createElement('a');
+            link.href = `data:${doc.tipo_archivo || 'application/octet-stream'};base64,${doc.contenido_base64}`;
+            link.download = doc.nombre_archivo;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('success', 'Descarga', 'Documento descargado correctamente');
+        } else {
+            throw new Error(result.mensaje || 'Error al descargar documento');
+        }
+    } catch (error) {
+        console.error('Error al descargar documento:', error);
+        showToast('error', 'Error', 'No se pudo descargar el documento');
+    }
+}
+
+// Eliminar documento
+async function eliminarDocumento(documentoId, empleadoId) {
+    if (!confirm('¿Estás seguro de eliminar este documento? Esta acción no se puede deshacer.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/documentos/${documentoId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('success', 'Documento Eliminado', 'El documento se eliminó correctamente');
+            loadDocumentosEmpleado(empleadoId);
+        } else {
+            throw new Error(result.mensaje || 'Error al eliminar documento');
+        }
+    } catch (error) {
+        console.error('Error al eliminar documento:', error);
+        showToast('error', 'Error', 'No se pudo eliminar el documento');
+    }
+}
+
+// Funciones auxiliares
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            // Remover el prefijo data:mime;base64,
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
+function getIconoArchivo(tipoArchivo) {
+    if (!tipoArchivo) return 'fa-file';
+
+    if (tipoArchivo.includes('pdf')) return 'fa-file-pdf';
+    if (tipoArchivo.includes('word') || tipoArchivo.includes('document')) return 'fa-file-word';
+    if (tipoArchivo.includes('image') || tipoArchivo.includes('jpg') || tipoArchivo.includes('png')) return 'fa-file-image';
+    if (tipoArchivo.includes('excel') || tipoArchivo.includes('sheet')) return 'fa-file-excel';
+
+    return 'fa-file';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+
+// ===== GESTIÓN DE USUARIOS Y PERMISOS =====
+
+async function loadUsuarios() {
+    try {
+        const response = await fetch(`${API_URL}/usuarios`);
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.mensaje);
+        }
+
+        const container = document.getElementById('usuarios-list');
+        const usuarios = result.data;
+
+        if (usuarios.length === 0) {
+            container.innerHTML = '<p class="text-muted">No hay usuarios registrados</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Empresas</th>
+                        <th>Estado</th>
+                        <th>Último Login</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${usuarios.map(u => `
+                        <tr>
+                            <td><strong>${escapeHtml(u.username)}</strong></td>
+                            <td>${escapeHtml(u.nombre)}</td>
+                            <td>${escapeHtml(u.email || '-')}</td>
+                            <td><span class="badge badge-${u.rol_global === 'superadmin' ? 'danger' : u.rol_global === 'admin' ? 'warning' : 'info'}">${u.rol_global || 'usuario'}</span></td>
+                            <td><span class="badge badge-secondary">${u.empresas_asignadas || 0}</span></td>
+                            <td><span class="badge badge-${u.activo ? 'success' : 'danger'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                            <td>${u.ultimo_login ? formatDateTime(u.ultimo_login) : 'Nunca'}</td>
+                            <td class="actions">
+                                <button class="btn-icon" onclick="verDetalleUsuario(${u.id})" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn-icon btn-edit" onclick="editarUsuario(${u.id})" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${u.id !== 1 ? `
+                                    <button class="btn-icon btn-delete" onclick="eliminarUsuario(${u.id}, '${escapeHtml(u.username)}')" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        document.getElementById('usuarios-list').innerHTML = '<p class="text-danger">Error al cargar usuarios</p>';
+    }
+}
+
+function showModalUsuario(usuarioId = null) {
+    const modal = document.getElementById('modal-usuario');
+    const form = document.getElementById('form-usuario');
+    const titulo = document.getElementById('modal-usuario-titulo');
+
+    form.reset();
+    document.getElementById('usuario-id').value = usuarioId || '';
+
+    if (usuarioId) {
+        titulo.innerHTML = '<i class="fas fa-user-edit"></i> Editar Usuario';
+        document.getElementById('password-fields').style.display = 'none';
+        cargarDatosUsuario(usuarioId);
+    } else {
+        titulo.innerHTML = '<i class="fas fa-user-plus"></i> Nuevo Usuario';
+        document.getElementById('password-fields').style.display = 'block';
+        document.getElementById('usuario-password').required = true;
+        document.getElementById('usuario-password-confirm').required = true;
+        cargarEmpresasParaAsignar();
+    }
+
+    modal.classList.add('active');
+}
+
+function closeUsuarioModal() {
+    document.getElementById('modal-usuario').classList.remove('active');
+}
+
+async function cargarDatosUsuario(usuarioId) {
+    try {
+        const response = await fetch(`${API_URL}/usuarios/${usuarioId}`);
+        const result = await response.json();
+
+        if (!result.success) throw new Error(result.mensaje);
+
+        const usuario = result.data;
+
+        document.getElementById('usuario-username').value = usuario.username;
+        document.getElementById('usuario-username').disabled = true;
+        document.getElementById('usuario-email').value = usuario.email || '';
+        document.getElementById('usuario-nombre').value = usuario.nombre;
+        document.getElementById('usuario-rol').value = usuario.rol_global || 'usuario';
+        document.getElementById('usuario-activo').checked = usuario.activo;
+        document.getElementById('usuario-debe-cambiar-password').checked = usuario.debe_cambiar_password;
+
+        // Cargar empresas asignadas
+        await cargarEmpresasParaAsignar(usuario.empresas);
+
+    } catch (error) {
+        console.error('Error al cargar usuario:', error);
+        showToast('error', 'Error', 'No se pudo cargar el usuario');
+        closeUsuarioModal();
+    }
+}
+
+async function cargarEmpresasParaAsignar(empresasAsignadas = []) {
+    try {
+        const response = await fetch(`${API_URL}/empresas`);
+        const empresas = await response.json();
+
+        const container = document.getElementById('empresas-asignacion');
+
+        container.innerHTML = empresas.map(emp => {
+            const asignada = empresasAsignadas.find(e => e.id === emp.id);
+            const permisos = asignada?.permisos || {
+                ver_empleados: true,
+                editar_empleados: false,
+                eliminar_empleados: false,
+                ver_tickets: true,
+                editar_tickets: false,
+                eliminar_tickets: false,
+                ver_reportes: true,
+                ver_auditoria: false
+            };
+
+            return `
+                <div class="empresa-asignacion-item" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <input type="checkbox" 
+                               id="emp-${emp.id}" 
+                               name="empresas" 
+                               value="${emp.id}"
+                               ${asignada ? 'checked' : ''}
+                               onchange="toggleEmpresaPermisos(${emp.id})">
+                        <label for="emp-${emp.id}" style="margin: 0; font-weight: bold; flex: 1;">
+                            ${escapeHtml(emp.nombre)}
+                        </label>
+                        <select id="rol-emp-${emp.id}" ${!asignada ? 'disabled' : ''}>
+                            <option value="empleado" ${asignada?.rol_empresa === 'empleado' ? 'selected' : ''}>Empleado</option>
+                            <option value="supervisor" ${asignada?.rol_empresa === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                            <option value="admin" ${asignada?.rol_empresa === 'admin' ? 'selected' : ''}>Administrador</option>
+                        </select>
+                    </div>
+                    <div id="permisos-emp-${emp.id}" class="permisos-empresa" style="display: ${asignada ? 'grid' : 'none'}; grid-template-columns: repeat(2, 1fr); gap: 5px; padding-left: 30px;">
+                        <label><input type="checkbox" id="perm-${emp.id}-ver_empleados" ${permisos.ver_empleados ? 'checked' : ''}> Ver Empleados</label>
+                        <label><input type="checkbox" id="perm-${emp.id}-editar_empleados" ${permisos.editar_empleados ? 'checked' : ''}> Editar Empleados</label>
+                        <label><input type="checkbox" id="perm-${emp.id}-ver_tickets" ${permisos.ver_tickets ? 'checked' : ''}> Ver Tickets</label>
+                        <label><input type="checkbox" id="perm-${emp.id}-editar_tickets" ${permisos.editar_tickets ? 'checked' : ''}> Editar Tickets</label>
+                        <label><input type="checkbox" id="perm-${emp.id}-ver_reportes" ${permisos.ver_reportes ? 'checked' : ''}> Ver Reportes</label>
+                        <label><input type="checkbox" id="perm-${emp.id}-ver_auditoria" ${permisos.ver_auditoria ? 'checked' : ''}> Ver Auditoría</label>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error al cargar empresas:', error);
+    }
+}
+
+function toggleEmpresaPermisos(empresaId) {
+    const checkbox = document.getElementById(`emp-${empresaId}`);
+    const permisos = document.getElementById(`permisos-emp-${empresaId}`);
+    const rolSelect = document.getElementById(`rol-emp-${empresaId}`);
+
+    if (checkbox.checked) {
+        permisos.style.display = 'grid';
+        rolSelect.disabled = false;
+    } else {
+        permisos.style.display = 'none';
+        rolSelect.disabled = true;
+    }
+}
+
+async function guardarUsuario(event) {
+    event.preventDefault();
+
+    const usuarioId = document.getElementById('usuario-id').value;
+    const username = document.getElementById('usuario-username').value;
+    const email = document.getElementById('usuario-email').value;
+    const nombre = document.getElementById('usuario-nombre').value;
+    const rol_global = document.getElementById('usuario-rol').value;
+    const activo = document.getElementById('usuario-activo').checked;
+    const debe_cambiar_password = document.getElementById('usuario-debe-cambiar-password').checked;
+
+    let password = null;
+    if (!usuarioId) {
+        password = document.getElementById('usuario-password').value;
+        const passwordConfirm = document.getElementById('usuario-password-confirm').value;
+
+        if (password !== passwordConfirm) {
+            showToast('error', 'Error', 'Las contraseñas no coinciden');
+            return;
+        }
+    }
+
+    // Recopilar empresas asignadas
+    const empresas = [];
+    const checkboxes = document.querySelectorAll('input[name="empresas"]:checked');
+    checkboxes.forEach(cb => {
+        const empresaId = parseInt(cb.value);
+        const rol_empresa = document.getElementById(`rol-emp-${empresaId}`).value;
+
+        const permisos = {
+            ver_empleados: document.getElementById(`perm-${empresaId}-ver_empleados`).checked,
+            editar_empleados: document.getElementById(`perm-${empresaId}-editar_empleados`).checked,
+            ver_tickets: document.getElementById(`perm-${empresaId}-ver_tickets`).checked,
+            editar_tickets: document.getElementById(`perm-${empresaId}-editar_tickets`).checked,
+            ver_reportes: document.getElementById(`perm-${empresaId}-ver_reportes`).checked,
+            ver_auditoria: document.getElementById(`perm-${empresaId}-ver_auditoria`).checked
+        };
+
+        empresas.push({ empresa_id: empresaId, rol_empresa, permisos });
+    });
+
+    try {
+        const data = { username, email, nombre, rol_global, activo, debe_cambiar_password, empresas };
+        if (password) data.password = password;
+
+        const url = usuarioId ? `${API_URL}/usuarios/${usuarioId}` : `${API_URL}/usuarios`;
+        const method = usuarioId ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!result.success) throw new Error(result.mensaje);
+
+        // Si es nuevo usuario o se actualizó, también actualizar empresas asignadas
+        if (empresas.length > 0 && result.data.id) {
+            await fetch(`${API_URL}/usuarios/${result.data.id}/empresas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ empresas })
+            });
+        }
+
+        showToast('success', 'Éxito', usuarioId ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
+        closeUsuarioModal();
+        loadUsuarios();
+
+    } catch (error) {
+        console.error('Error al guardar usuario:', error);
+        showToast('error', 'Error', error.message || 'No se pudo guardar el usuario');
+    }
+}
+
+async function editarUsuario(usuarioId) {
+    showModalUsuario(usuarioId);
+}
+
+async function eliminarUsuario(usuarioId, username) {
+    if (!confirm(`¿Está seguro de eliminar el usuario "${username}"?\n\nEsta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/usuarios/${usuarioId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (!result.success) throw new Error(result.mensaje);
+
+        showToast('success', 'Usuario Eliminado', 'El usuario se eliminó correctamente');
+        loadUsuarios();
+
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        showToast('error', 'Error', error.message || 'No se pudo eliminar el usuario');
+    }
+}
+
+async function verDetalleUsuario(usuarioId) {
+    try {
+        const response = await fetch(`${API_URL}/usuarios/${usuarioId}`);
+        const result = await response.json();
+
+        if (!result.success) throw new Error(result.mensaje);
+
+        const usuario = result.data;
+
+        const html = `
+            <div style="padding: 20px;">
+                <h3><i class="fas fa-user-circle"></i> ${escapeHtml(usuario.nombre)}</h3>
+                <hr>
+                <p><strong>Usuario:</strong> ${escapeHtml(usuario.username)}</p>
+                <p><strong>Email:</strong> ${escapeHtml(usuario.email || '-')}</p>
+                <p><strong>Rol Global:</strong> <span class="badge badge-info">${usuario.rol_global}</span></p>
+                <p><strong>Estado:</strong> <span class="badge badge-${usuario.activo ? 'success' : 'danger'}">${usuario.activo ? 'Activo' : 'Inactivo'}</span></p>
+                <p><strong>Último Login:</strong> ${usuario.ultimo_login ? formatDateTime(usuario.ultimo_login) : 'Nunca'}</p>
+                <p><strong>Creado:</strong> ${formatDateTime(usuario.created_at)}</p>
+                
+                <h4 style="margin-top: 20px;"><i class="fas fa-building"></i> Empresas Asignadas</h4>
+                ${usuario.empresas.length > 0 ? `
+                    <table class="data-table" style="margin-top: 10px;">
+                        <thead>
+                            <tr>
+                                <th>Empresa</th>
+                                <th>Rol</th>
+                                <th>Permisos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${usuario.empresas.map(e => `
+                                <tr>
+                                    <td>${escapeHtml(e.nombre)}</td>
+                                    <td><span class="badge badge-secondary">${e.rol_empresa}</span></td>
+                                    <td style="font-size: 0.85em;">
+                                        ${Object.entries(e.permisos || {})
+                .filter(([k, v]) => v)
+                .map(([k]) => k.replace(/_/g, ' '))
+                .join(', ') || 'Sin permisos'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                ` : '<p class="text-muted">No tiene empresas asignadas</p>'}
+                
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn btn-primary" onclick="editarUsuario(${usuarioId})">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Mostrar en un modal o alert
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        tempDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; z-index: 10000; max-width: 800px; max-height: 80vh; overflow-y: auto; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999;';
+        overlay.onclick = () => {
+            document.body.removeChild(overlay);
+            document.body.removeChild(tempDiv);
+        };
+
+        document.body.appendChild(overlay);
+        document.body.appendChild(tempDiv);
+
+    } catch (error) {
+        console.error('Error al ver detalle:', error);
+        showToast('error', 'Error', 'No se pudo cargar el detalle del usuario');
+    }
+}
