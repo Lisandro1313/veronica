@@ -1108,10 +1108,13 @@ function mapearEmpleado(emp) {
 
 async function loadEmpleados() {
     try {
-        let url = `${API_URL}/empleados`;
-        if (currentEmpresa && currentEmpresa.id) {
-            url += `?empresa_id=${currentEmpresa.id}`;
+        if (!currentEmpresa || !currentEmpresa.id) {
+            console.error('No hay empresa seleccionada');
+            empleadosList.innerHTML = '<p class="loading">⚠️ Selecciona una empresa primero</p>';
+            return;
         }
+        
+        const url = `${API_URL}/empleados?empresa_id=${currentEmpresa.id}`;
         const response = await fetch(url);
         const data = await response.json();
         empleados = data.map(mapearEmpleado);
