@@ -25,6 +25,7 @@ const loginForm = document.getElementById('login-form');
 const empleadoForm = document.getElementById('empleado-form');
 const ticketForm = document.getElementById('ticket-form');
 const logoutBtn = document.getElementById('sidebar-logout-btn');
+const btnCambiarEmpresa = document.getElementById('btn-cambiar-empresa');
 const userNameSpan = document.getElementById('sidebar-user-name');
 const empleadosList = document.getElementById('empleados-list');
 const ticketsList = document.getElementById('tickets-list');
@@ -151,6 +152,16 @@ logoutBtn.addEventListener('click', () => {
     showLoginScreen();
     loginForm.reset();
     showToast('info', 'Sesión Cerrada', 'Has cerrado sesión correctamente');
+});
+
+// Botón para cambiar de empresa
+btnCambiarEmpresa?.addEventListener('click', () => {
+    currentEmpresa = null;
+    empleados = [];
+    tickets = [];
+    localStorage.removeItem('empresaId');
+    showEmpresaScreen();
+    showToast('info', 'Cambiar Empresa', 'Selecciona una empresa para continuar');
 });
 
 // ===== TOAST NOTIFICATIONS =====

@@ -86,16 +86,17 @@ body {
 
 /* Animación de partículas en el fondo del login */
 #login-screen::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
+    content: '' !important;
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
     background-image: 
         radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
         radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
         radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
         radial-gradient(circle at 60% 90%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
-    animation: moveBackground 20s ease-in-out infinite;
+    animation: moveBackground 20s ease-in-out infinite !important;
+    z-index: 1 !important;
 }
 
 @keyframes moveBackground {
@@ -109,15 +110,16 @@ body {
 
 /* Círculos flotantes animados */
 #login-screen::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
+    content: '' !important;
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
     background-image:
         radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 30%),
         radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 30%),
         radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
-    animation: float 15s ease-in-out infinite;
+    animation: float 15s ease-in-out infinite !important;
+    z-index: 2 !important;
 }
 
 @keyframes float {
@@ -259,6 +261,38 @@ body {
 .sidebar-footer {
     padding: 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-cambiar-empresa {
+    background: linear-gradient(135deg, var(--primary) 0%, #0d47a1 100%);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.btn-cambiar-empresa:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+.btn-cambiar-empresa i {
+    font-size: 14px;
+}
+
+.sidebar-footer > div {
     display: flex;
     align-items: center;
     justify-content: space-between;
