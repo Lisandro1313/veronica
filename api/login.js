@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
         // Buscar usuario con Supabase
         const { data, error } = await supabase
             .from('usuarios')
-            .select('id, nombre, username, password, rol')
+            .select('id, nombre, username, password, rol, empresa_id')
             .eq('username', usuario)
             .single();
 
@@ -92,6 +92,7 @@ module.exports = async (req, res) => {
                     nombre: data.nombre,
                     username: data.username,
                     rol: rol,
+                    empresaId: data.empresa_id || null,
                     permisos: userPermisos
                 }
             });
