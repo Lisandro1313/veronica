@@ -5672,10 +5672,12 @@ function showModalUsuario(usuarioId = null) {
     if (usuarioId) {
         titulo.innerHTML = '<i class="fas fa-user-edit"></i> Editar Usuario';
         document.getElementById('password-fields').style.display = 'none';
+        document.getElementById('usuario-username').disabled = true;
         cargarDatosUsuario(usuarioId);
     } else {
         titulo.innerHTML = '<i class="fas fa-user-plus"></i> Nuevo Usuario';
         document.getElementById('password-fields').style.display = 'block';
+        document.getElementById('usuario-username').disabled = false;
         document.getElementById('usuario-password').required = true;
         document.getElementById('usuario-password-confirm').required = true;
         cargarEmpresasParaAsignar();
