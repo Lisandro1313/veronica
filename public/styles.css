@@ -4099,3 +4099,51 @@ body.dark-mode .badge-info {
     background-color: #1c3d4a;
     color: #a6d5f5;
 }
+
+/* ===== ESTILOS PARA CHECKBOX DE MANTENER SESIÓN ===== */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 15px 0 20px 0;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(26, 115, 232, 0.02));
+    border-radius: 8px;
+    border: 1px solid rgba(26, 115, 232, 0.15);
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.checkbox-group label {
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--gray-700);
+    flex: 1;
+}
+
+.checkbox-group label:hover {
+    color: var(--primary);
+}
+
+body.dark-mode .checkbox-group {
+    background: linear-gradient(135deg, rgba(26, 115, 232, 0.15), rgba(26, 115, 232, 0.08));
+    border-color: rgba(26, 115, 232, 0.3);
+}
+
+body.dark-mode .checkbox-group label {
+    color: var(--gray-300);
+}
+
+body.dark-mode .checkbox-group label:hover {
+    color: var(--primary);
+}
