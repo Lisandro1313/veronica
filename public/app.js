@@ -104,14 +104,29 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 
 // ===== AUTENTICACIÓN =====
 
-// Variables para el captcha
-let captchaNum1, captchaNum2, captchaAnswer;
+// Variables para el captcha de literatura/gramática
+let captchaAnswer;
+
+// Banco de preguntas de literatura y gramática
+const captchaQuestions = [
+    { question: '¿Quién escribió "Don Quijote de la Mancha"?', answer: 'cervantes' },
+    { question: '¿Cuál es el sujeto en "El perro ladra fuerte"?', answer: 'el perro' },
+    { question: '¿Qué color tiene el caballo blanco de San Martín?', answer: 'blanco' },
+    { question: '¿Cuántas vocales tiene el abecedario español?', answer: '5' },
+    { question: 'En "María canta bien", ¿cuál es el verbo?', answer: 'canta' },
+    { question: '¿Quién escribió "Martín Fierro"?', answer: 'hernandez' },
+    { question: '¿Cuál es la capital de Argentina?', answer: 'buenos aires' },
+    { question: 'En "Los niños juegan", ¿cuál es el sujeto?', answer: 'los niños' },
+    { question: '¿Cómo se llama la montaña más alta de América?', answer: 'aconcagua' },
+    { question: '¿Cuántas letras tiene la palabra "casa"?', answer: '4' },
+    { question: 'En "El gato duerme", ¿qué hace el gato?', answer: 'duerme' },
+    { question: '¿Qué animal hace "miau"?', answer: 'gato' }
+];
 
 function generateCaptcha() {
-    captchaNum1 = Math.floor(Math.random() * 10) + 1;
-    captchaNum2 = Math.floor(Math.random() * 10) + 1;
-    captchaAnswer = captchaNum1 + captchaNum2;
-    document.getElementById('captcha-question').textContent = `¿Cuánto es ${captchaNum1} + ${captchaNum2}?`;
+    const randomQuestion = captchaQuestions[Math.floor(Math.random() * captchaQuestions.length)];
+    captchaAnswer = randomQuestion.answer.toLowerCase().trim();
+    document.getElementById('captcha-question').textContent = randomQuestion.question;
 }
 
 // Generar captcha al cargar
@@ -122,7 +137,7 @@ loginForm.addEventListener('submit', async (e) => {
 
     const usuario = document.getElementById('usuario').value;
     const password = document.getElementById('password').value;
-    const captchaInput = parseInt(document.getElementById('captcha').value);
+    const captchaInput = document.getElementById('captcha').value.toLowerCase().trim();
 
     // Validar captcha
     if (captchaInput !== captchaAnswer) {
