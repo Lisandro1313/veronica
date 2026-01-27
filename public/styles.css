@@ -4110,6 +4110,7 @@ body.dark-mode .badge-info {
     background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(26, 115, 232, 0.02));
     border-radius: 8px;
     border: 1px solid rgba(26, 115, 232, 0.15);
+    justify-content: space-between;
 }
 
 .checkbox-group input[type="checkbox"] {
@@ -4118,6 +4119,7 @@ body.dark-mode .badge-info {
     cursor: pointer;
     flex-shrink: 0;
     accent-color: var(--primary);
+    margin: 0;
 }
 
 .checkbox-group label {
@@ -4128,7 +4130,7 @@ body.dark-mode .badge-info {
     gap: 8px;
     font-size: 14px;
     color: var(--gray-700);
-    flex: 1;
+    flex: 0;
 }
 
 .checkbox-group label:hover {
