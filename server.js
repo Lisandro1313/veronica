@@ -389,8 +389,9 @@ app.put('/api/empleados/:id', async (req, res) => {
                 sueldo = $27,
                 antecedentes_penales = $28,
                 observaciones_antecedentes = $29,
-                observaciones = $30
-            WHERE id = $31 RETURNING *`,
+                observaciones = $30,
+                empresa_id = $31
+            WHERE id = $32 RETURNING *`,
             [
                 d.nombreCompleto,
                 d.cuil,
@@ -422,6 +423,7 @@ app.put('/api/empleados/:id', async (req, res) => {
                 d.antecedentesPenales || 'no',
                 d.observacionesAntecedentes || null,
                 d.observaciones || null,
+                d.empresa_id || req.headers['x-empresa-id'] || null,
                 req.params.id
             ]
         );

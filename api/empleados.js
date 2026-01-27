@@ -118,7 +118,8 @@ module.exports = async (req, res) => {
                 sueldo: d.sueldo ? parseFloat(d.sueldo) : null,
                 antecedentes_penales: d.antecedentesPenales || 'no',
                 observaciones_antecedentes: d.observacionesAntecedentes || null,
-                observaciones: d.observaciones || null
+                observaciones: d.observaciones || null,
+                empresa_id: d.empresa_id || null
             };
 
             const { data, error } = await supabase
@@ -177,7 +178,8 @@ module.exports = async (req, res) => {
                 sueldo: d.sueldo ? parseFloat(d.sueldo) : null,
                 antecedentes_penales: d.antecedentesPenales || 'no',
                 observaciones_antecedentes: d.observacionesAntecedentes || null,
-                observaciones: d.observaciones || null
+                observaciones: d.observaciones || null,
+                empresa_id: d.empresa_id || null
             };
 
             const { data, error } = await supabase
