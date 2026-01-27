@@ -107,26 +107,90 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 // Variables para el captcha de literatura/gramática
 let captchaAnswer;
 
-// Banco de preguntas de literatura y gramática
+// Banco de preguntas con opciones múltiples
 const captchaQuestions = [
-    { question: '¿Quién escribió "Don Quijote de la Mancha"?', answer: 'cervantes' },
-    { question: '¿Cuál es el sujeto en "El perro ladra fuerte"?', answer: 'el perro' },
-    { question: '¿Qué color tiene el caballo blanco de San Martín?', answer: 'blanco' },
-    { question: '¿Cuántas vocales tiene el abecedario español?', answer: '5' },
-    { question: 'En "María canta bien", ¿cuál es el verbo?', answer: 'canta' },
-    { question: '¿Quién escribió "Martín Fierro"?', answer: 'hernandez' },
-    { question: '¿Cuál es la capital de Argentina?', answer: 'buenos aires' },
-    { question: 'En "Los niños juegan", ¿cuál es el sujeto?', answer: 'los niños' },
-    { question: '¿Cómo se llama la montaña más alta de América?', answer: 'aconcagua' },
-    { question: '¿Cuántas letras tiene la palabra "casa"?', answer: '4' },
-    { question: 'En "El gato duerme", ¿qué hace el gato?', answer: 'duerme' },
-    { question: '¿Qué animal hace "miau"?', answer: 'gato' }
+    { 
+        question: '¿Quién escribió "Don Quijote de la Mancha"?', 
+        correct: 'Cervantes',
+        options: ['Cervantes', 'Shakespeare', 'Borges']
+    },
+    { 
+        question: '¿Cuál es el sujeto en "El perro ladra fuerte"?', 
+        correct: 'El perro',
+        options: ['El perro', 'Ladra', 'Fuerte']
+    },
+    { 
+        question: '¿Qué color tiene el caballo blanco de San Martín?', 
+        correct: 'Blanco',
+        options: ['Blanco', 'Negro', 'Marrón']
+    },
+    { 
+        question: '¿Cuántas vocales tiene el abecedario español?', 
+        correct: '5',
+        options: ['5', '7', '3']
+    },
+    { 
+        question: 'En "María canta bien", ¿cuál es el verbo?', 
+        correct: 'Canta',
+        options: ['Canta', 'María', 'Bien']
+    },
+    { 
+        question: '¿Quién escribió "Martín Fierro"?', 
+        correct: 'José Hernández',
+        options: ['José Hernández', 'Jorge Luis Borges', 'Julio Cortázar']
+    },
+    { 
+        question: '¿Cuál es la capital de Argentina?', 
+        correct: 'Buenos Aires',
+        options: ['Buenos Aires', 'Córdoba', 'Rosario']
+    },
+    { 
+        question: 'En "Los niños juegan", ¿cuál es el sujeto?', 
+        correct: 'Los niños',
+        options: ['Los niños', 'Juegan', 'Los']
+    },
+    { 
+        question: '¿Cómo se llama la montaña más alta de América?', 
+        correct: 'Aconcagua',
+        options: ['Aconcagua', 'Everest', 'Kilimanjaro']
+    },
+    { 
+        question: '¿Cuántas letras tiene la palabra "casa"?', 
+        correct: '4',
+        options: ['4', '5', '3']
+    },
+    { 
+        question: 'En "El gato duerme", ¿qué hace el gato?', 
+        correct: 'Duerme',
+        options: ['Duerme', 'Come', 'Corre']
+    },
+    { 
+        question: '¿Qué animal hace "miau"?', 
+        correct: 'Gato',
+        options: ['Gato', 'Perro', 'Vaca']
+    }
 ];
 
 function generateCaptcha() {
     const randomQuestion = captchaQuestions[Math.floor(Math.random() * captchaQuestions.length)];
-    captchaAnswer = randomQuestion.answer.toLowerCase().trim();
+    captchaAnswer = randomQuestion.correct;
+    
+    // Actualizar la pregunta
     document.getElementById('captcha-question').textContent = randomQuestion.question;
+    
+    // Limpiar y llenar el select con las opciones mezcladas
+    const selectElement = document.getElementById('captcha');
+    selectElement.innerHTML = '<option value="">-- Selecciona una respuesta --</option>';
+    
+    // Mezclar las opciones aleatoriamente
+    const shuffledOptions = [...randomQuestion.options].sort(() => Math.random() - 0.5);
+    
+    shuffledOptions.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        optionElement.textContent = option;
+        selectElement.appendChild(optionElement);
+    });
 }
 
 // Generar captcha al cargar
@@ -137,13 +201,12 @@ loginForm.addEventListener('submit', async (e) => {
 
     const usuario = document.getElementById('usuario').value;
     const password = document.getElementById('password').value;
-    const captchaInput = document.getElementById('captcha').value.toLowerCase().trim();
+    const captchaInput = document.getElementById('captcha').value;
 
     // Validar captcha
-    if (captchaInput !== captchaAnswer) {
-        showToast('error', 'Error', 'Verificación incorrecta. Inténtalo de nuevo.');
+    if (!captchaInput || captchaInput !== captchaAnswer) {
+        showToast('error', 'Error', 'Por favor selecciona la respuesta correcta.');
         generateCaptcha();
-        document.getElementById('captcha').value = '';
         return;
     }
 
