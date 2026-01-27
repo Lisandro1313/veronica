@@ -158,6 +158,15 @@ app.post('/api/login', async (req, res) => {
                 reportes: { ver: true, avanzados: true },
                 alertas: { ver: true, configurar: false }
             },
+            supervisor: {
+                empleados: { crear: true, editar: true, eliminar: true, ver: true },
+                usuarios: { crear: true, editar: true, eliminar: false, ver: true },
+                tickets: { crear: true, editar: true, eliminar: false, ver: true },
+                empresas: { crear: false, editar: true, eliminar: false, ver: true },
+                exportar: { pdf: true, excel: true },
+                reportes: { ver: true, avanzados: true },
+                alertas: { ver: true, configurar: false }
+            },
             usuario: {
                 empleados: { crear: false, editar: false, eliminar: false, ver: true },
                 usuarios: { crear: false, editar: false, eliminar: false, ver: false },

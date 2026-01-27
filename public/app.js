@@ -109,63 +109,63 @@ let captchaAnswer;
 
 // Banco de preguntas con opciones múltiples
 const captchaQuestions = [
-    { 
-        question: '¿Quién escribió "Don Quijote de la Mancha"?', 
+    {
+        question: '¿Quién escribió "Don Quijote de la Mancha"?',
         correct: 'Cervantes',
         options: ['Cervantes', 'Shakespeare', 'Borges']
     },
-    { 
-        question: '¿Cuál es el sujeto en "El perro ladra fuerte"?', 
+    {
+        question: '¿Cuál es el sujeto en "El perro ladra fuerte"?',
         correct: 'El perro',
         options: ['El perro', 'Ladra', 'Fuerte']
     },
-    { 
-        question: '¿Qué color tiene el caballo blanco de San Martín?', 
+    {
+        question: '¿Qué color tiene el caballo blanco de San Martín?',
         correct: 'Blanco',
         options: ['Blanco', 'Negro', 'Marrón']
     },
-    { 
-        question: '¿Cuántas vocales tiene el abecedario español?', 
+    {
+        question: '¿Cuántas vocales tiene el abecedario español?',
         correct: '5',
         options: ['5', '7', '3']
     },
-    { 
-        question: 'En "María canta bien", ¿cuál es el verbo?', 
+    {
+        question: 'En "María canta bien", ¿cuál es el verbo?',
         correct: 'Canta',
         options: ['Canta', 'María', 'Bien']
     },
-    { 
-        question: '¿Quién escribió "Martín Fierro"?', 
+    {
+        question: '¿Quién escribió "Martín Fierro"?',
         correct: 'José Hernández',
         options: ['José Hernández', 'Jorge Luis Borges', 'Julio Cortázar']
     },
-    { 
-        question: '¿Cuál es la capital de Argentina?', 
+    {
+        question: '¿Cuál es la capital de Argentina?',
         correct: 'Buenos Aires',
         options: ['Buenos Aires', 'Córdoba', 'Rosario']
     },
-    { 
-        question: 'En "Los niños juegan", ¿cuál es el sujeto?', 
+    {
+        question: 'En "Los niños juegan", ¿cuál es el sujeto?',
         correct: 'Los niños',
         options: ['Los niños', 'Juegan', 'Los']
     },
-    { 
-        question: '¿Cómo se llama la montaña más alta de América?', 
+    {
+        question: '¿Cómo se llama la montaña más alta de América?',
         correct: 'Aconcagua',
         options: ['Aconcagua', 'Everest', 'Kilimanjaro']
     },
-    { 
-        question: '¿Cuántas letras tiene la palabra "casa"?', 
+    {
+        question: '¿Cuántas letras tiene la palabra "casa"?',
         correct: '4',
         options: ['4', '5', '3']
     },
-    { 
-        question: 'En "El gato duerme", ¿qué hace el gato?', 
+    {
+        question: 'En "El gato duerme", ¿qué hace el gato?',
         correct: 'Duerme',
         options: ['Duerme', 'Come', 'Corre']
     },
-    { 
-        question: '¿Qué animal hace "miau"?', 
+    {
+        question: '¿Qué animal hace "miau"?',
         correct: 'Gato',
         options: ['Gato', 'Perro', 'Vaca']
     }
@@ -174,17 +174,17 @@ const captchaQuestions = [
 function generateCaptcha() {
     const randomQuestion = captchaQuestions[Math.floor(Math.random() * captchaQuestions.length)];
     captchaAnswer = randomQuestion.correct;
-    
+
     // Actualizar la pregunta
     document.getElementById('captcha-question').textContent = randomQuestion.question;
-    
+
     // Limpiar y llenar el select con las opciones mezcladas
     const selectElement = document.getElementById('captcha');
     selectElement.innerHTML = '<option value="">-- Selecciona una respuesta --</option>';
-    
+
     // Mezclar las opciones aleatoriamente
     const shuffledOptions = [...randomQuestion.options].sort(() => Math.random() - 0.5);
-    
+
     shuffledOptions.forEach(option => {
         const optionElement = document.createElement('option');
         optionElement.value = option;
@@ -232,8 +232,21 @@ loginForm.addEventListener('submit', async (e) => {
                 }
             }
 
-            // Mostrar pantalla de empresas
-            showEmpresaScreen();
+            // Si es supervisor, entrar directo a configuración sin elegir empresa
+            if (currentUser.rol === 'supervisor') {
+                currentEmpresa = { id: 1, nombre: 'Configuración Global' };
+                localStorage.setItem('empresaId', JSON.stringify(currentEmpresa));
+                showMainScreen();
+                
+                // Mostrar la sección de usuarios (configuración)
+                setTimeout(() => {
+                    document.querySelector('[data-tab="usuarios"]').click();
+                }, 300);
+            } else {
+                // Mostrar pantalla de empresas
+                showEmpresaScreen();
+            }
+            
             // Regenerar captcha para la próxima vez
             generateCaptcha();
             document.getElementById('captcha').value = '';
