@@ -1024,6 +1024,7 @@ empleadoForm.addEventListener('submit', async (e) => {
         cuil: document.getElementById('cuil').value,
         fechaNacimiento: document.getElementById('fechaNacimiento').value,
         documento: document.getElementById('documento').value,
+        empresaId: currentEmpresa?.id || currentUser?.empresaId || null,
 
         estadoCivil: document.getElementById('estadoCivil').value,
         tienePareja: document.getElementById('tienePareja')?.value || 'no',

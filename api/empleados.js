@@ -89,6 +89,7 @@ module.exports = async (req, res) => {
                 fecha_nacimiento: d.fechaNacimiento || null,
                 documento: d.documento || null,
                 estado_civil: d.estadoCivil || null,
+                empresa_id: d.empresaId || null,
 
                 // Composición Familiar
                 tiene_pareja: d.tienePareja === 'si',

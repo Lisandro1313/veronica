@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
             const { data, error } = await supabase
                 .from('empresas')
                 .select('*')
-                .eq('activa', true)
+                .eq('activo', true)
                 .order('nombre', { ascending: true });
 
             if (error) throw error;
@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
                     nombre,
                     descripcion: descripcion || null,
                     logo: logo || '🏢',
-                    activa: true
+                    activo: true
                 }])
                 .select()
                 .single();
@@ -63,7 +63,7 @@ module.exports = async (req, res) => {
 
         // PUT - Actualizar empresa
         if (req.method === 'PUT') {
-            const { id, nombre, descripcion, logo, activa } = req.body;
+            const { id, nombre, descripcion, logo, activo } = req.body;
 
             if (!id) {
                 return res.status(400).json({
@@ -76,7 +76,7 @@ module.exports = async (req, res) => {
             if (nombre !== undefined) updateData.nombre = nombre;
             if (descripcion !== undefined) updateData.descripcion = descripcion;
             if (logo !== undefined) updateData.logo = logo;
-            if (activa !== undefined) updateData.activa = activa;
+            if (activo !== undefined) updateData.activo = activo;
 
             const { data, error } = await supabase
                 .from('empresas')
@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
             // En lugar de eliminar, desactivamos la empresa
             const { data, error } = await supabase
                 .from('empresas')
-                .update({ activa: false })
+                .update({ activo: false })
                 .eq('id', id)
                 .select()
                 .single();
