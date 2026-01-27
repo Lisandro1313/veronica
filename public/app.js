@@ -43,6 +43,78 @@ const API_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3000/api'
     : '/api';
 
+// ===== VERIFICACIÓN AUTOMÁTICA DE SESIÓN =====
+
+// Función para restaurar sesión guardada
+async function verificarSesionGuardada() {
+    const mantenerSesionActiva = localStorage.getItem('mantener_sesion_activa') === 'true';
+    const sesionGuardada = localStorage.getItem('sesion_usuario');
+
+    if (mantenerSesionActiva && sesionGuardada) {
+        try {
+            const { usuario, password } = JSON.parse(sesionGuardada);
+            
+            // Mostrar indicador de carga
+            const loginScreen = document.getElementById('login-screen');
+            if (loginScreen) {
+                loginScreen.style.opacity = '0.7';
+            }
+
+            // Auto-login
+            const response = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario, password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                currentUser = data.usuario;
+
+                // Ocultar botón de usuarios si no tiene permisos
+                const navUsuarios = document.getElementById('nav-usuarios');
+                if (navUsuarios) {
+                    if (currentUser.permisos.usuarios && currentUser.permisos.usuarios.ver) {
+                        navUsuarios.style.display = 'flex';
+                    } else {
+                        navUsuarios.style.display = 'none';
+                    }
+                }
+
+                // Si es supervisor, entrar directo a configuración
+                if (currentUser.rol === 'supervisor') {
+                    currentEmpresa = { id: 1, nombre: 'Configuración Global' };
+                    localStorage.setItem('empresaId', JSON.stringify(currentEmpresa));
+                    showMainScreen();
+                    setTimeout(() => {
+                        document.querySelector('[data-tab="usuarios"]').click();
+                    }, 300);
+                } else {
+                    // Mostrar pantalla de empresas
+                    showEmpresaScreen();
+                }
+
+                generateCaptcha();
+            } else {
+                // Si falló el auto-login, limpiar datos guardados
+                localStorage.removeItem('sesion_usuario');
+                localStorage.removeItem('mantener_sesion_activa');
+                if (loginScreen) {
+                    loginScreen.style.opacity = '1';
+                }
+            }
+        } catch (error) {
+            console.error('Error al restaurar sesión:', error);
+            localStorage.removeItem('sesion_usuario');
+            localStorage.removeItem('mantener_sesion_activa');
+        }
+    }
+}
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', verificarSesionGuardada);
+
 // ===== NAVEGACIÓN SIDEBAR =====
 
 document.querySelectorAll('.nav-item').forEach(btn => {
@@ -222,6 +294,20 @@ loginForm.addEventListener('submit', async (e) => {
         if (data.success) {
             currentUser = data.usuario;
 
+            // Guardar sesión si el checkbox está marcado
+            const mantenerSesion = document.getElementById('mantener-sesion').checked;
+            if (mantenerSesion) {
+                localStorage.setItem('sesion_usuario', JSON.stringify({
+                    usuario: usuario,
+                    password: password,
+                    timestamp: Date.now()
+                }));
+                localStorage.setItem('mantener_sesion_activa', 'true');
+            } else {
+                localStorage.removeItem('sesion_usuario');
+                localStorage.removeItem('mantener_sesion_activa');
+            }
+
             // Ocultar botón de usuarios si no tiene permisos
             const navUsuarios = document.getElementById('nav-usuarios');
             if (navUsuarios) {
@@ -237,7 +323,7 @@ loginForm.addEventListener('submit', async (e) => {
                 currentEmpresa = { id: 1, nombre: 'Configuración Global' };
                 localStorage.setItem('empresaId', JSON.stringify(currentEmpresa));
                 showMainScreen();
-                
+
                 // Mostrar la sección de usuarios (configuración)
                 setTimeout(() => {
                     document.querySelector('[data-tab="usuarios"]').click();
@@ -246,7 +332,7 @@ loginForm.addEventListener('submit', async (e) => {
                 // Mostrar pantalla de empresas
                 showEmpresaScreen();
             }
-            
+
             // Regenerar captcha para la próxima vez
             generateCaptcha();
             document.getElementById('captcha').value = '';
@@ -271,6 +357,8 @@ logoutBtn.addEventListener('click', () => {
     empleados = [];
     tickets = [];
     localStorage.removeItem('empresaId');
+    localStorage.removeItem('sesion_usuario');
+    localStorage.removeItem('mantener_sesion_activa');
     showLoginScreen();
     loginForm.reset();
     generateCaptcha();
