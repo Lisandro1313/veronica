@@ -553,12 +553,27 @@ app.post('/api/empleados/:empleadoId/documentos', async (req, res) => {
         const { empleadoId } = req.params;
         const { nombre_archivo, tipo_archivo, tamano, contenido_base64, descripcion, subido_por, empresa_id } = req.body;
 
-        const result = await db.query(
-            'INSERT INTO documentos_empleado (empleado_id, empresa_id, nombre_archivo, tipo_archivo, tamano, contenido_base64, descripcion, subido_por) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-            [empleadoId, empresa_id, nombre_archivo, tipo_archivo, tamano, contenido_base64, descripcion, subido_por]
+        if (!nombre_archivo || !contenido_base64) {
+            return res.status(400).json({ success: false, mensaje: 'Faltan datos del documento' });
+        }
+
+        const empleadoResult = await db.query(
+            'SELECT empresa_id FROM empleados WHERE id = $1',
+            [empleadoId]
         );
 
-        res.json({ success: true, data: result.rows[0] });
+        if (empleadoResult.rows.length === 0) {
+            return res.status(404).json({ success: false, mensaje: 'Empleado no encontrado' });
+        }
+
+        const empresaId = empleadoResult.rows[0].empresa_id || empresa_id;
+
+        await db.query(
+            'INSERT INTO documentos_empleado (empleado_id, empresa_id, nombre_archivo, tipo_archivo, tamano, contenido_base64, descripcion, subido_por) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+            [empleadoId, empresaId, nombre_archivo, tipo_archivo, tamano, contenido_base64, descripcion, subido_por]
+        );
+
+        res.status(201).json({ success: true, mensaje: 'Documento subido correctamente' });
     } catch (error) {
         console.error('Error al subir documento:', error);
         res.status(500).json({ success: false, mensaje: 'Error al subir documento' });
